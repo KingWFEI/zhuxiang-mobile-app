@@ -2,6 +2,8 @@ import 'package:go_router/go_router.dart';
 
 import '../launch/app_loading_page.dart';
 import '../../core/widgets/app_placeholder_page.dart';
+import '../../features/auth/presentation/pages/login_page.dart';
+import '../../features/auth/presentation/pages/register_page.dart';
 import 'app_shell.dart';
 import 'route_names.dart';
 import 'route_paths.dart';
@@ -20,13 +22,12 @@ class AppRouter {
       GoRoute(
         name: RouteNames.login,
         path: RoutePaths.login,
-        builder: (context, state) => const AppPlaceholderPage(
-          title: '登录',
-          description: '登录模块占位，暂不实现真实登录业务',
-          actions: [
-            AppPlaceholderAction(label: '游客浏览', routeName: RouteNames.main),
-          ],
-        ),
+        builder: (context, state) => const LoginPage(),
+      ),
+      GoRoute(
+        name: RouteNames.register,
+        path: RoutePaths.register,
+        builder: (context, state) => const RegisterPage(),
       ),
       GoRoute(
         name: RouteNames.main,

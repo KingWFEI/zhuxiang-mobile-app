@@ -1,5 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zhuxiang_app/app/app.dart';
+import 'package:zhuxiang_app/features/auth/presentation/pages/login_page.dart';
+import 'package:zhuxiang_app/features/auth/presentation/pages/register_page.dart';
 
 void main() {
   testWidgets('Zhuxiang app renders loading page', (tester) async {
@@ -27,5 +30,27 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('个人中心'), findsWidgets);
+  });
+
+  testWidgets('login page validates empty phone', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: LoginPage()));
+
+    final loginButton = find.widgetWithText(ElevatedButton, '登录');
+    await tester.ensureVisible(loginButton);
+    await tester.tap(loginButton);
+    await tester.pump();
+
+    expect(find.text('请输入手机号'), findsOneWidget);
+  });
+
+  testWidgets('register page validates empty phone', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: RegisterPage()));
+
+    final registerButton = find.widgetWithText(ElevatedButton, '注册');
+    await tester.ensureVisible(registerButton);
+    await tester.tap(registerButton);
+    await tester.pump();
+
+    expect(find.text('请输入手机号'), findsOneWidget);
   });
 }
