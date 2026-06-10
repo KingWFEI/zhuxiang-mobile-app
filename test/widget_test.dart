@@ -18,7 +18,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1500));
     await tester.pumpAndSettle();
 
+    expect(find.text('找房'), findsWidgets);
+    expect(find.text('消息'), findsOneWidget);
     expect(find.text('我的'), findsOneWidget);
+    expect(find.text('租约'), findsNothing);
 
     await tester.tap(find.text('我的'));
     await tester.pumpAndSettle();

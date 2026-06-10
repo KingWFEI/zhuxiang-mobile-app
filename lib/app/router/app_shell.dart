@@ -30,11 +30,6 @@ class AppShell extends StatelessWidget {
             label: '找房',
           ),
           NavigationDestination(
-            icon: Icon(Icons.description_outlined),
-            selectedIcon: Icon(Icons.description),
-            label: '租约',
-          ),
-          NavigationDestination(
             icon: Icon(Icons.notifications_outlined),
             selectedIcon: Icon(Icons.notifications),
             label: '消息',

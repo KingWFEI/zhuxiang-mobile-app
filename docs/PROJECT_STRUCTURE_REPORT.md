@@ -148,7 +148,7 @@ lib/
 
 ## 7. 路由系统说明
 
-路由使用 `go_router`。主页面使用 `StatefulShellRoute.indexedStack` 管理底部导航，当前底部 tab 为：首页、找房、租约、消息、我的。`/main` 保留为兼容入口并重定向到 `/home`。
+路由使用 `go_router`。主页面使用 `StatefulShellRoute.indexedStack` 管理底部导航，当前底部 tab 为：首页、找房、消息、我的。`/main` 保留为兼容入口并重定向到 `/home`。
 
 当前提供以下占位路由：
 
