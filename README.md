@@ -5,7 +5,7 @@
 ## 技术栈
 
 - Flutter / Dart
-- go_router：路由管理
+- go_router：路由管理，主页面底部导航使用 `StatefulShellRoute.indexedStack`
 - flutter_riverpod：状态管理基础能力
 - dio：网络请求封装
 - flutter_secure_storage：Token 安全存储
@@ -59,7 +59,7 @@ flutter run
 
 ## 当前阶段
 
-当前仅完成企业级 Flutter 项目基础结构搭建。路由页均为占位页，网络地址为占位地址，未实现登录、房源、租约、账单、门锁、报修等真实业务逻辑。
+当前仅完成企业级 Flutter 项目基础结构搭建。主页面使用 indexedStack 底部导航保存 tab 状态，路由页均为占位页，网络地址为占位地址，未实现登录、房源、租约、账单、门锁、报修等真实业务逻辑。
 
 ## 后续开发计划
 

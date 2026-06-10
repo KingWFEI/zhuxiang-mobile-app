@@ -78,6 +78,7 @@ lib/
 | lib/app/config/app_env.dart | 新增 | 定义 dev、staging、prod 环境 |
 | lib/app/config/app_config.dart | 新增 | 根据环境提供 baseUrl 和超时配置 |
 | lib/app/router/app_router.dart | 新增 | GoRouter 路由配置 |
+| lib/app/router/app_shell.dart | 新增 | `StatefulShellRoute.indexedStack` 的底部导航壳组件 |
 | lib/app/router/route_names.dart | 新增 | 路由名称常量 |
 | lib/app/router/route_paths.dart | 新增 | 路由路径常量 |
 | lib/app/theme/app_colors.dart | 新增 | App 颜色系统 |
@@ -138,7 +139,8 @@ lib/
 
 - `lib/main.dart`：只负责 Flutter 绑定初始化、配置初始化、存储初始化和启动 App。
 - `lib/app/app.dart`：承载 `MaterialApp.router`，接入主题和路由。
-- `lib/app/router/app_router.dart`：集中声明当前所有占位路由。
+- `lib/app/router/app_router.dart`：集中声明当前所有占位路由和 indexedStack shell 路由。
+- `lib/app/router/app_shell.dart`：承载底部导航栏，并通过 `StatefulNavigationShell.goBranch` 切换 tab。
 - `lib/app/theme/app_theme.dart`：统一输出浅色 Material 3 主题，并配置 Button、Input、Card、AppBar。
 - `lib/core/network/api_client.dart`：封装 Dio 的 get、post、put、delete 方法。
 - `lib/core/storage/storage_service.dart`：统一初始化 SharedPreferences，并暴露本地存储入口。
@@ -146,11 +148,13 @@ lib/
 
 ## 7. 路由系统说明
 
-路由使用 `go_router`。当前提供以下占位路由：
+路由使用 `go_router`。主页面使用 `StatefulShellRoute.indexedStack` 管理底部导航，当前底部 tab 为：首页、找房、租约、消息、我的。`/main` 保留为兼容入口并重定向到 `/home`。
+
+当前提供以下占位路由：
 
 `splash`、`login`、`main`、`home`、`search`、`houseList`、`houseDetail`、`appointment`、`realNameAuth`、`profile`、`lease`、`bill`、`lock`、`repair`、`messageCenter`、`customerService`。
 
-`route_names.dart` 管理路由名称，`route_paths.dart` 管理路径，`app_router.dart` 负责创建 `GoRouter`。占位页只用于验证基础跳转，不实现业务逻辑。
+`route_names.dart` 管理路由名称，`route_paths.dart` 管理路径，`app_router.dart` 负责创建 `GoRouter`。占位页只用于验证基础跳转，不实现业务逻辑。非 tab 页面仍作为普通 `GoRoute` 保留，便于后续按业务归属调整到对应 branch。
 
 ## 8. 主题系统说明
 
@@ -191,6 +195,9 @@ flutter run
 flutter pub add go_router dio flutter_riverpod flutter_secure_storage shared_preferences freezed_annotation json_annotation equatable intl
 flutter pub add --dev build_runner freezed json_serializable
 flutter pub get
+dart format lib test
+flutter analyze
+flutter test
 dart format lib test
 flutter analyze
 flutter test
