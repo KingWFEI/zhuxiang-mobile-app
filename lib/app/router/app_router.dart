@@ -1,6 +1,8 @@
 import 'package:go_router/go_router.dart';
 
+import '../launch/app_loading_page.dart';
 import '../../core/widgets/app_placeholder_page.dart';
+import 'app_shell.dart';
 import 'route_names.dart';
 import 'route_paths.dart';
 
@@ -13,14 +15,7 @@ class AppRouter {
       GoRoute(
         name: RouteNames.splash,
         path: RoutePaths.splash,
-        builder: (context, state) => const AppPlaceholderPage(
-          title: '住享',
-          description: 'App 启动页占位',
-          actions: [
-            AppPlaceholderAction(label: '进入首页', routeName: RouteNames.main),
-            AppPlaceholderAction(label: '登录入口', routeName: RouteNames.login),
-          ],
-        ),
+        builder: (context, state) => const AppLoadingPage(),
       ),
       GoRoute(
         name: RouteNames.login,
@@ -36,41 +31,111 @@ class AppRouter {
       GoRoute(
         name: RouteNames.main,
         path: RoutePaths.main,
-        builder: (context, state) => const AppPlaceholderPage(
-          title: '主框架',
-          description: '主导航容器占位，后续承载底部导航或标签页',
-          actions: [
-            AppPlaceholderAction(label: '首页', routeName: RouteNames.home),
-            AppPlaceholderAction(label: '找房', routeName: RouteNames.search),
-            AppPlaceholderAction(
-              label: '房源列表',
-              routeName: RouteNames.houseList,
-            ),
-            AppPlaceholderAction(label: '个人中心', routeName: RouteNames.profile),
-            AppPlaceholderAction(label: '租约', routeName: RouteNames.lease),
-            AppPlaceholderAction(label: '账单', routeName: RouteNames.bill),
-            AppPlaceholderAction(label: '门锁', routeName: RouteNames.lock),
-            AppPlaceholderAction(label: '报修', routeName: RouteNames.repair),
-            AppPlaceholderAction(
-              label: '消息',
-              routeName: RouteNames.messageCenter,
-            ),
-            AppPlaceholderAction(
-              label: '客服',
-              routeName: RouteNames.customerService,
-            ),
-          ],
-        ),
+        redirect: (context, state) => RoutePaths.home,
       ),
-      GoRoute(
-        name: RouteNames.home,
-        path: RoutePaths.home,
-        builder: (context, state) => const AppPlaceholderPage(title: '首页'),
-      ),
-      GoRoute(
-        name: RouteNames.search,
-        path: RoutePaths.search,
-        builder: (context, state) => const AppPlaceholderPage(title: '找房'),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return AppShell(navigationShell: navigationShell);
+        },
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                name: RouteNames.home,
+                path: RoutePaths.home,
+                builder: (context, state) => const AppPlaceholderPage(
+                  title: '首页',
+                  actions: [
+                    AppPlaceholderAction(
+                      label: '找房',
+                      routeName: RouteNames.search,
+                    ),
+                    AppPlaceholderAction(
+                      label: '房源列表',
+                      routeName: RouteNames.houseList,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                name: RouteNames.search,
+                path: RoutePaths.search,
+                builder: (context, state) => const AppPlaceholderPage(
+                  title: '找房',
+                  actions: [
+                    AppPlaceholderAction(
+                      label: '房源列表',
+                      routeName: RouteNames.houseList,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                name: RouteNames.lease,
+                path: RoutePaths.lease,
+                builder: (context, state) => const AppPlaceholderPage(
+                  title: '租约',
+                  actions: [
+                    AppPlaceholderAction(
+                      label: '账单',
+                      routeName: RouteNames.bill,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                name: RouteNames.messageCenter,
+                path: RoutePaths.messageCenter,
+                builder: (context, state) => const AppPlaceholderPage(
+                  title: '消息中心',
+                  actions: [
+                    AppPlaceholderAction(
+                      label: '客服管家',
+                      routeName: RouteNames.customerService,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                name: RouteNames.profile,
+                path: RoutePaths.profile,
+                builder: (context, state) => const AppPlaceholderPage(
+                  title: '个人中心',
+                  actions: [
+                    AppPlaceholderAction(
+                      label: '实名认证',
+                      routeName: RouteNames.realNameAuth,
+                    ),
+                    AppPlaceholderAction(
+                      label: '门锁',
+                      routeName: RouteNames.lock,
+                    ),
+                    AppPlaceholderAction(
+                      label: '报修',
+                      routeName: RouteNames.repair,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       GoRoute(
         name: RouteNames.houseList,
@@ -114,24 +179,6 @@ class AppRouter {
         builder: (context, state) => const AppPlaceholderPage(title: '实名认证'),
       ),
       GoRoute(
-        name: RouteNames.profile,
-        path: RoutePaths.profile,
-        builder: (context, state) => const AppPlaceholderPage(
-          title: '个人中心',
-          actions: [
-            AppPlaceholderAction(
-              label: '实名认证',
-              routeName: RouteNames.realNameAuth,
-            ),
-          ],
-        ),
-      ),
-      GoRoute(
-        name: RouteNames.lease,
-        path: RoutePaths.lease,
-        builder: (context, state) => const AppPlaceholderPage(title: '租约'),
-      ),
-      GoRoute(
         name: RouteNames.bill,
         path: RoutePaths.bill,
         builder: (context, state) => const AppPlaceholderPage(title: '账单'),
@@ -145,11 +192,6 @@ class AppRouter {
         name: RouteNames.repair,
         path: RoutePaths.repair,
         builder: (context, state) => const AppPlaceholderPage(title: '报修'),
-      ),
-      GoRoute(
-        name: RouteNames.messageCenter,
-        path: RoutePaths.messageCenter,
-        builder: (context, state) => const AppPlaceholderPage(title: '消息中心'),
       ),
       GoRoute(
         name: RouteNames.customerService,

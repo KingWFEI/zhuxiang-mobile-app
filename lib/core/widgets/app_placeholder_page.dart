@@ -30,6 +30,15 @@ class AppPlaceholderPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final routeName = GoRouterState.of(context).name;
+    final shouldShowReturnToMain =
+        routeName != RouteNames.splash &&
+        routeName != RouteNames.home &&
+        routeName != RouteNames.search &&
+        routeName != RouteNames.lease &&
+        routeName != RouteNames.messageCenter &&
+        routeName != RouteNames.profile;
+
     return Scaffold(
       appBar: AppBar(title: Text(title)),
       body: SafeArea(
@@ -55,7 +64,7 @@ class AppPlaceholderPage extends StatelessWidget {
                 ],
               ],
               const Spacer(),
-              if (GoRouterState.of(context).name != RouteNames.splash)
+              if (shouldShowReturnToMain)
                 OutlinedButton(
                   onPressed: () => context.goNamed(RouteNames.main),
                   child: const Text('返回主框架'),
