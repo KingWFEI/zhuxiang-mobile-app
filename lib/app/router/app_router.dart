@@ -79,23 +79,6 @@ class AppRouter {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                name: RouteNames.lease,
-                path: RoutePaths.lease,
-                builder: (context, state) => const AppPlaceholderPage(
-                  title: '租约',
-                  actions: [
-                    AppPlaceholderAction(
-                      label: '账单',
-                      routeName: RouteNames.bill,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
                 name: RouteNames.messageCenter,
                 path: RoutePaths.messageCenter,
                 builder: (context, state) => const AppPlaceholderPage(
@@ -177,6 +160,16 @@ class AppRouter {
         name: RouteNames.realNameAuth,
         path: RoutePaths.realNameAuth,
         builder: (context, state) => const AppPlaceholderPage(title: '实名认证'),
+      ),
+      GoRoute(
+        name: RouteNames.lease,
+        path: RoutePaths.lease,
+        builder: (context, state) => const AppPlaceholderPage(
+          title: '租约',
+          actions: [
+            AppPlaceholderAction(label: '账单', routeName: RouteNames.bill),
+          ],
+        ),
       ),
       GoRoute(
         name: RouteNames.bill,

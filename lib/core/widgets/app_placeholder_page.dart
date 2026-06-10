@@ -35,7 +35,6 @@ class AppPlaceholderPage extends StatelessWidget {
         routeName != RouteNames.splash &&
         routeName != RouteNames.home &&
         routeName != RouteNames.search &&
-        routeName != RouteNames.lease &&
         routeName != RouteNames.messageCenter &&
         routeName != RouteNames.profile;
 
