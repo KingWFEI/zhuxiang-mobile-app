@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_names.dart';
@@ -12,15 +13,16 @@ import '../widgets/auth_agreement_row.dart';
 import '../widgets/auth_page_header.dart';
 import '../widgets/auth_primary_button.dart';
 import '../widgets/auth_text_field.dart';
+import '../providers/auth_controller.dart';
 
-class LoginPage extends StatefulWidget {
+class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends ConsumerState<LoginPage> {
   final _phoneController = TextEditingController();
   final _codeController = TextEditingController();
   bool _hasAgreed = false;
@@ -69,7 +71,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void _handleLogin() {
+  Future<void> _handleLogin() async {
     final phone = _phoneController.text.trim();
     final code = _codeController.text.trim();
 
@@ -86,7 +88,18 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    _showMessage('登录功能暂未接入接口');
+    final success = await ref
+        .read(authControllerProvider.notifier)
+        .login(phone: phone, code: code);
+    if (!mounted) return;
+    if (success) {
+      context.goNamed(RouteNames.main);
+      return;
+    }
+
+    final message =
+        ref.read(authControllerProvider).errorMessage ?? '登录失败，请稍后重试';
+    _showMessage(message);
   }
 
   void _handleGetCode() {
@@ -98,7 +111,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _handlePasswordLogin() {
-    _showMessage('密码登录暂未开放');
+    _showMessage('当前 mock 账号使用验证码登录：13800138000 / 123456');
   }
 
   void _showMessage(String message) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_names.dart';
@@ -12,15 +13,16 @@ import '../widgets/auth_agreement_row.dart';
 import '../widgets/auth_page_header.dart';
 import '../widgets/auth_primary_button.dart';
 import '../widgets/auth_text_field.dart';
+import '../providers/auth_controller.dart';
 
-class RegisterPage extends StatefulWidget {
+class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
 
   @override
-  State<RegisterPage> createState() => _RegisterPageState();
+  ConsumerState<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _RegisterPageState extends State<RegisterPage> {
+class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _phoneController = TextEditingController();
   final _codeController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -86,7 +88,7 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  void _handleRegister() {
+  Future<void> _handleRegister() async {
     final phone = _phoneController.text.trim();
     final code = _codeController.text.trim();
     final password = _passwordController.text.trim();
@@ -117,7 +119,19 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
-    _showMessage('注册功能暂未接入接口');
+    final success = await ref
+        .read(authControllerProvider.notifier)
+        .register(phone: phone, code: code, password: password);
+    if (!mounted) return;
+    if (success) {
+      _showMessage('注册成功，请登录');
+      context.goNamed(RouteNames.login);
+      return;
+    }
+
+    final message =
+        ref.read(authControllerProvider).errorMessage ?? '注册失败，请稍后重试';
+    _showMessage(message);
   }
 
   void _handleGetCode() {

@@ -6,8 +6,8 @@ class RoutePaths {
   static const register = '/register';
   static const main = '/main';
   static const home = '/home';
-  static const search = '/search';
-  static const houseList = '/houses';
+  static const search = '/houses';
+  static const houseList = '/house-list';
   static const houseDetail = '/houses/:houseId';
   static const appointment = '/appointment';
   static const realNameAuth = '/real-name-auth';
