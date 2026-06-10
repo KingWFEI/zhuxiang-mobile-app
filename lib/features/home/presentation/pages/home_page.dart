@@ -109,7 +109,7 @@ class HomePage extends ConsumerWidget {
   }
 
   void _openDetail(BuildContext context, House house) {
-    context.goNamed(
+    context.pushNamed(
       RouteNames.houseDetail,
       pathParameters: {'houseId': house.id},
     );

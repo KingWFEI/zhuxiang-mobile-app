@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
@@ -64,7 +66,13 @@ class _DetailAppBar extends StatelessWidget {
         child: CircleAvatar(
           backgroundColor: AppColors.surface,
           child: IconButton(
-            onPressed: () => Navigator.of(context).maybePop(),
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+                return;
+              }
+              context.goNamed(RouteNames.search);
+            },
             icon: const Icon(Icons.arrow_back_ios_new),
           ),
         ),
