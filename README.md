@@ -140,3 +140,51 @@ git checkout -b feature/appointment
 git checkout -b feature/real_name_auth
 
 <!-- 然后开始开发。 -->
+
+## 踩坑日记
+
+在错误的分支上提交了commit：
+
+729b7e6 修改md中git提交流程规范
+
+是提交在：
+
+feature/add_main_page(该分支已经删除)
+
+分支上的，不是在 develop 上，也不是在 docs/update-git-workflow 上。
+
+所以切到 docs/update-git-workflow 后看到：
+
+nothing to commit
+
+因为文件修改已经被提交成 commit 了，不再是“未提交状态”。
+
+现在正确做法：把这个 commit 拿到 docs 分支
+
+把：
+
+729b7e6
+
+这个提交 cherry-pick 到 docs/update-git-workflow 分支。
+
+正确执行流程：
+
+先回到最新的 develop：
+
+git checkout develop
+
+<!-- 拉去下来最新代码保持最新代码内容一致 -->
+
+git pull --ff-only origin develop
+
+然后重新创建或重置文档分支：
+
+git checkout -B docs/update-git-workflow develop
+
+再把那个 MD 提交复制过来：
+
+git cherry-pick 729b7e6
+
+然后推送文档分支：
+
+git push -u origin docs/update-git-workflow
