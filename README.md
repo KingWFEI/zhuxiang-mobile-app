@@ -69,12 +69,11 @@ flutter run
 4. 接入预约、实名认证、租约、账单等租住流程。
 5. 在明确 SDK 方案后接入智能门锁能力。
 
-新增功能后提交git流程
+# 新增功能后提交git流程：每次都需要先走这个流程提交代码
+
 git branch
 
 git status
-
-git restore linux/flutter/generated_plugin_registrant.cc linux/flutter/generated_plugins.cmake macos/Flutter/GeneratedPluginRegistrant.swift windows/flutter/generated_plugin_registrant.cc windows/flutter/generated_plugins.cmake
 
 dart format lib test
 
@@ -88,6 +87,56 @@ git add .
 
 git status
 
+<!-- git commit -m "feat: 优化首页便捷服务与分类吸顶效果" -->
+
 git commit -m "你的提交信息"
 
+<!-- 例如 git push -u origin feature/add_main_page -->
+
 git push origin 当前分支名
+
+## github代码审批流程
+
+提交当前功能分支
+→ push 到 GitHub
+→ 创建 PR 合并到 develop
+→ 本地切回 develop
+→ 拉取最新 develop
+→ 删除旧功能分支
+→ 从 develop 新建下一个功能分支
+
+## 本地提交功能分支代码，github合并代码到develop分支后
+
+<!-- 切回开发分支 -->
+
+git checkout develop
+
+<!-- 从开发分支拉去代码 -->
+
+git pull origin develop
+
+git status
+
+<!-- 确认当前是最新的代码 ：
+理想状态
+On branch develop
+Your branch is up to date with 'origin/develop'.
+nothing to commit, working tree clean
+
+-->
+
+## 新建功能分支
+
+<!-- 比如下一个要做搜索页： -->
+
+git checkout -b feature/search_page
+
+<!-- 比如下一个要做预约看房： -->
+
+git checkout -b feature/appointment
+
+<!-- 比如下一个要做实名认证： -->
+
+git checkout -b feature/real_name_auth
+
+<!-- 然后开始开发。 -->
