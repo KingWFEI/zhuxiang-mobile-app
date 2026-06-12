@@ -69,12 +69,11 @@ flutter run
 4. 接入预约、实名认证、租约、账单等租住流程。
 5. 在明确 SDK 方案后接入智能门锁能力。
 
-新增功能后提交git流程
+# 新增功能后提交git流程：每次都需要先走这个流程提交代码
+
 git branch
 
 git status
-
-git restore linux/flutter/generated_plugin_registrant.cc linux/flutter/generated_plugins.cmake macos/Flutter/GeneratedPluginRegistrant.swift windows/flutter/generated_plugin_registrant.cc windows/flutter/generated_plugins.cmake
 
 dart format lib test
 
@@ -88,6 +87,104 @@ git add .
 
 git status
 
+<!-- git commit -m "feat: 优化首页便捷服务与分类吸顶效果" -->
+
 git commit -m "你的提交信息"
 
+<!-- 例如 git push -u origin feature/add_main_page -->
+
 git push origin 当前分支名
+
+## github代码审批流程
+
+提交当前功能分支
+→ push 到 GitHub
+→ 创建 PR 合并到 develop
+→ 本地切回 develop
+→ 拉取最新 develop
+→ 删除旧功能分支
+→ 从 develop 新建下一个功能分支
+
+## 本地提交功能分支代码，github合并代码到develop分支后
+
+<!-- 切回开发分支 -->
+
+git checkout develop
+
+<!-- 从开发分支拉去代码 -->
+
+git pull origin develop
+
+git status
+
+<!-- 确认当前是最新的代码 ：
+理想状态
+On branch develop
+Your branch is up to date with 'origin/develop'.
+nothing to commit, working tree clean
+
+-->
+
+## 新建功能分支
+
+<!-- 比如下一个要做搜索页： -->
+
+git checkout -b feature/search_page
+
+<!-- 比如下一个要做预约看房： -->
+
+git checkout -b feature/appointment
+
+<!-- 比如下一个要做实名认证： -->
+
+git checkout -b feature/real_name_auth
+
+<!-- 然后开始开发。 -->
+
+## 踩坑日记
+
+在错误的分支上提交了commit：
+
+729b7e6 修改md中git提交流程规范
+
+是提交在：
+
+feature/add_main_page(该分支已经删除)
+
+分支上的，不是在 develop 上，也不是在 docs/update-git-workflow 上。
+
+所以切到 docs/update-git-workflow 后看到：
+
+nothing to commit
+
+因为文件修改已经被提交成 commit 了，不再是“未提交状态”。
+
+现在正确做法：把这个 commit 拿到 docs 分支
+
+把：
+
+729b7e6
+
+这个提交 cherry-pick 到 docs/update-git-workflow 分支。
+
+正确执行流程：
+
+先回到最新的 develop：
+
+git checkout develop
+
+<!-- 拉去下来最新代码保持最新代码内容一致 -->
+
+git pull --ff-only origin develop
+
+然后重新创建或重置文档分支：
+
+git checkout -B docs/update-git-workflow develop
+
+再把那个 MD 提交复制过来：
+
+git cherry-pick 729b7e6
+
+然后推送文档分支：
+
+git push -u origin docs/update-git-workflow
