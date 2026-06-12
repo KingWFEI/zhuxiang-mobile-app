@@ -4,6 +4,11 @@ import '../launch/app_loading_page.dart';
 import '../../core/widgets/app_placeholder_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
+import '../../features/home/presentation/pages/home_page.dart';
+import '../../features/house/presentation/pages/find_home_page.dart';
+import '../../features/house/presentation/pages/house_detail_page.dart';
+import '../../features/message/presentation/pages/message_page.dart';
+import '../../features/profile/presentation/pages/profile_page.dart';
 import 'app_shell.dart';
 import 'route_names.dart';
 import 'route_paths.dart';
@@ -44,19 +49,7 @@ class AppRouter {
               GoRoute(
                 name: RouteNames.home,
                 path: RoutePaths.home,
-                builder: (context, state) => const AppPlaceholderPage(
-                  title: '首页',
-                  actions: [
-                    AppPlaceholderAction(
-                      label: '找房',
-                      routeName: RouteNames.search,
-                    ),
-                    AppPlaceholderAction(
-                      label: '房源列表',
-                      routeName: RouteNames.houseList,
-                    ),
-                  ],
-                ),
+                builder: (context, state) => const HomePage(),
               ),
             ],
           ),
@@ -65,15 +58,7 @@ class AppRouter {
               GoRoute(
                 name: RouteNames.search,
                 path: RoutePaths.search,
-                builder: (context, state) => const AppPlaceholderPage(
-                  title: '找房',
-                  actions: [
-                    AppPlaceholderAction(
-                      label: '房源列表',
-                      routeName: RouteNames.houseList,
-                    ),
-                  ],
-                ),
+                builder: (context, state) => const FindHomePage(),
               ),
             ],
           ),
@@ -82,15 +67,7 @@ class AppRouter {
               GoRoute(
                 name: RouteNames.messageCenter,
                 path: RoutePaths.messageCenter,
-                builder: (context, state) => const AppPlaceholderPage(
-                  title: '消息中心',
-                  actions: [
-                    AppPlaceholderAction(
-                      label: '客服管家',
-                      routeName: RouteNames.customerService,
-                    ),
-                  ],
-                ),
+                builder: (context, state) => const MessagePage(),
               ),
             ],
           ),
@@ -99,23 +76,7 @@ class AppRouter {
               GoRoute(
                 name: RouteNames.profile,
                 path: RoutePaths.profile,
-                builder: (context, state) => const AppPlaceholderPage(
-                  title: '个人中心',
-                  actions: [
-                    AppPlaceholderAction(
-                      label: '实名认证',
-                      routeName: RouteNames.realNameAuth,
-                    ),
-                    AppPlaceholderAction(
-                      label: '门锁',
-                      routeName: RouteNames.lock,
-                    ),
-                    AppPlaceholderAction(
-                      label: '报修',
-                      routeName: RouteNames.repair,
-                    ),
-                  ],
-                ),
+                builder: (context, state) => const ProfilePage(),
               ),
             ],
           ),
@@ -124,32 +85,14 @@ class AppRouter {
       GoRoute(
         name: RouteNames.houseList,
         path: RoutePaths.houseList,
-        builder: (context, state) => const AppPlaceholderPage(
-          title: '房源列表',
-          actions: [
-            AppPlaceholderAction(
-              label: '查看房源详情',
-              routeName: RouteNames.houseDetail,
-              pathParameters: {'houseId': 'mock-house-001'},
-            ),
-          ],
-        ),
+        redirect: (context, state) => RoutePaths.search,
       ),
       GoRoute(
         name: RouteNames.houseDetail,
         path: RoutePaths.houseDetail,
         builder: (context, state) {
           final houseId = state.pathParameters['houseId'] ?? 'unknown';
-          return AppPlaceholderPage(
-            title: '房源详情',
-            description: '当前房源 ID: $houseId',
-            actions: const [
-              AppPlaceholderAction(
-                label: '预约看房',
-                routeName: RouteNames.appointment,
-              ),
-            ],
-          );
+          return HouseDetailPage(houseId: houseId);
         },
       ),
       GoRoute(

@@ -68,3 +68,26 @@ flutter run
 3. 按 feature-first 顺序实现登录、首页、找房、房源详情。
 4. 接入预约、实名认证、租约、账单等租住流程。
 5. 在明确 SDK 方案后接入智能门锁能力。
+
+新增功能后提交git流程
+git branch
+
+git status
+
+git restore linux/flutter/generated_plugin_registrant.cc linux/flutter/generated_plugins.cmake macos/Flutter/GeneratedPluginRegistrant.swift windows/flutter/generated_plugin_registrant.cc windows/flutter/generated_plugins.cmake
+
+dart format lib test
+
+flutter analyze
+
+flutter test
+
+git status
+
+git add .
+
+git status
+
+git commit -m "你的提交信息"
+
+git push origin 当前分支名
