@@ -45,7 +45,7 @@ class ProfilePage extends ConsumerWidget {
             const SizedBox(height: AppSpacing.xl),
             const _MenuGrid(),
             const SizedBox(height: AppSpacing.xl),
-            Text('更多服务', style: AppTextStyles.titleLarge),
+            Text('更多服务', style: AppTextStyles.titleMedium),
             const SizedBox(height: AppSpacing.md),
             Row(
               children: const [
@@ -116,22 +116,15 @@ class _ProfileHeader extends StatelessWidget {
     return SizedBox(
       height: 146,
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Align(
-            alignment: Alignment.centerRight,
-            child: Container(
-              width: 160,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.xl),
-                gradient: const LinearGradient(
-                  colors: [Color(0x00FFFFFF), AppColors.primaryLight],
-                ),
-              ),
-              child: const Icon(
-                Icons.apartment,
-                size: 86,
-                color: AppColors.primarySoft,
-              ),
+          Positioned(
+            top: -50,
+            right: 0,
+            child: Image.asset(
+              "assets/home_bk.png",
+              width: 400,
+              fit: BoxFit.fitWidth,
             ),
           ),
           Column(
@@ -287,51 +280,80 @@ class _CurrentHomeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.xl),
+      padding: const EdgeInsets.all(AppSpacing.lg_2),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: const [
+            Color(0xFFE0F2FE), // 浅蓝色
+            Colors.white, // 白色
+          ],
+        ),
         borderRadius: BorderRadius.circular(AppRadius.xl),
         boxShadow: AppShadows.card,
       ),
-      child: Row(
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('当前居住', style: AppTextStyles.bodyLarge),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  '3栋2单元1201',
-                  style: AppTextStyles.titleLarge.copyWith(fontSize: 26),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Chip(
-                  avatar: const Icon(
-                    Icons.lock,
-                    color: AppColors.secondary,
-                    size: 18,
-                  ),
-                  label: const Text('门锁已上锁'),
-                  backgroundColor: const Color(0xFFE3FAF4),
-                  side: BorderSide.none,
-                ),
-              ],
+          Positioned(
+            top: -10,
+            right: 120,
+            child: Image.asset(
+              "assets/lock_style.png",
+              width: 100,
+              fit: BoxFit.fitWidth,
             ),
           ),
-          const Icon(Icons.lock, size: 74, color: AppColors.textPrimary),
-          const SizedBox(width: AppSpacing.md),
-          SizedBox(
-            width: 116,
-            child: OutlinedButton.icon(
-              onPressed: () {},
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(0, 44),
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('当前居住', style: AppTextStyles.bodyLarge),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      '3栋2单元1201',
+                      style: AppTextStyles.titleLarge.copyWith(fontSize: 26),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Chip(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20), // 这里的值可以随意调整
+                      ),
+                      avatar: const Icon(
+                        Icons.lock,
+                        color: AppColors.secondary,
+                        size: 18,
+                      ),
+                      label: const Text(
+                        '门锁已上锁',
+                        style: TextStyle(color: AppColors.secondary),
+                      ),
+                      backgroundColor: const Color(0xFFE3FAF4),
+                      side: BorderSide.none,
+                    ),
+                  ],
+                ),
               ),
-              icon: const Icon(Icons.chevron_right),
-              label: const Text('查看门锁'),
-            ),
+
+              const SizedBox(width: AppSpacing.md),
+              SizedBox(
+                width: 116,
+                child: OutlinedButton.icon(
+                  onPressed: () {},
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 44),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                    ),
+                  ),
+                  icon: const Icon(Icons.chevron_right),
+                  label: const Text('查看门锁'),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -356,7 +378,7 @@ class _MenuGrid extends StatelessWidget {
     ];
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.md), // 减小外间距
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -368,21 +390,21 @@ class _MenuGrid extends StatelessWidget {
         itemCount: items.length,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 4,
-          childAspectRatio: 0.9,
-          mainAxisSpacing: AppSpacing.lg,
+          childAspectRatio: 1.3, // 调整为正方形（或1.1）
+          mainAxisSpacing: AppSpacing.sm, // 行间距减小
+          crossAxisSpacing: AppSpacing.sm, // 列间距新增（避免文字挤在一起）
         ),
         itemBuilder: (context, index) {
           final item = items[index];
           return Column(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center, // 垂直居中
             children: [
-              Icon(item.$1, color: item.$3, size: 34),
-              const SizedBox(height: AppSpacing.sm),
+              Icon(item.$1, color: item.$3, size: 32), // 略微缩小图标
+              const SizedBox(height: AppSpacing.xs), // 减小间距
               Text(
                 item.$2,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textPrimary,
-                ),
+                style: AppTextStyles.bodyLarge,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),

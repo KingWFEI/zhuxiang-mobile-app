@@ -76,9 +76,9 @@ class _FindHeader extends StatelessWidget {
           ),
         ),
         Spacer(),
-        Icon(Icons.notifications_none, size: 30),
-        SizedBox(width: AppSpacing.lg),
-        Icon(Icons.qr_code_scanner, size: 28),
+        // Icon(Icons.notifications_none, size: 30),
+        // SizedBox(width: AppSpacing.lg),
+        // Icon(Icons.qr_code_scanner, size: 28),
       ],
     );
   }
@@ -138,22 +138,37 @@ class _RecommendBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 68,
+      height: 50,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.primaryLight,
         borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
-      child: Row(
+      child: Stack(
+        alignment: Alignment.centerLeft,
         children: [
-          const Icon(Icons.verified_user, color: AppColors.primary),
-          const SizedBox(width: AppSpacing.md),
-          Text(
-            '为你推荐安心好房',
-            style: AppTextStyles.titleMedium.copyWith(fontSize: 17),
+          Row(
+            children: [
+              const Icon(Icons.verified_user, color: AppColors.primary),
+              const SizedBox(width: AppSpacing.md),
+              Text(
+                '为你推荐安心好房',
+                style: AppTextStyles.titleMedium.copyWith(fontSize: 17),
+              ),
+              const Spacer(),
+            ],
           ),
-          const Spacer(),
-          const Icon(Icons.apartment, color: AppColors.primarySoft, size: 54),
+          Positioned(
+            right: 0,
+            top: 0,
+            bottom: 0,
+            child: Image.asset(
+              "assets/home_bk.png",
+              width: 130,
+              height: double.infinity,
+              fit: BoxFit.cover,
+            ),
+          ),
         ],
       ),
     );

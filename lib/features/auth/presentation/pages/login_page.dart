@@ -24,13 +24,15 @@ class LoginPage extends ConsumerStatefulWidget {
 
 class _LoginPageState extends ConsumerState<LoginPage> {
   final _phoneController = TextEditingController();
-  final _codeController = TextEditingController();
+  final _credentialController = TextEditingController();
   bool _hasAgreed = false;
+  bool _isPasswordVisible = false;
+  LoginMode _loginMode = LoginMode.code;
 
   @override
   void dispose() {
     _phoneController.dispose();
-    _codeController.dispose();
+    _credentialController.dispose();
     super.dispose();
   }
 
@@ -53,14 +55,21 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   offset: const Offset(0, -22),
                   child: _LoginFormPanel(
                     phoneController: _phoneController,
-                    codeController: _codeController,
+                    credentialController: _credentialController,
+                    loginMode: _loginMode,
+                    isPasswordVisible: _isPasswordVisible,
                     hasAgreed: _hasAgreed,
                     onAgreementChanged: (value) {
                       setState(() => _hasAgreed = value);
                     },
                     onLogin: _handleLogin,
                     onGetCode: _handleGetCode,
-                    onPasswordLogin: _handlePasswordLogin,
+                    onToggleLoginMode: _toggleLoginMode,
+                    onTogglePasswordVisibility: () {
+                      setState(() {
+                        _isPasswordVisible = !_isPasswordVisible;
+                      });
+                    },
                   ),
                 ),
               ],
@@ -73,14 +82,22 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   Future<void> _handleLogin() async {
     final phone = _phoneController.text.trim();
-    final code = _codeController.text.trim();
+    final credential = _credentialController.text.trim();
 
     if (phone.isEmpty) {
       _showMessage('请输入手机号');
       return;
     }
-    if (code.isEmpty) {
-      _showMessage('请输入验证码');
+    if (phone.length != 11) {
+      _showMessage('请输入正确的手机号');
+      return;
+    }
+    if (credential.isEmpty) {
+      _showMessage(_loginMode == LoginMode.code ? '请输入验证码' : '请输入密码');
+      return;
+    }
+    if (_loginMode == LoginMode.code && credential.length != 6) {
+      _showMessage('请输入6位验证码');
       return;
     }
     if (!_hasAgreed) {
@@ -88,9 +105,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       return;
     }
 
-    final success = await ref
-        .read(authControllerProvider.notifier)
-        .login(phone: phone, code: code);
+    final controller = ref.read(authControllerProvider.notifier);
+    final success = switch (_loginMode) {
+      LoginMode.code => await controller.loginWithCode(
+        phone: phone,
+        code: credential,
+      ),
+      LoginMode.password => await controller.loginWithPassword(
+        phone: phone,
+        password: credential,
+      ),
+    };
     if (!mounted) return;
     if (success) {
       context.goNamed(RouteNames.main);
@@ -107,11 +132,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       _showMessage('请输入手机号');
       return;
     }
-    _showMessage('验证码功能暂未接入接口');
+    _showMessage('当前 mock 验证码：246810');
   }
 
-  void _handlePasswordLogin() {
-    _showMessage('当前 mock 账号使用验证码登录：13800138000 / 123456');
+  void _toggleLoginMode() {
+    setState(() {
+      _loginMode = _loginMode == LoginMode.code
+          ? LoginMode.password
+          : LoginMode.code;
+      _credentialController.clear();
+      _isPasswordVisible = false;
+    });
   }
 
   void _showMessage(String message) {
@@ -121,24 +152,32 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 }
 
+enum LoginMode { code, password }
+
 class _LoginFormPanel extends StatelessWidget {
   const _LoginFormPanel({
     required this.phoneController,
-    required this.codeController,
+    required this.credentialController,
+    required this.loginMode,
+    required this.isPasswordVisible,
     required this.hasAgreed,
     required this.onAgreementChanged,
     required this.onLogin,
     required this.onGetCode,
-    required this.onPasswordLogin,
+    required this.onToggleLoginMode,
+    required this.onTogglePasswordVisibility,
   });
 
   final TextEditingController phoneController;
-  final TextEditingController codeController;
+  final TextEditingController credentialController;
+  final LoginMode loginMode;
+  final bool isPasswordVisible;
   final bool hasAgreed;
   final ValueChanged<bool> onAgreementChanged;
   final VoidCallback onLogin;
   final VoidCallback onGetCode;
-  final VoidCallback onPasswordLogin;
+  final VoidCallback onToggleLoginMode;
+  final VoidCallback onTogglePasswordVisibility;
 
   @override
   Widget build(BuildContext context) {
@@ -173,22 +212,35 @@ class _LoginFormPanel extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
           AuthTextField(
-            controller: codeController,
-            hintText: '验证码',
-            icon: Icons.verified_user_outlined,
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(6),
-            ],
-            suffix: AuthCodeButton(onPressed: onGetCode),
+            key: ValueKey(loginMode),
+            controller: credentialController,
+            hintText: loginMode == LoginMode.code ? '验证码' : '密码',
+            icon: loginMode == LoginMode.code
+                ? Icons.verified_user_outlined
+                : Icons.lock_outline_rounded,
+            keyboardType: loginMode == LoginMode.code
+                ? TextInputType.number
+                : TextInputType.visiblePassword,
+            obscureText: loginMode == LoginMode.password && !isPasswordVisible,
+            inputFormatters: loginMode == LoginMode.code
+                ? [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(6),
+                  ]
+                : [LengthLimitingTextInputFormatter(32)],
+            suffix: loginMode == LoginMode.code
+                ? AuthCodeButton(onPressed: onGetCode)
+                : AuthVisibilityButton(
+                    isVisible: isPasswordVisible,
+                    onPressed: onTogglePasswordVisibility,
+                  ),
           ),
           const SizedBox(height: AppSpacing.xl),
           AuthPrimaryButton(label: '登录', onPressed: onLogin),
           const SizedBox(height: AppSpacing.lg),
           AuthPrimaryButton(
-            label: '密码登录',
-            onPressed: onPasswordLogin,
+            label: loginMode == LoginMode.code ? '密码登录' : '验证码登录',
+            onPressed: onToggleLoginMode,
             isOutlined: true,
           ),
           const SizedBox(height: AppSpacing.lg),

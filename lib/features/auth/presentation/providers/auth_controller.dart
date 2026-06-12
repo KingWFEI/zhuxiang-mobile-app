@@ -67,10 +67,34 @@ class AuthController extends StateNotifier<AuthState> {
   final RegisterUseCase _registerUseCase;
   final LogoutUseCase _logoutUseCase;
 
-  Future<bool> login({required String phone, required String code}) async {
+  Future<bool> loginWithCode({
+    required String phone,
+    required String code,
+  }) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final user = await _loginUseCase(phone: phone, code: code);
+      final user = await _loginUseCase.withCode(phone: phone, code: code);
+      state = AuthState(user: user);
+      return true;
+    } catch (error) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: _messageFromError(error),
+      );
+      return false;
+    }
+  }
+
+  Future<bool> loginWithPassword({
+    required String phone,
+    required String password,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final user = await _loginUseCase.withPassword(
+        phone: phone,
+        password: password,
+      );
       state = AuthState(user: user);
       return true;
     } catch (error) {

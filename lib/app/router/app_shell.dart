@@ -72,15 +72,6 @@ class _BottomTabBar extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: _UnlockButton(
-                onTap: () {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('开锁能力暂未接入')));
-                },
-              ),
-            ),
-            Expanded(
               child: _TabItem(
                 icon: Icons.chat_bubble_outline,
                 selectedIcon: Icons.chat_bubble,
@@ -152,48 +143,6 @@ class _TabItem extends StatelessWidget {
             style: AppTextStyles.bodyMedium.copyWith(
               color: color,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _UnlockButton extends StatelessWidget {
-  const _UnlockButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      customBorder: const CircleBorder(),
-      onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 62,
-            height: 62,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.primary,
-              boxShadow: [
-                BoxShadow(
-                  color: Color(0x332F7AF6),
-                  blurRadius: 18,
-                  offset: Offset(0, 8),
-                ),
-              ],
-            ),
-            child: const Icon(Icons.lock_open, color: AppColors.surface),
-          ),
-          Text(
-            '开锁',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.primary,
-              fontWeight: FontWeight.w700,
             ),
           ),
         ],

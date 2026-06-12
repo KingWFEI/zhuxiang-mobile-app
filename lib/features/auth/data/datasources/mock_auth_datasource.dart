@@ -13,14 +13,14 @@ class MockAuthDatasource {
         ),
       ];
 
-  static const validCode = '123456';
+  static const validCode = '246810';
 
   final List<AuthUserModel> _users;
   AuthUserModel? _currentUser;
 
   AuthUserModel? get currentUser => _currentUser;
 
-  Future<AuthUserModel> login({
+  Future<AuthUserModel> loginWithCode({
     required String phone,
     required String code,
   }) async {
@@ -28,6 +28,19 @@ class MockAuthDatasource {
     final user = _users.where((item) => item.phone == phone).firstOrNull;
     if (user == null || code != validCode) {
       throw const MockAuthException('手机号或验证码不正确');
+    }
+    _currentUser = user;
+    return user;
+  }
+
+  Future<AuthUserModel> loginWithPassword({
+    required String phone,
+    required String password,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    final user = _users.where((item) => item.phone == phone).firstOrNull;
+    if (user == null || user.password != password) {
+      throw const MockAuthException('手机号或密码不正确');
     }
     _currentUser = user;
     return user;

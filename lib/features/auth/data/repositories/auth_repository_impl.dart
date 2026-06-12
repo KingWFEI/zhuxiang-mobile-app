@@ -11,8 +11,19 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthUser? get currentUser => _datasource.currentUser;
 
   @override
-  Future<AuthUser> login({required String phone, required String code}) {
-    return _datasource.login(phone: phone, code: code);
+  Future<AuthUser> loginWithCode({
+    required String phone,
+    required String code,
+  }) {
+    return _datasource.loginWithCode(phone: phone, code: code);
+  }
+
+  @override
+  Future<AuthUser> loginWithPassword({
+    required String phone,
+    required String password,
+  }) {
+    return _datasource.loginWithPassword(phone: phone, password: password);
   }
 
   @override

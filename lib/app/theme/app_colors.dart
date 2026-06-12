@@ -7,7 +7,7 @@ class AppColors {
   static const primaryDark = Color(0xFF1565C0);
   static const primaryLight = Color(0xFFEAF4FF);
   static const primarySoft = Color(0xFFD8E9FF);
-  static const secondary = Color(0xFF00A896);
+  static const secondary = Color.fromARGB(255, 7, 153, 138);
   static const background = Color(0xFFF7F9FC);
   static const authBackground = Color(0xFFF3F8FF);
   static const surface = Color(0xFFFFFFFF);
