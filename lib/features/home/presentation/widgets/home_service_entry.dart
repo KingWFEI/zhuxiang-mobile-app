@@ -26,14 +26,14 @@ class HomeServiceEntry extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
+          // horizontal: AppSpacing.sm,
           vertical: AppSpacing.lg,
         ),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: AppColors.border),
-        ),
+        // decoration: BoxDecoration(
+        //   color: AppColors.surface,
+        //   borderRadius: BorderRadius.circular(AppRadius.lg),
+        //   border: Border.all(color: AppColors.border),
+        // ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

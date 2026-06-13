@@ -1,3 +1,7 @@
+import 'package:dio/dio.dart';
+
+import 'api_exception.dart';
+
 sealed class ApiResult<T> {
   const ApiResult();
 
@@ -23,4 +27,35 @@ class ApiFailure<T> extends ApiResult<T> {
 
   final String message;
   final Object? error;
+}
+
+extension ApiResultUnwrap on ApiResult<Response<dynamic>> {
+  Future<T> unwrapData<T>(
+    T Function(Map<String, dynamic> json) fromJson,
+  ) async {
+    return when(
+      success: (response) {
+        final body = response.data as Map<String, dynamic>;
+        final code = body['code'] as int? ?? 0;
+        final message = body['message'] as String? ?? '';
+        if (code == 200 && body['data'] != null) {
+          return fromJson(body['data'] as Map<String, dynamic>);
+        }
+        throw ApiException(
+          type: ApiExceptionType.server,
+          message: message,
+          statusCode: code,
+        );
+      },
+      failure: (message, error) {
+        throw error is ApiException
+            ? error
+            : ApiException(
+                type: ApiExceptionType.unknown,
+                message: message,
+                cause: error,
+              );
+      },
+    );
+  }
 }

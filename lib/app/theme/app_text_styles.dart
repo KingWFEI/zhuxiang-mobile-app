@@ -28,10 +28,29 @@ class AppTextStyles {
     fontSize: 14,
     fontWeight: FontWeight.w400,
   );
+  static const bodySmall = TextStyle(
+    color: AppColors.textSecondary,
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+  );
 
   static const labelLarge = TextStyle(
     color: Colors.white,
     fontSize: 16,
     fontWeight: FontWeight.w600,
+  );
+  // 房屋详情页的专属标签样式
+  static const housedetailtoolTitle = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+  );
+  static const housedetailtoolL1 = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+  );
+  static const housedetailtoolL2 = TextStyle(
+    fontSize: 10,
+    fontWeight: FontWeight.w400,
+    color: AppColors.textSecondary,
   );
 }
