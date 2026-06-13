@@ -6,4 +6,5 @@ class AppRadius {
   static const double lg = 12;
   static const double xl = 16;
   static const double xxl = 28;
+  static const double xxxxxxtest = 50;
 }

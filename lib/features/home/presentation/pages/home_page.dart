@@ -8,13 +8,14 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
-import '../../../auth/presentation/providers/auth_controller.dart';
-import '../../../house/data/datasources/mock_house_datasource.dart';
+import '../../../../core/network/api_exception.dart';
 import '../../../house/domain/entities/house.dart';
 import '../../../house/presentation/widgets/house_card.dart';
+import '../../domain/home_model.dart';
+import '../providers/home_provider.dart';
 import '../widgets/home_category_tabs_delegate.dart';
-import '../widgets/home_convenient_services.dart';
 import '../widgets/home_search_bar.dart';
+import '../widgets/home_service_entry.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -24,116 +25,145 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
-  HomeCategory _selectedCategory = HomeCategory.recommended;
+  String? _selectedTabKey;
+
+  static const _categorySubtitles = {
+    'recommended': '品质房源，住得舒心',
+    'short_rent': '按需入住，轻松出发',
+    'homestay': '发现更有温度的居住体验',
+    'long_rent': '稳定生活，从理想住所开始',
+  };
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(authControllerProvider).user;
-    final houses = MockHouseDatasource.houses;
-    final selectedHouses = _housesFor(_selectedCategory, houses);
+    final homeAsync = ref.watch(homeDataProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.xl,
-                AppSpacing.lg,
-                AppSpacing.xl,
-                0,
-              ),
-              child: Column(
-                children: [
-                  _HomeHeader(name: user?.nickname ?? '陌生游客'),
-                  const SizedBox(height: AppSpacing.xl),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: SizedBox(
-                      width: 360,
-                      child: HomeSearchBar(
-                        hintText: '搜索小区、地址或房源',
-                        onTap: () => context.goNamed(RouteNames.search),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                ],
-              ),
-            ),
-            Expanded(
-              child: CustomScrollView(
-                key: const PageStorageKey('home-scroll-view'),
-                slivers: [
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.xl,
-                      AppSpacing.xs,
-                      AppSpacing.xl,
-                      AppSpacing.xl,
-                    ),
-                    sliver: SliverToBoxAdapter(
-                      child: HomeConvenientServices(
-                        onLeaseTap: () => context.pushNamed(RouteNames.lease),
-                        onDoorRecordTap: _showDoorRecordTodo,
-                        onRepairTap: () => context.pushNamed(RouteNames.repair),
-                        onCustomerServiceTap: () =>
-                            context.pushNamed(RouteNames.customerService),
-                      ),
-                    ),
-                  ),
-                  SliverPersistentHeader(
-                    pinned: true,
-                    delegate: HomeCategoryTabsDelegate(
-                      height: HomeCategoryTabs.height,
-                      child: HomeCategoryTabs(
-                        selectedCategory: _selectedCategory,
-                        onSelected: _selectCategory,
-                      ),
-                    ),
-                  ),
-                  HomeCategoryContent(
-                    key: PageStorageKey(_selectedCategory.name),
-                    category: _selectedCategory,
-                    houses: selectedHouses,
-                    onHouseTap: _openDetail,
-                  ),
-                ],
-              ),
-            ),
-          ],
+        child: homeAsync.when(
+          loading: () => const _HomeSkeleton(),
+          error: (error, _) => _HomeErrorView(
+            message: _errorMessage(error),
+            onRetry: () => ref.invalidate(homeDataProvider),
+          ),
+          data: _buildContent,
         ),
       ),
     );
   }
 
-  void _showDoorRecordTodo() {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(const SnackBar(content: Text('开门记录功能开发中')));
+  String _errorMessage(Object error) {
+    if (error is ApiException) return error.message;
+    return '加载失败，请检查网络后重试';
   }
 
-  void _selectCategory(HomeCategory category) {
-    if (_selectedCategory == category) return;
+  Widget _buildContent(HomeData data) {
+    final tabs = data.tabs.where((t) => t.enabled).toList();
+    if (_selectedTabKey == null || !tabs.any((t) => t.key == _selectedTabKey)) {
+      _selectedTabKey = tabs.isNotEmpty ? tabs.first.key : '';
+    }
+    final selectedKey = _selectedTabKey!;
+    final selectedTab = tabs.firstWhere((t) => t.key == selectedKey);
+    final houseGroup = data.houseGroups[selectedKey];
 
-    setState(() {
-      _selectedCategory = category;
-    });
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xl,
+            AppSpacing.lg,
+            AppSpacing.xl,
+            0,
+          ),
+          child: Column(
+            children: [
+              _HomeHeader(data: data.header),
+              const SizedBox(height: AppSpacing.md),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: SizedBox(
+                  width: 220,
+                  child: HomeSearchBar(
+                    hintText: data.header.searchPlaceholder,
+                    onTap: () => context.goNamed(RouteNames.search),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+            ],
+          ),
+        ),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(homeDataProvider);
+              await ref.read(homeDataProvider.future);
+            },
+            child: CustomScrollView(
+              key: const PageStorageKey('home-scroll-view'),
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.xl,
+                    AppSpacing.xs,
+                    AppSpacing.xl,
+                    AppSpacing.xl,
+                  ),
+                  sliver: SliverToBoxAdapter(
+                    child: _DynamicServices(
+                      entries: data.serviceEntries
+                          .where((e) => e.enabled)
+                          .toList(),
+                      onTap: _handleServiceTap,
+                    ),
+                  ),
+                ),
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: HomeCategoryTabsDelegate(
+                    height: _DynamicTabs.height,
+                    child: _DynamicTabs(
+                      tabs: tabs,
+                      selectedKey: selectedKey,
+                      onSelected: (key) =>
+                          setState(() => _selectedTabKey = key),
+                    ),
+                  ),
+                ),
+                if (houseGroup != null)
+                  _HomeContent(
+                    key: PageStorageKey(selectedKey),
+                    title: selectedTab.title,
+                    subtitle: _categorySubtitles[selectedKey] ?? '',
+                    items: houseGroup.items,
+                    onHouseTap: _openDetail,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
-  List<House> _housesFor(HomeCategory category, List<House> houses) {
-    const categoryOrders = {
-      HomeCategory.recommended: [0, 1, 2, 3, 4],
-      HomeCategory.shortRent: [2, 0, 3, 4],
-      HomeCategory.homestay: [3, 2, 0, 4],
-      HomeCategory.longRent: [1, 4, 0, 3],
-    };
-
-    return [
-      for (final index in categoryOrders[category]!)
-        if (index < houses.length) houses[index],
-    ];
+  void _handleServiceTap(ServiceEntry entry) {
+    switch (entry.targetValue) {
+      case 'lease':
+        context.pushNamed(RouteNames.lease);
+      case 'unlock_records':
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(const SnackBar(content: Text('开门记录功能开发中')));
+      case 'repairs':
+        context.pushNamed(RouteNames.repair);
+      case 'customer_service':
+        context.pushNamed(RouteNames.customerService);
+      default:
+        if (entry.targetType == 'route') {
+          context.pushNamed(RouteNames.home);
+        }
+    }
   }
 
   void _openDetail(House house) {
@@ -144,28 +174,15 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 }
 
-enum HomeCategory {
-  recommended('推荐', '为你精选', '品质房源，住得舒心'),
-  shortRent('短租', '灵活短住', '按需入住，轻松出发'),
-  homestay('民宿', '城市民宿', '发现更有温度的居住体验'),
-  longRent('长租', '安心长租', '稳定生活，从理想住所开始');
-
-  const HomeCategory(this.label, this.title, this.subtitle);
-
-  final String label;
-  final String title;
-  final String subtitle;
-}
-
 class _HomeHeader extends StatelessWidget {
-  const _HomeHeader({required this.name});
+  const _HomeHeader({required this.data});
 
-  final String name;
+  final HomeHeaderData data;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 170,
+      height: 120,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -174,15 +191,19 @@ class _HomeHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.home_work, color: AppColors.primary, size: 34),
-                    SizedBox(width: AppSpacing.sm),
+                    const Icon(
+                      Icons.home_work,
+                      color: AppColors.primary,
+                      size: 18,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
                     Text(
-                      '住享',
-                      style: TextStyle(
+                      data.cityName.isNotEmpty ? '住享 · ${data.cityName}' : '住享',
+                      style: const TextStyle(
                         color: AppColors.primary,
-                        fontSize: 28,
+                        fontSize: 12,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -190,11 +211,11 @@ class _HomeHeader extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  '早安， $name',
+                  data.greeting,
                   style: AppTextStyles.titleLarge.copyWith(fontSize: 32),
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                Text('欢迎来到你的安心居住空间', style: AppTextStyles.bodyLarge),
+                Text(data.subtitle, style: AppTextStyles.bodyMedium),
               ],
             ),
           ),
@@ -211,9 +232,9 @@ class _HeaderBuilding extends StatelessWidget {
   Widget build(BuildContext context) {
     return Positioned(
       top: 10,
-      right: -40,
-      width: 550,
-      height: 250,
+      right: -20,
+      width: 320,
+      height: 220,
       child: IgnorePointer(
         child: ClipRRect(
           borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -228,17 +249,18 @@ class _HeaderBuilding extends StatelessWidget {
   }
 }
 
-class HomeCategoryTabs extends StatelessWidget {
-  const HomeCategoryTabs({
-    required this.selectedCategory,
+class _DynamicTabs extends StatelessWidget {
+  const _DynamicTabs({
+    required this.tabs,
+    required this.selectedKey,
     required this.onSelected,
-    super.key,
   });
 
   static const double height = 60;
 
-  final HomeCategory selectedCategory;
-  final ValueChanged<HomeCategory> onSelected;
+  final List<HomeTab> tabs;
+  final String selectedKey;
+  final ValueChanged<String> onSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -251,13 +273,13 @@ class HomeCategoryTabs extends StatelessWidget {
       ),
       child: Row(
         children: [
-          for (final category in HomeCategory.values)
+          for (final tab in tabs)
             Expanded(
-              child: _CategoryTab(
-                key: ValueKey('home-category-${category.name}'),
-                category: category,
-                isSelected: selectedCategory == category,
-                onTap: () => onSelected(category),
+              child: _DynamicTab(
+                key: ValueKey('home-tab-${tab.key}'),
+                tab: tab,
+                isSelected: selectedKey == tab.key,
+                onTap: () => onSelected(tab.key),
               ),
             ),
         ],
@@ -266,15 +288,15 @@ class HomeCategoryTabs extends StatelessWidget {
   }
 }
 
-class _CategoryTab extends StatelessWidget {
-  const _CategoryTab({
-    required this.category,
+class _DynamicTab extends StatelessWidget {
+  const _DynamicTab({
+    required this.tab,
     required this.isSelected,
     required this.onTap,
     super.key,
   });
 
-  final HomeCategory category;
+  final HomeTab tab;
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -291,12 +313,12 @@ class _CategoryTab extends StatelessWidget {
             horizontal: AppSpacing.lg,
             vertical: AppSpacing.sm,
           ),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.primaryLight : Colors.transparent,
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-          ),
+          // decoration: BoxDecoration(
+          //   // color: isSelected ? AppColors.primaryLight : Colors.transparent,
+          //   borderRadius: BorderRadius.circular(AppRadius.lg),
+          // ),
           child: Text(
-            category.label,
+            tab.title,
             style: AppTextStyles.bodyLarge.copyWith(
               color: isSelected ? AppColors.primary : AppColors.textSecondary,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
@@ -308,24 +330,90 @@ class _CategoryTab extends StatelessWidget {
   }
 }
 
-class HomeCategoryContent extends StatelessWidget {
-  const HomeCategoryContent({
-    required this.category,
-    required this.houses,
+class _DynamicServices extends StatelessWidget {
+  const _DynamicServices({required this.entries, required this.onTap});
+
+  final List<ServiceEntry> entries;
+  final ValueChanged<ServiceEntry> onTap;
+
+  static const _iconMap = {
+    'lease': Icons.description_rounded,
+    'lock': Icons.history_rounded,
+    'repair': Icons.home_repair_service_rounded,
+    'service': Icons.support_agent_rounded,
+  };
+
+  static const _colorMap = {
+    'lease': AppColors.primary,
+    'lock': AppColors.secondary,
+    'repair': AppColors.warning,
+    'service': Color(0xFF7667F8),
+  };
+
+  IconData _iconFor(String iconKey) =>
+      _iconMap[iconKey] ?? Icons.widgets_rounded;
+
+  Color _colorFor(String iconKey) => _colorMap[iconKey] ?? AppColors.primary;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 18,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              for (final entry in entries.take(4))
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      right: entry != entries.take(4).last ? AppSpacing.sm : 0,
+                    ),
+                    child: HomeServiceEntry(
+                      icon: _iconFor(entry.iconKey),
+                      label: entry.title,
+                      color: _colorFor(entry.iconKey),
+                      onTap: () => onTap(entry),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeContent extends StatelessWidget {
+  const _HomeContent({
+    required this.title,
+    required this.subtitle,
+    required this.items,
     required this.onHouseTap,
     super.key,
   });
 
-  final HomeCategory category;
-  final List<House> houses;
+  final String title;
+  final String subtitle;
+  final List<HomeFeedItem> items;
   final ValueChanged<House> onHouseTap;
 
   @override
   Widget build(BuildContext context) {
-    final items = _buildFeedItems();
-
     return SliverMainAxisGroup(
-      key: key,
       slivers: [
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(
@@ -335,7 +423,7 @@ class HomeCategoryContent extends StatelessWidget {
             AppSpacing.md,
           ),
           sliver: SliverToBoxAdapter(
-            child: _CategoryIntroduction(category: category),
+            child: _CategoryIntroduction(title: title, subtitle: subtitle),
           ),
         ),
         SliverPadding(
@@ -352,16 +440,15 @@ class HomeCategoryContent extends StatelessWidget {
             childCount: items.length,
             itemBuilder: (context, index) {
               final item = items[index];
-              final house = item.house;
-
-              if (house != null) {
+              if (item.type == 'house' && item.house != null) {
                 return HouseCard(
-                  house: house,
+                  house: item.house!.toHouse(),
                   compact: true,
-                  onTap: () => onHouseTap(house),
+                  onTap: () => onHouseTap(item.house!.toHouse()),
                 );
-              } else if (item.ad != null) {
-                return _HomeAdCard(data: item.ad!);
+              } else if (item.type == 'advertisement' &&
+                  item.advertisement != null) {
+                return _FeedAdCard(ad: item.advertisement!);
               } else {
                 return const SizedBox.shrink();
               }
@@ -371,85 +458,29 @@ class HomeCategoryContent extends StatelessWidget {
       ],
     );
   }
-
-  List<_HomeFeedItem> _buildFeedItems() {
-    final items = houses.map(_HomeFeedItem.house).toList();
-    final ad = _adForCategory(category);
-
-    if (ad != null) {
-      items.insert(items.length > 1 ? 1 : 0, _HomeFeedItem.ad(ad));
-    }
-
-    return items;
-  }
-
-  _HomeAdData? _adForCategory(HomeCategory category) {
-    return switch (category) {
-      HomeCategory.recommended => const _HomeAdData(
-        label: '品牌推荐',
-        title: '毕业季安心租房',
-        description: '品质公寓限时优惠\n签约即享专属好礼',
-        icon: Icons.card_giftcard_rounded,
-        colors: [Color(0xFF367BF5), Color(0xFF75A7FF)],
-      ),
-      HomeCategory.homestay => const _HomeAdData(
-        label: '精选专题',
-        title: '周末住进风景里',
-        description: '发现城市周边特色民宿',
-        icon: Icons.landscape_rounded,
-        colors: [Color(0xFF38A88A), Color(0xFF86D4BE)],
-      ),
-      HomeCategory.shortRent || HomeCategory.longRent => null,
-    };
-  }
 }
 
-class _HomeFeedItem {
-  const _HomeFeedItem.house(this.house) : ad = null;
+class _FeedAdCard extends StatelessWidget {
+  const _FeedAdCard({required this.ad});
 
-  const _HomeFeedItem.ad(this.ad) : house = null;
-
-  final House? house;
-  final _HomeAdData? ad;
-}
-
-class _HomeAdData {
-  const _HomeAdData({
-    required this.label,
-    required this.title,
-    required this.description,
-    required this.icon,
-    required this.colors,
-  });
-
-  final String label;
-  final String title;
-  final String description;
-  final IconData icon;
-  final List<Color> colors;
-}
-
-class _HomeAdCard extends StatelessWidget {
-  const _HomeAdCard({required this.data});
-
-  final _HomeAdData data;
+  final HomeAdItem ad;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: data.colors,
+          colors: [Color(0xFF367BF5), Color(0xFF75A7FF)],
         ),
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: data.colors.first.withValues(alpha: 0.24),
+            color: Color(0x3D367BF5),
             blurRadius: 18,
-            offset: const Offset(0, 8),
+            offset: Offset(0, 8),
           ),
         ],
       ),
@@ -466,7 +497,7 @@ class _HomeAdCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: Text(
-              data.label,
+              '精选推荐',
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.surface,
                 fontSize: 11,
@@ -475,10 +506,14 @@ class _HomeAdCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          Icon(data.icon, color: AppColors.surface, size: 38),
+          const Icon(
+            Icons.card_giftcard_rounded,
+            color: AppColors.surface,
+            size: 38,
+          ),
           const SizedBox(height: AppSpacing.lg),
           Text(
-            data.title,
+            ad.title,
             style: AppTextStyles.titleMedium.copyWith(
               color: AppColors.surface,
               fontWeight: FontWeight.w700,
@@ -486,7 +521,7 @@ class _HomeAdCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            data.description,
+            ad.description,
             style: AppTextStyles.bodyMedium.copyWith(
               color: AppColors.surface.withValues(alpha: 0.88),
               height: 1.55,
@@ -517,9 +552,10 @@ class _HomeAdCard extends StatelessWidget {
 }
 
 class _CategoryIntroduction extends StatelessWidget {
-  const _CategoryIntroduction({required this.category});
+  const _CategoryIntroduction({required this.title, required this.subtitle});
 
-  final HomeCategory category;
+  final String title;
+  final String subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -531,9 +567,9 @@ class _CategoryIntroduction extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(category.title, style: AppTextStyles.titleLarge),
+                Text(title, style: AppTextStyles.titleLarge),
                 const SizedBox(height: AppSpacing.xs),
-                Text(category.subtitle, style: AppTextStyles.bodyMedium),
+                Text(subtitle, style: AppTextStyles.bodyMedium),
               ],
             ),
           ),
@@ -551,6 +587,309 @@ class _CategoryIntroduction extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _HomeErrorView extends StatelessWidget {
+  const _HomeErrorView({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.wifi_off_rounded,
+              size: 64,
+              color: AppColors.textMuted,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              message,
+              style: AppTextStyles.bodyLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            FilledButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('重试'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeSkeleton extends StatefulWidget {
+  const _HomeSkeleton();
+
+  @override
+  State<_HomeSkeleton> createState() => _HomeSkeletonState();
+}
+
+class _HomeSkeletonState extends State<_HomeSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Color _shimmer(Color base) {
+    return Color.lerp(
+      base,
+      base == AppColors.border ? const Color(0xFFF3F4F6) : AppColors.border,
+      _controller.value,
+    )!;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        return Column(
+          children: [
+            // Header skeleton
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xl,
+                AppSpacing.lg,
+                AppSpacing.xl,
+                0,
+              ),
+              child: SizedBox(
+                height: 170,
+                child: Stack(
+                  children: [
+                    Positioned(
+                      top: 10,
+                      right: -40,
+                      width: 550,
+                      height: 250,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(AppRadius.xl),
+                        child: Container(color: _shimmer(AppColors.border)),
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.home_work,
+                              color: _shimmer(AppColors.border),
+                              size: 34,
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Container(
+                              width: 80,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: _shimmer(AppColors.border),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        Container(
+                          width: 220,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: _shimmer(AppColors.border),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        Container(
+                          width: 180,
+                          height: 16,
+                          decoration: BoxDecoration(
+                            color: _shimmer(AppColors.border),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            // Search bar skeleton
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  width: 360,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: _shimmer(AppColors.border),
+                    borderRadius: BorderRadius.circular(AppRadius.xl),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            // Content skeleton
+            Expanded(
+              child: CustomScrollView(
+                physics: const NeverScrollableScrollPhysics(),
+                slivers: [
+                  // Services skeleton
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.xl,
+                      AppSpacing.xs,
+                      AppSpacing.xl,
+                      AppSpacing.xl,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: Container(
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(AppRadius.xl),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 80,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: _shimmer(AppColors.border),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            Row(
+                              children: List.generate(
+                                4,
+                                (_) => Expanded(
+                                  child: Column(
+                                    children: [
+                                      Container(
+                                        width: 48,
+                                        height: 48,
+                                        decoration: BoxDecoration(
+                                          color: _shimmer(AppColors.border),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: AppSpacing.sm),
+                                      Container(
+                                        width: 48,
+                                        height: 12,
+                                        decoration: BoxDecoration(
+                                          color: _shimmer(AppColors.border),
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Tabs skeleton
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: HomeCategoryTabsDelegate(
+                      height: 60,
+                      child: Container(
+                        height: 60,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg,
+                        ),
+                        decoration: const BoxDecoration(
+                          color: AppColors.background,
+                          border: Border(
+                            bottom: BorderSide(color: AppColors.border),
+                          ),
+                        ),
+                        child: Row(
+                          children: List.generate(
+                            4,
+                            (_) => Expanded(
+                              child: Center(
+                                child: Container(
+                                  width: 40,
+                                  height: 16,
+                                  decoration: BoxDecoration(
+                                    color: _shimmer(AppColors.border),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Cards skeleton
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.xl,
+                      AppSpacing.xl,
+                      AppSpacing.xl,
+                      AppSpacing.xl,
+                    ),
+                    sliver: SliverMasonryGrid.count(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: AppSpacing.md,
+                      crossAxisSpacing: AppSpacing.md,
+                      childCount: 4,
+                      itemBuilder: (context, index) {
+                        final heights = [180.0, 220.0, 200.0, 240.0];
+                        return Container(
+                          height: heights[index],
+                          decoration: BoxDecoration(
+                            color: _shimmer(AppColors.border),
+                            borderRadius: BorderRadius.circular(AppRadius.xl),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

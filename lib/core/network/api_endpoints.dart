@@ -10,4 +10,5 @@ class ApiEndpoints {
   static const repairs = '/repairs';
   static const messages = '/messages';
   static const profile = '/profile';
+  static const homeDetail = '/home/detail';
 }

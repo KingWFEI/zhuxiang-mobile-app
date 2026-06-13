@@ -2,40 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_radius.dart';
 
-// class HouseImagePlaceholder extends StatelessWidget {
-//   const HouseImagePlaceholder({
-//     super.key,
-//     this.imageUrl,
-//     this.height,
-//     this.borderRadius,
-//   });
-
-//   final String? imageUrl;
-//   final double? height;
-//   final BorderRadius? borderRadius;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Container(
-//       height: height,
-//       decoration: BoxDecoration(
-//         borderRadius: BorderRadius.only(
-//           topLeft: Radius.circular(AppRadius.xl),
-//           topRight: Radius.circular(AppRadius.xl),
-//         ),
-//         gradient: const LinearGradient(
-//           begin: Alignment.topLeft,
-//           end: Alignment.bottomRight,
-//           colors: [Color(0xFFF3E7D8), Color(0xFFEAF4FF)],
-//         ),
-//       ),
-//       child: Image.asset(
-//         'assets/images/house_placeholder.png',
-//         fit: BoxFit.cover,
-//       ),
-//     );
-//   }
-// }
 class HouseImagePlaceholder extends StatelessWidget {
   const HouseImagePlaceholder({
     super.key,
@@ -50,6 +16,7 @@ class HouseImagePlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final imageUrl = coverImage;
+    print('HouseImagePlaceholder: imageUrl = $imageUrl');
     final radius =
         borderRadius ??
         BorderRadius.only(
@@ -78,8 +45,23 @@ class HouseImagePlaceholder extends StatelessWidget {
               cacheWidth: 480,
               filterQuality: FilterQuality.low,
               gaplessPlayback: true,
-              errorBuilder: (context, error, stackTrace) =>
-                  const _ImageFallback(),
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return const Center(child: CircularProgressIndicator());
+              },
+              errorBuilder: (context, error, stackTrace) {
+                // debugPrint('HouseImagePlaceholder load error: $error');
+                // debugPrint('HouseImagePlaceholder stackTrace: $stackTrace');
+                return Container(
+                  color: const Color(0xFFEFF3F8),
+                  alignment: Alignment.center,
+                  child: const Icon(
+                    Icons.broken_image_outlined,
+                    size: 40,
+                    color: Colors.grey,
+                  ),
+                );
+              },
             ),
     );
   }

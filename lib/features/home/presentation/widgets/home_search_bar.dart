@@ -17,7 +17,7 @@ class HomeSearchBar extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppRadius.lg),
       onTap: onTap,
       child: Container(
-        height: 56,
+        height: 30,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         decoration: BoxDecoration(
           color: AppColors.surface,
@@ -32,12 +32,12 @@ class HomeSearchBar extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.search, color: AppColors.iconMuted, size: 28),
+            const Icon(Icons.search, color: AppColors.iconMuted, size: 18),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Text(
                 hintText,
-                style: AppTextStyles.bodyLarge.copyWith(
+                style: AppTextStyles.bodySmall.copyWith(
                   color: AppColors.textMuted,
                 ),
                 overflow: TextOverflow.ellipsis,
