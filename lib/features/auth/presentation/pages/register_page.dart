@@ -23,6 +23,7 @@ class RegisterPage extends ConsumerStatefulWidget {
 }
 
 class _RegisterPageState extends ConsumerState<RegisterPage> {
+  final _nicknameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _codeController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -33,6 +34,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   @override
   void dispose() {
+    _nicknameController.dispose();
     _phoneController.dispose();
     _codeController.dispose();
     _passwordController.dispose();
@@ -58,6 +60,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 Transform.translate(
                   offset: const Offset(0, -22),
                   child: _RegisterFormPanel(
+                    nicknameController: _nicknameController,
                     phoneController: _phoneController,
                     codeController: _codeController,
                     passwordController: _passwordController,
@@ -89,6 +92,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
 
   Future<void> _handleRegister() async {
+    final nickname = _nicknameController.text.trim();
     final phone = _phoneController.text.trim();
     final code = _codeController.text.trim();
     final password = _passwordController.text.trim();
@@ -98,12 +102,20 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       _showMessage('请输入手机号');
       return;
     }
-    if (code.isEmpty) {
-      _showMessage('请输入验证码');
+    if (phone.length != 11) {
+      _showMessage('请输入正确的手机号');
       return;
     }
-    if (password.isEmpty) {
-      _showMessage('请设置密码');
+    if (nickname.isEmpty) {
+      _showMessage('请输入昵称');
+      return;
+    }
+    if (code.length != 6) {
+      _showMessage('请输入6位验证码');
+      return;
+    }
+    if (password.length < 6 || password.length > 32) {
+      _showMessage('密码长度应为6-32位');
       return;
     }
     if (confirmPassword.isEmpty) {
@@ -121,11 +133,16 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
     final success = await ref
         .read(authControllerProvider.notifier)
-        .register(phone: phone, code: code, password: password);
+        .register(
+          phone: phone,
+          code: code,
+          password: password,
+          nickname: nickname,
+        );
     if (!mounted) return;
     if (success) {
-      _showMessage('注册成功，请登录');
-      context.goNamed(RouteNames.login);
+      _showMessage('注册成功');
+      context.goNamed(RouteNames.main);
       return;
     }
 
@@ -134,12 +151,24 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     _showMessage(message);
   }
 
-  void _handleGetCode() {
-    if (_phoneController.text.trim().isEmpty) {
-      _showMessage('请输入手机号');
+  Future<void> _handleGetCode() async {
+    final phone = _phoneController.text.trim();
+    if (phone.length != 11) {
+      _showMessage('请输入正确的手机号');
       return;
     }
-    _showMessage('验证码功能暂未接入接口');
+
+    final expiresIn = await ref
+        .read(authControllerProvider.notifier)
+        .sendSmsCode(phone: phone, scene: 'register');
+    if (!mounted) return;
+    if (expiresIn == null) {
+      _showMessage(
+        ref.read(authControllerProvider).errorMessage ?? '验证码发送失败，请稍后重试',
+      );
+      return;
+    }
+    _showMessage('验证码已发送，$expiresIn 秒内有效');
   }
 
   void _showMessage(String message) {
@@ -151,6 +180,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
 class _RegisterFormPanel extends StatelessWidget {
   const _RegisterFormPanel({
+    required this.nicknameController,
     required this.phoneController,
     required this.codeController,
     required this.passwordController,
@@ -165,6 +195,7 @@ class _RegisterFormPanel extends StatelessWidget {
     required this.onGetCode,
   });
 
+  final TextEditingController nicknameController;
   final TextEditingController phoneController;
   final TextEditingController codeController;
   final TextEditingController passwordController;
@@ -200,6 +231,13 @@ class _RegisterFormPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           AuthTextField(
+            controller: nicknameController,
+            hintText: '昵称',
+            icon: Icons.person_outline,
+            inputFormatters: [LengthLimitingTextInputFormatter(30)],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AuthTextField(
             controller: phoneController,
             hintText: '手机号',
             icon: Icons.phone_android_outlined,
@@ -227,6 +265,7 @@ class _RegisterFormPanel extends StatelessWidget {
             hintText: '设置密码',
             icon: Icons.lock_outline,
             obscureText: !showPassword,
+            inputFormatters: [LengthLimitingTextInputFormatter(32)],
             suffix: AuthVisibilityButton(
               isVisible: showPassword,
               onPressed: onPasswordVisibilityChanged,
@@ -238,6 +277,7 @@ class _RegisterFormPanel extends StatelessWidget {
             hintText: '确认密码',
             icon: Icons.lock_outline,
             obscureText: !showConfirmPassword,
+            inputFormatters: [LengthLimitingTextInputFormatter(32)],
             suffix: AuthVisibilityButton(
               isVisible: showConfirmPassword,
               onPressed: onConfirmPasswordVisibilityChanged,

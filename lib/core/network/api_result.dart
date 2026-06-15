@@ -30,16 +30,14 @@ class ApiFailure<T> extends ApiResult<T> {
 }
 
 extension ApiResultUnwrap on ApiResult<Response<dynamic>> {
-  Future<T> unwrapData<T>(
-    T Function(Map<String, dynamic> json) fromJson,
-  ) async {
+  Future<T> unwrapValue<T>(T Function(dynamic data) fromData) async {
     return when(
       success: (response) {
         final body = response.data as Map<String, dynamic>;
         final code = body['code'] as int? ?? 0;
         final message = body['message'] as String? ?? '';
-        if (code == 200 && body['data'] != null) {
-          return fromJson(body['data'] as Map<String, dynamic>);
+        if (code == 200 && body.containsKey('data')) {
+          return fromData(body['data']);
         }
         throw ApiException(
           type: ApiExceptionType.server,
@@ -57,5 +55,11 @@ extension ApiResultUnwrap on ApiResult<Response<dynamic>> {
               );
       },
     );
+  }
+
+  Future<T> unwrapData<T>(
+    T Function(Map<String, dynamic> json) fromJson,
+  ) async {
+    return unwrapValue((data) => fromJson(data as Map<String, dynamic>));
   }
 }

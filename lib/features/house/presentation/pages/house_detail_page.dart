@@ -9,7 +9,7 @@ import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../domain/entities/house.dart';
-import '../../service/house_service.dart';
+import '../../data/house_service.dart';
 
 class HouseDetailPage extends StatefulWidget {
   const HouseDetailPage({required this.houseId, super.key});

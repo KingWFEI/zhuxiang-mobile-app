@@ -62,7 +62,7 @@ class _ListContent extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.lg),
               child: SizedBox(
-                width: 220, // 只固定宽度，不固定高度
+                width: 160, // 只固定宽度，不固定高度
                 child: HouseImagePlaceholder(
                   coverImage: house.coverImage, // 传入实际图片
                 ),
@@ -78,7 +78,11 @@ class _ListContent extends StatelessWidget {
                       Expanded(
                         child: Text(
                           house.title,
-                          style: AppTextStyles.titleMedium,
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -90,10 +94,11 @@ class _ListContent extends StatelessWidget {
                         color: house.isFavorite
                             ? AppColors.error
                             : AppColors.iconMuted,
+                        size: 20,
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppSpacing.sm),
+                  const SizedBox(height: 2),
                   Wrap(
                     spacing: AppSpacing.sm,
                     runSpacing: AppSpacing.xs,
@@ -102,30 +107,42 @@ class _ListContent extends StatelessWidget {
                         .map((tag) => _HouseTag(tag))
                         .toList(),
                   ),
-                  const SizedBox(height: AppSpacing.sm),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
                     '${house.roomType}  |  ${house.area}m²  |  ${house.floor}',
-                    style: AppTextStyles.bodyMedium,
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     house.metro,
-                    style: AppTextStyles.bodyMedium,
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text.rich(
                     TextSpan(
-                      text: '¥ ${house.price}',
+                      text: '¥ ${_displayPrice(house.price)}',
                       style: AppTextStyles.titleMedium.copyWith(
                         color: AppColors.primary,
-                        fontSize: 22,
+                        fontSize: 16,
                       ),
                       children: [
-                        TextSpan(text: ' /月', style: AppTextStyles.bodyMedium),
+                        TextSpan(
+                          text: ' /月',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -149,7 +166,7 @@ class _CompactContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        HouseImagePlaceholder(coverImage: house.coverImage, height: 162),
+        HouseImagePlaceholder(coverImage: house.coverImage, height: 120),
         Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
           child: Column(
@@ -164,7 +181,7 @@ class _CompactContent extends StatelessWidget {
               const SizedBox(height: AppSpacing.sm),
               Text(
                 '${house.roomType} | ${house.area}m² | ${house.orientation}',
-                style: AppTextStyles.bodyMedium.copyWith(fontSize: 12),
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -180,12 +197,19 @@ class _CompactContent extends StatelessWidget {
               const SizedBox(height: AppSpacing.sm),
               Text.rich(
                 TextSpan(
-                  text: '¥ ${house.price}',
+                  text: '¥ ${_displayPrice(house.price)}',
                   style: AppTextStyles.titleMedium.copyWith(
                     color: AppColors.primary,
+                    fontSize: 16,
                   ),
                   children: [
-                    TextSpan(text: ' /月', style: AppTextStyles.bodyMedium),
+                    TextSpan(
+                      text: ' /月',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -195,6 +219,14 @@ class _CompactContent extends StatelessWidget {
       ],
     );
   }
+}
+
+String _displayPrice(int price) {
+  if (price < 10000) return '$price';
+  final value = price / 100;
+  return value == value.roundToDouble()
+      ? value.toInt().toString()
+      : value.toStringAsFixed(2);
 }
 
 class _HouseTag extends StatelessWidget {
@@ -217,7 +249,7 @@ class _HouseTag extends StatelessWidget {
         label,
         style: AppTextStyles.bodyMedium.copyWith(
           color: AppColors.primary,
-          fontSize: 12,
+          fontSize: 10,
           fontWeight: FontWeight.w600,
         ),
       ),

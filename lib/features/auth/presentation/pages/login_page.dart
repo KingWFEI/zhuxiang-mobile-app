@@ -63,6 +63,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       setState(() => _hasAgreed = value);
                     },
                     onLogin: _handleLogin,
+                    onGuestBrowse: _handleGuestBrowse,
                     onGetCode: _handleGetCode,
                     onToggleLoginMode: _toggleLoginMode,
                     onTogglePasswordVisibility: () {
@@ -127,12 +128,30 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     _showMessage(message);
   }
 
-  void _handleGetCode() {
-    if (_phoneController.text.trim().isEmpty) {
-      _showMessage('请输入手机号');
+  Future<void> _handleGetCode() async {
+    final phone = _phoneController.text.trim();
+    if (phone.length != 11) {
+      _showMessage('请输入正确的手机号');
       return;
     }
-    _showMessage('当前 mock 验证码：246810');
+
+    final expiresIn = await ref
+        .read(authControllerProvider.notifier)
+        .sendSmsCode(phone: phone, scene: 'login');
+    if (!mounted) return;
+    if (expiresIn == null) {
+      _showMessage(
+        ref.read(authControllerProvider).errorMessage ?? '验证码发送失败，请稍后重试',
+      );
+      return;
+    }
+    _showMessage('验证码已发送，$expiresIn 秒内有效');
+  }
+
+  Future<void> _handleGuestBrowse() async {
+    await ref.read(authControllerProvider.notifier).enterGuestMode();
+    if (!mounted) return;
+    context.goNamed(RouteNames.main);
   }
 
   void _toggleLoginMode() {
@@ -163,6 +182,7 @@ class _LoginFormPanel extends StatelessWidget {
     required this.hasAgreed,
     required this.onAgreementChanged,
     required this.onLogin,
+    required this.onGuestBrowse,
     required this.onGetCode,
     required this.onToggleLoginMode,
     required this.onTogglePasswordVisibility,
@@ -175,6 +195,7 @@ class _LoginFormPanel extends StatelessWidget {
   final bool hasAgreed;
   final ValueChanged<bool> onAgreementChanged;
   final VoidCallback onLogin;
+  final VoidCallback onGuestBrowse;
   final VoidCallback onGetCode;
   final VoidCallback onToggleLoginMode;
   final VoidCallback onTogglePasswordVisibility;
@@ -245,7 +266,7 @@ class _LoginFormPanel extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
           TextButton(
-            onPressed: () => context.goNamed(RouteNames.main),
+            onPressed: onGuestBrowse,
             child: Text(
               '游客浏览',
               style: AppTextStyles.bodyLarge.copyWith(

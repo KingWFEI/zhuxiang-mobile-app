@@ -16,7 +16,6 @@ class HouseImagePlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final imageUrl = coverImage;
-    print('HouseImagePlaceholder: imageUrl = $imageUrl');
     final radius =
         borderRadius ??
         BorderRadius.only(
