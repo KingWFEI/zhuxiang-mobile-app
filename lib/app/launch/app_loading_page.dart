@@ -1,38 +1,62 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/presentation/auth_controller.dart';
 import '../router/route_names.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 
-class AppLoadingPage extends StatefulWidget {
+class AppLoadingPage extends ConsumerStatefulWidget {
   const AppLoadingPage({super.key});
 
   static const loadingDuration = Duration(milliseconds: 1400);
 
   @override
-  State<AppLoadingPage> createState() => _AppLoadingPageState();
+  ConsumerState<AppLoadingPage> createState() => _AppLoadingPageState();
 }
 
-class _AppLoadingPageState extends State<AppLoadingPage> {
-  Timer? _navigationTimer;
+class _AppLoadingPageState extends ConsumerState<AppLoadingPage> {
+  Timer? _minimumLoadingTimer;
+  bool _minimumLoadingFinished = false;
+  bool _sessionRestoreFinished = false;
 
   @override
   void initState() {
     super.initState();
-    _navigationTimer = Timer(AppLoadingPage.loadingDuration, () {
-      if (!mounted) return;
-      context.goNamed(RouteNames.main);
+    _minimumLoadingTimer = Timer(AppLoadingPage.loadingDuration, () {
+      _minimumLoadingFinished = true;
+      _navigateWhenReady();
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _restoreSession());
+  }
+
+  Future<void> _restoreSession() async {
+    await ref.read(authControllerProvider.notifier).restoreSession();
+    if (!mounted) return;
+    _sessionRestoreFinished = true;
+    _navigateWhenReady();
+  }
+
+  void _navigateWhenReady() {
+    if (!mounted || !_minimumLoadingFinished || !_sessionRestoreFinished) {
+      return;
+    }
+    final authState = ref.read(authControllerProvider);
+    context.goNamed(
+      authState.isLoggedIn || authState.isGuest
+          ? RouteNames.main
+          : RouteNames.login,
+    );
   }
 
   @override
   void dispose() {
-    _navigationTimer?.cancel();
+    _minimumLoadingTimer?.cancel();
     super.dispose();
   }
 

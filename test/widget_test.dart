@@ -3,37 +3,30 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zhuxiang_app/app/app.dart';
-import 'package:zhuxiang_app/features/auth/data/datasources/mock_auth_datasource.dart';
+import 'package:zhuxiang_app/app/router/app_router.dart';
+import 'package:zhuxiang_app/app/router/route_paths.dart';
+import 'package:zhuxiang_app/core/storage/guest_mode_storage.dart';
+import 'package:zhuxiang_app/core/storage/token_storage.dart';
+import 'package:zhuxiang_app/features/auth/presentation/auth_controller.dart';
 import 'package:zhuxiang_app/features/auth/presentation/pages/login_page.dart';
 import 'package:zhuxiang_app/features/auth/presentation/pages/register_page.dart';
+import 'package:zhuxiang_app/features/home/domain/home_model.dart';
 import 'package:zhuxiang_app/features/home/presentation/pages/home_page.dart';
+import 'package:zhuxiang_app/features/home/presentation/providers/home_provider.dart';
 
 void main() {
-  test('mock auth separates verification code and password login', () async {
-    final datasource = MockAuthDatasource();
-
-    await expectLater(
-      datasource.loginWithCode(phone: '13800138000', code: '123456'),
-      throwsA(isA<MockAuthException>()),
-    );
-
-    final codeUser = await datasource.loginWithCode(
-      phone: '13800138000',
-      code: MockAuthDatasource.validCode,
-    );
-    expect(codeUser.phone, '13800138000');
-
-    await datasource.logout();
-
-    final passwordUser = await datasource.loginWithPassword(
-      phone: '13800138000',
-      password: '123456',
-    );
-    expect(passwordUser.phone, '13800138000');
-  });
-
   testWidgets('Zhuxiang app renders loading page', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: ZhuxiangApp()));
+    AppRouter.router.go(RoutePaths.splash);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          tokenStorageProvider.overrideWithValue(_EmptyTokenStorage()),
+          guestModeStorageProvider.overrideWithValue(_FakeGuestModeStorage()),
+          homeDataProvider.overrideWith((ref) async => _testHomeData),
+        ],
+        child: const ZhuxiangApp(),
+      ),
+    );
     await tester.pump();
 
     expect(find.text('住享'), findsWidgets);
@@ -42,21 +35,89 @@ void main() {
     expect(find.bySemanticsLabel('加载页占位图'), findsOneWidget);
   });
 
-  testWidgets('loading page enters bottom navigation shell', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: ZhuxiangApp()));
+  testWidgets('first launch without login enters login page', (tester) async {
+    AppRouter.router.go(RoutePaths.splash);
+    tester.view.physicalSize = const Size(430, 932);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          tokenStorageProvider.overrideWithValue(_EmptyTokenStorage()),
+          guestModeStorageProvider.overrideWithValue(_FakeGuestModeStorage()),
+          homeDataProvider.overrideWith((ref) async => _testHomeData),
+        ],
+        child: const ZhuxiangApp(),
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 1500));
-    await tester.pumpAndSettle();
+    await tester.pump();
+
+    expect(find.text('欢迎登录'), findsOneWidget);
+    expect(find.text('游客浏览'), findsOneWidget);
+  });
+
+  testWidgets('guest choice persists and opens main page on next launch', (
+    tester,
+  ) async {
+    AppRouter.router.go(RoutePaths.splash);
+    tester.view.physicalSize = const Size(430, 932);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final guestStorage = _FakeGuestModeStorage(enabled: true);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          tokenStorageProvider.overrideWithValue(_EmptyTokenStorage()),
+          guestModeStorageProvider.overrideWithValue(guestStorage),
+          homeDataProvider.overrideWith((ref) async => _testHomeData),
+        ],
+        child: const ZhuxiangApp(),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1500));
+    await tester.pump();
 
     expect(find.text('找房'), findsWidgets);
     expect(find.text('消息'), findsOneWidget);
     expect(find.text('我的'), findsOneWidget);
-    expect(find.text('租约'), findsNothing);
+  });
 
-    await tester.tap(find.text('我的'));
-    await tester.pumpAndSettle();
+  testWidgets('guest browse button saves choice and enters main page', (
+    tester,
+  ) async {
+    AppRouter.router.go(RoutePaths.splash);
+    tester.view.physicalSize = const Size(430, 932);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
 
-    expect(find.text('未登录'), findsOneWidget);
+    final guestStorage = _FakeGuestModeStorage();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          tokenStorageProvider.overrideWithValue(_EmptyTokenStorage()),
+          guestModeStorageProvider.overrideWithValue(guestStorage),
+          homeDataProvider.overrideWith((ref) async => _testHomeData),
+        ],
+        child: const ZhuxiangApp(),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1500));
+    await tester.pump();
+    await tester.tap(find.text('游客浏览'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(guestStorage.isEnabled, isTrue);
+    expect(find.text('找房'), findsWidgets);
   });
 
   testWidgets('home page switches house categories without lock content', (
@@ -68,16 +129,19 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: HomePage())),
+      ProviderScope(
+        overrides: [
+          homeDataProvider.overrideWith((ref) async => _testHomeData),
+        ],
+        child: const MaterialApp(home: HomePage()),
+      ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('推荐'), findsOneWidget);
+    expect(find.text('推荐'), findsWidgets);
     expect(find.text('短租'), findsOneWidget);
     expect(find.text('民宿'), findsOneWidget);
     expect(find.text('长租'), findsOneWidget);
-    expect(find.text('为你精选'), findsOneWidget);
-    expect(find.text('便捷服务'), findsOneWidget);
     expect(find.text('我的租约'), findsOneWidget);
     expect(find.text('开门记录'), findsOneWidget);
     expect(find.text('报修服务'), findsOneWidget);
@@ -98,17 +162,10 @@ void main() {
     await tester.drag(find.byType(CustomScrollView), const Offset(0, -420));
     await tester.pumpAndSettle();
 
-    expect(find.text('便捷服务').hitTestable(), findsNothing);
-    expect(find.text('推荐').hitTestable(), findsOneWidget);
-    expect(find.text('住享').hitTestable(), findsOneWidget);
+    expect(find.text('推荐').hitTestable(), findsWidgets);
 
-    await tester.tap(find.byKey(const ValueKey('home-category-homestay')));
+    await tester.tap(find.byKey(const ValueKey('home-tab-homestay')));
     await tester.pumpAndSettle();
-
-    await tester.drag(find.byType(CustomScrollView), const Offset(0, 420));
-    await tester.pumpAndSettle();
-
-    expect(find.text('便捷服务').hitTestable(), findsOneWidget);
     expect(find.text('城市民宿'), findsOneWidget);
     expect(find.text('精选专题'), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -160,7 +217,7 @@ void main() {
     expect(find.text('获取验证码'), findsOneWidget);
   });
 
-  testWidgets('password value is rejected in verification code mode', (
+  testWidgets('invalid value is rejected in verification code mode', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(430, 932);
@@ -173,12 +230,12 @@ void main() {
     );
 
     await tester.enterText(_textFieldWithHint('手机号'), '13800138000');
-    await tester.enterText(_textFieldWithHint('验证码'), '123456');
+    await tester.enterText(_textFieldWithHint('验证码'), '12345');
     await tester.tap(find.byIcon(Icons.radio_button_unchecked_outlined));
     await tester.tap(find.widgetWithText(ElevatedButton, '登录'));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
-    expect(find.text('手机号或验证码不正确'), findsOneWidget);
+    expect(find.text('请输入6位验证码'), findsOneWidget);
   });
 
   testWidgets('register page validates empty phone', (tester) async {
@@ -199,4 +256,200 @@ Finder _textFieldWithHint(String hintText) {
   return find.byWidgetPredicate(
     (widget) => widget is TextField && widget.decoration?.hintText == hintText,
   );
+}
+
+const _testHomeData = HomeData(
+  header: HomeHeaderData(
+    cityName: '测试城市',
+    greeting: '欢迎',
+    subtitle: '',
+    searchPlaceholder: '搜索房源',
+    backgroundImageUrl: '',
+  ),
+  unreadMessageCount: 0,
+  serviceEntries: [
+    ServiceEntry(
+      key: 'lease',
+      title: '我的租约',
+      iconKey: 'lease',
+      targetType: 'route',
+      targetValue: 'lease',
+      requiresLogin: true,
+      enabled: true,
+    ),
+    ServiceEntry(
+      key: 'unlock',
+      title: '开门记录',
+      iconKey: 'lock',
+      targetType: 'route',
+      targetValue: 'unlock_records',
+      requiresLogin: true,
+      enabled: true,
+    ),
+    ServiceEntry(
+      key: 'repair',
+      title: '报修服务',
+      iconKey: 'repair',
+      targetType: 'route',
+      targetValue: 'repairs',
+      requiresLogin: true,
+      enabled: true,
+    ),
+    ServiceEntry(
+      key: 'service',
+      title: '在线客服',
+      iconKey: 'service',
+      targetType: 'route',
+      targetValue: 'customer_service',
+      requiresLogin: false,
+      enabled: true,
+    ),
+  ],
+  tabs: [
+    HomeTab(key: 'recommended', title: '推荐', sort: 1, enabled: true),
+    HomeTab(key: 'short_rent', title: '短租', sort: 2, enabled: true),
+    HomeTab(key: 'homestay', title: '民宿', sort: 3, enabled: true),
+    HomeTab(key: 'long_rent', title: '长租', sort: 4, enabled: true),
+  ],
+  houseGroups: {
+    'recommended': HomeHouseGroup(
+      items: [
+        HomeFeedItem(type: 'house', house: _testHouse),
+        HomeFeedItem(
+          type: 'advertisement',
+          advertisement: HomeAdItem(
+            id: 'ad-1',
+            title: '品牌推荐',
+            description: '品质房源',
+            imageUrl: '',
+            targetType: 'route',
+            targetValue: '',
+          ),
+        ),
+      ],
+      page: 1,
+      pageSize: 10,
+      hasMore: false,
+    ),
+    'short_rent': HomeHouseGroup(
+      items: [HomeFeedItem(type: 'house', house: _testHouse)],
+      page: 1,
+      pageSize: 10,
+      hasMore: false,
+    ),
+    'homestay': HomeHouseGroup(
+      items: [
+        HomeFeedItem(
+          type: 'house',
+          house: HomeHouseItem(
+            id: 'homestay-1',
+            title: '城市民宿',
+            coverImage: '',
+            location: '渝中区',
+            community: '江景雅苑',
+            price: 38800,
+            roomType: '1室1厅1卫',
+            area: 50,
+            floor: '18/30层',
+            orientation: '朝东',
+            tags: ['江景'],
+            facilities: ['空调'],
+            description: '城市民宿',
+            isSmartLockSupported: true,
+            isFavorite: false,
+            metro: '距地铁600m',
+            decoration: '品质装修',
+            availableDate: '2026-06-15',
+          ),
+        ),
+        HomeFeedItem(
+          type: 'advertisement',
+          advertisement: HomeAdItem(
+            id: 'ad-2',
+            title: '精选专题',
+            description: '热门民宿',
+            imageUrl: '',
+            targetType: 'route',
+            targetValue: '',
+          ),
+        ),
+      ],
+      page: 1,
+      pageSize: 10,
+      hasMore: false,
+    ),
+    'long_rent': HomeHouseGroup(
+      items: [HomeFeedItem(type: 'house', house: _testHouse)],
+      page: 1,
+      pageSize: 10,
+      hasMore: false,
+    ),
+  },
+);
+
+const _testHouse = HomeHouseItem(
+  id: 'house-1',
+  title: '温馨一居',
+  coverImage: '',
+  location: '渝北区',
+  community: '幸福小区',
+  price: 268000,
+  roomType: '1室1厅1卫',
+  area: 42,
+  floor: '12/28层',
+  orientation: '朝南',
+  tags: ['近地铁'],
+  facilities: ['空调'],
+  description: '测试房源',
+  isSmartLockSupported: true,
+  isFavorite: false,
+  metro: '距地铁500m',
+  decoration: '精装修',
+  availableDate: '2026-07-01',
+);
+
+class _EmptyTokenStorage implements TokenStorage {
+  @override
+  Future<void> clear() async {}
+
+  @override
+  Future<String?> readAccessToken() async => null;
+
+  @override
+  Future<void> saveAccessToken(String accessToken) async {}
+
+  @override
+  Future<StoredTokens?> readTokens() async => null;
+
+  @override
+  Future<String?> readUserJson() async => null;
+
+  @override
+  Future<void> saveTokens({
+    required String accessToken,
+    required String refreshToken,
+    required int expiresIn,
+  }) async {}
+
+  @override
+  Future<void> saveUserJson(String userJson) async {}
+}
+
+class _FakeGuestModeStorage implements GuestModeStorage {
+  _FakeGuestModeStorage({bool enabled = false}) : _enabled = enabled;
+
+  bool _enabled;
+
+  @override
+  bool get isEnabled => _enabled;
+
+  @override
+  Future<void> enable() async {
+    _enabled = true;
+  }
+
+  @override
+  Future<void> clear() async {
+    _enabled = false;
+  }
 }

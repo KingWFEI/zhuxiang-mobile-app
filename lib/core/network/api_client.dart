@@ -106,6 +106,10 @@ class ApiClient {
 
   ApiException _mapDioException(DioException error) {
     final statusCode = error.response?.statusCode;
+    final responseData = error.response?.data;
+    final responseMessage = responseData is Map<String, dynamic>
+        ? responseData['message'] as String?
+        : null;
 
     if (error.type == DioExceptionType.connectionTimeout ||
         error.type == DioExceptionType.receiveTimeout ||
@@ -121,7 +125,7 @@ class ApiClient {
     if (statusCode == 401) {
       return ApiException(
         type: ApiExceptionType.unauthorized,
-        message: 'Unauthorized request',
+        message: responseMessage ?? 'Unauthorized request',
         statusCode: statusCode,
         cause: error,
       );
@@ -130,7 +134,7 @@ class ApiClient {
     if (statusCode != null && statusCode >= 500) {
       return ApiException(
         type: ApiExceptionType.server,
-        message: 'Server error',
+        message: responseMessage ?? 'Server error',
         statusCode: statusCode,
         cause: error,
       );
@@ -147,7 +151,7 @@ class ApiClient {
 
     return ApiException(
       type: ApiExceptionType.unknown,
-      message: error.message ?? 'Unknown network error',
+      message: responseMessage ?? error.message ?? 'Unknown network error',
       statusCode: statusCode,
       cause: error,
     );

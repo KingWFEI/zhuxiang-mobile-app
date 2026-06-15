@@ -82,9 +82,7 @@ class House {
       floor: json['floor'] as String? ?? '',
       orientation: json['orientation'] as String? ?? '',
       tags:
-          (json['tags'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
+          (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
           [],
       facilities:
           (json['facilities'] as List<dynamic>?)

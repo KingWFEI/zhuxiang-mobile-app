@@ -1,22 +1,20 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
-import '../constants/storage_keys.dart';
+import 'token_storage.dart';
 
 class SecureTokenStorage {
-  SecureTokenStorage({FlutterSecureStorage? storage})
-    : _storage = storage ?? const FlutterSecureStorage();
+  SecureTokenStorage({TokenStorage? tokenStorage})
+    : _tokenStorage = tokenStorage ?? TokenStorage();
 
-  final FlutterSecureStorage _storage;
+  final TokenStorage _tokenStorage;
 
   Future<void> saveToken(String token) {
-    return _storage.write(key: StorageKeys.accessToken, value: token);
+    return _tokenStorage.saveAccessToken(token);
   }
 
   Future<String?> getToken() {
-    return _storage.read(key: StorageKeys.accessToken);
+    return _tokenStorage.readAccessToken();
   }
 
   Future<void> clearToken() {
-    return _storage.delete(key: StorageKeys.accessToken);
+    return _tokenStorage.clear();
   }
 }
