@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:zhuxiang_app/app/theme/app_icon.dart';
 
@@ -8,6 +9,7 @@ import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../rental_flow/presentation/providers/rental_flow_providers.dart';
 import '../../domain/entities/house.dart';
 import '../../data/house_service.dart';
 
@@ -706,13 +708,14 @@ class _DetailTag extends StatelessWidget {
   }
 }
 
-class _BottomActionBar extends StatelessWidget {
+class _BottomActionBar extends ConsumerWidget {
   const _BottomActionBar({required this.house});
 
   final House house;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final flow = ref.watch(rentalFlowProvider);
     return SafeArea(
       top: false,
       child: Container(
@@ -734,24 +737,31 @@ class _BottomActionBar extends StatelessWidget {
         ),
         child: Row(
           children: [
-            IconButton(
-              onPressed: () => _showMessage(context, '收藏状态已模拟更新'),
-              icon: Icon(
-                house.isFavorite ? Icons.favorite : Icons.favorite_border,
-                color: house.isFavorite ? AppColors.error : AppColors.primary,
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: flow.isLoading
+                    ? null
+                    : () => _startConsultation(context, ref),
+                icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                label: const Text('在线咨询'),
               ),
             ),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
-              child: OutlinedButton(
-                onPressed: () => _showMessage(context, '预约看房暂未接入'),
-                child: const Text('预约看房'),
+              child: OutlinedButton.icon(
+                onPressed: flow.isLoading ? null : () => _openViewing(context),
+                icon: const Icon(Icons.event_available_outlined, size: 18),
+                label: const Text('预约看房'),
               ),
             ),
-            const SizedBox(width: AppSpacing.md),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
-              child: ElevatedButton(
-                onPressed: () => _showMessage(context, '立即租住暂未接入'),
-                child: const Text('立即租住'),
+              child: ElevatedButton.icon(
+                onPressed: flow.isLoading
+                    ? null
+                    : () => _openApplication(context),
+                icon: const Icon(Icons.assignment_outlined, size: 18),
+                label: const Text('立即申请'),
               ),
             ),
           ],
@@ -760,10 +770,32 @@ class _BottomActionBar extends StatelessWidget {
     );
   }
 
-  void _showMessage(BuildContext context, String message) {
+  Future<void> _startConsultation(BuildContext context, WidgetRef ref) async {
+    final notifier = ref.read(rentalFlowProvider.notifier);
+    if (ref.read(rentalFlowProvider).houseId != house.id) {
+      await notifier.loadFlow(house.id);
+    }
+    final ok = await notifier.startConsultation();
+    if (!context.mounted || !ok) return;
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ).showSnackBar(const SnackBar(content: Text('已创建咨询会话')));
+    context.pushNamed(RouteNames.customerService);
+  }
+
+  void _openViewing(BuildContext context) {
+    context.pushNamed(
+      RouteNames.viewingAppointment,
+      pathParameters: {'houseId': house.id},
+      queryParameters: {'houseTitle': house.title},
+    );
+  }
+
+  void _openApplication(BuildContext context) {
+    context.pushNamed(
+      RouteNames.rentalApplication,
+      pathParameters: {'houseId': house.id},
+    );
   }
 }
 
