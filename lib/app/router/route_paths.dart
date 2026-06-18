@@ -18,4 +18,11 @@ class RoutePaths {
   static const repair = '/repair';
   static const messageCenter = '/messages';
   static const customerService = '/customer-service';
+  static const viewingAppointment = '/rental-flow/:houseId/viewing-appointment';
+  static const viewingDetail = '/rental-flow/:houseId/viewing-detail';
+  static const rentalApplication = '/rental-flow/:houseId/rental-application';
+  static const realNameVerify = '/rental-flow/:houseId/real-name-verify';
+  static const leaseContract = '/rental-flow/:houseId/lease-contract';
+  static const rentalPayment = '/rental-flow/:houseId/payment';
+  static const moveInComplete = '/rental-flow/:houseId/move-in-complete';
 }

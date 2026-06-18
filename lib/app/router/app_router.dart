@@ -1,6 +1,5 @@
 import 'package:go_router/go_router.dart';
 
-import '../launch/app_loading_page.dart';
 import '../../core/widgets/app_placeholder_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
@@ -9,6 +8,14 @@ import '../../features/house/presentation/pages/find_home_page.dart';
 import '../../features/house/presentation/pages/house_detail_page.dart';
 import '../../features/message/presentation/pages/message_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/rental_flow/presentation/pages/lease_contract_page.dart';
+import '../../features/rental_flow/presentation/pages/move_in_complete_page.dart';
+import '../../features/rental_flow/presentation/pages/payment_page.dart';
+import '../../features/rental_flow/presentation/pages/real_name_verify_page.dart';
+import '../../features/rental_flow/presentation/pages/rental_application_page.dart';
+import '../../features/rental_flow/presentation/pages/viewing_appointment_page.dart';
+import '../../features/rental_flow/presentation/pages/viewing_detail_page.dart';
+import '../launch/app_loading_page.dart';
 import 'app_shell.dart';
 import 'route_names.dart';
 import 'route_paths.dart';
@@ -134,6 +141,66 @@ class AppRouter {
         name: RouteNames.customerService,
         path: RoutePaths.customerService,
         builder: (context, state) => const AppPlaceholderPage(title: '客服管家'),
+      ),
+      GoRoute(
+        name: RouteNames.viewingAppointment,
+        path: RoutePaths.viewingAppointment,
+        builder: (context, state) {
+          final houseId = state.pathParameters['houseId'] ?? '';
+          final houseTitle = state.uri.queryParameters['houseTitle'] ?? '房源';
+          return ViewingAppointmentPage(
+            houseId: houseId,
+            houseTitle: houseTitle,
+          );
+        },
+      ),
+      GoRoute(
+        name: RouteNames.viewingDetail,
+        path: RoutePaths.viewingDetail,
+        builder: (context, state) {
+          final houseId = state.pathParameters['houseId'] ?? '';
+          return ViewingDetailPage(houseId: houseId);
+        },
+      ),
+      GoRoute(
+        name: RouteNames.rentalApplication,
+        path: RoutePaths.rentalApplication,
+        builder: (context, state) {
+          final houseId = state.pathParameters['houseId'] ?? '';
+          return RentalApplicationPage(houseId: houseId);
+        },
+      ),
+      GoRoute(
+        name: RouteNames.realNameVerify,
+        path: RoutePaths.realNameVerify,
+        builder: (context, state) {
+          final houseId = state.pathParameters['houseId'] ?? '';
+          return RealNameVerifyPage(houseId: houseId);
+        },
+      ),
+      GoRoute(
+        name: RouteNames.leaseContract,
+        path: RoutePaths.leaseContract,
+        builder: (context, state) {
+          final houseId = state.pathParameters['houseId'] ?? '';
+          return LeaseContractPage(houseId: houseId);
+        },
+      ),
+      GoRoute(
+        name: RouteNames.rentalPayment,
+        path: RoutePaths.rentalPayment,
+        builder: (context, state) {
+          final houseId = state.pathParameters['houseId'] ?? '';
+          return PaymentPage(houseId: houseId);
+        },
+      ),
+      GoRoute(
+        name: RouteNames.moveInComplete,
+        path: RoutePaths.moveInComplete,
+        builder: (context, state) {
+          final houseId = state.pathParameters['houseId'] ?? '';
+          return MoveInCompletePage(houseId: houseId);
+        },
       ),
     ],
   );

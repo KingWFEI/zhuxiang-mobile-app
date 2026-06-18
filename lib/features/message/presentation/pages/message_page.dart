@@ -39,13 +39,13 @@ class _MessagePageState extends State<MessagePage> {
               child: _MessageHeader(),
             ),
             SizedBox(
-              height: 54,
+              height: 35,
               child: ListView.separated(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
                 scrollDirection: Axis.horizontal,
                 itemCount: _tabs.length,
                 separatorBuilder: (context, index) =>
-                    const SizedBox(width: AppSpacing.xl),
+                    const SizedBox(width: AppSpacing.sm),
                 itemBuilder: (context, index) {
                   final tab = _tabs[index];
                   final selected = index == _selectedIndex;
@@ -55,7 +55,12 @@ class _MessagePageState extends State<MessagePage> {
                     showCheckmark: false,
                     onSelected: (_) => setState(() => _selectedIndex = index),
                     selectedColor: AppColors.primaryLight,
-                    labelStyle: AppTextStyles.bodyLarge.copyWith(
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
+                    labelPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                    ),
+                    labelStyle: AppTextStyles.bodySmall.copyWith(
                       color: selected
                           ? AppColors.primary
                           : AppColors.textSecondary,
@@ -96,19 +101,19 @@ class _MessageHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Icon(Icons.home_work, color: AppColors.primary, size: 34),
+        const Icon(Icons.home_work, color: AppColors.primary, size: 18),
         const SizedBox(width: AppSpacing.sm),
         Text(
           '住享',
-          style: AppTextStyles.titleLarge.copyWith(
+          style: AppTextStyles.bodySmall.copyWith(
             color: AppColors.primary,
-            fontSize: 26,
+            fontWeight: FontWeight.w800,
           ),
         ),
         const Spacer(),
-        Text('消息中心', style: AppTextStyles.titleLarge.copyWith(fontSize: 24)),
+        Text('消息中心', style: AppTextStyles.titleMedium.copyWith(fontSize: 16)),
         const Spacer(),
-        const Icon(Icons.cleaning_services_outlined, size: 28),
+        const Icon(Icons.cleaning_services_outlined, size: 18),
       ],
     );
   }
