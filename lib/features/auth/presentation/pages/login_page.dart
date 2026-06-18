@@ -52,7 +52,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               children: [
                 const AuthPageHeader(title: '欢迎登录', subtitle: '租房、入住、开锁，一站式完成'),
                 Transform.translate(
-                  offset: const Offset(0, -22),
+                  offset: const Offset(0, -16),
                   child: _LoginFormPanel(
                     phoneController: _phoneController,
                     credentialController: _credentialController,
@@ -202,105 +202,164 @@ class _LoginFormPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.xl,
-        AppSpacing.xxl,
-        AppSpacing.xl,
-        AppSpacing.xl,
-      ),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(AppRadius.xxl),
-          topRight: Radius.circular(AppRadius.xxl),
-        ),
-        boxShadow: AppShadows.card,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AuthTextField(
-            controller: phoneController,
-            hintText: '手机号',
-            icon: Icons.phone_android_outlined,
-            keyboardType: TextInputType.phone,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(11),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.md,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            border: Border.all(color: AppColors.border),
+            boxShadow: AppShadows.card,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AuthTextField(
+                controller: phoneController,
+                hintText: '手机号',
+                icon: Icons.phone_android_outlined,
+                keyboardType: TextInputType.phone,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(11),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AuthTextField(
+                key: ValueKey(loginMode),
+                controller: credentialController,
+                hintText: loginMode == LoginMode.code ? '验证码' : '密码',
+                icon: loginMode == LoginMode.code
+                    ? Icons.verified_user_outlined
+                    : Icons.lock_outline_rounded,
+                keyboardType: loginMode == LoginMode.code
+                    ? TextInputType.number
+                    : TextInputType.visiblePassword,
+                obscureText:
+                    loginMode == LoginMode.password && !isPasswordVisible,
+                inputFormatters: loginMode == LoginMode.code
+                    ? [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(6),
+                      ]
+                    : [LengthLimitingTextInputFormatter(32)],
+                suffix: loginMode == LoginMode.code
+                    ? AuthCodeButton(onPressed: onGetCode)
+                    : AuthVisibilityButton(
+                        isVisible: isPasswordVisible,
+                        onPressed: onTogglePasswordVisibility,
+                      ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              AuthPrimaryButton(label: '登录', onPressed: onLogin),
+              const SizedBox(height: AppSpacing.sm),
+              _LoginSecondaryActions(
+                loginMode: loginMode,
+                onToggleLoginMode: onToggleLoginMode,
+                onGuestBrowse: onGuestBrowse,
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '没有账号？',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => context.goNamed(RouteNames.register),
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(0, 36),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.xs,
+                      ),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      '立即注册',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AuthAgreementRow(
+                isChecked: hasAgreed,
+                onChanged: onAgreementChanged,
+              ),
             ],
           ),
-          const SizedBox(height: AppSpacing.lg),
-          AuthTextField(
-            key: ValueKey(loginMode),
-            controller: credentialController,
-            hintText: loginMode == LoginMode.code ? '验证码' : '密码',
-            icon: loginMode == LoginMode.code
-                ? Icons.verified_user_outlined
-                : Icons.lock_outline_rounded,
-            keyboardType: loginMode == LoginMode.code
-                ? TextInputType.number
-                : TextInputType.visiblePassword,
-            obscureText: loginMode == LoginMode.password && !isPasswordVisible,
-            inputFormatters: loginMode == LoginMode.code
-                ? [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(6),
-                  ]
-                : [LengthLimitingTextInputFormatter(32)],
-            suffix: loginMode == LoginMode.code
-                ? AuthCodeButton(onPressed: onGetCode)
-                : AuthVisibilityButton(
-                    isVisible: isPasswordVisible,
-                    onPressed: onTogglePasswordVisibility,
-                  ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          AuthPrimaryButton(label: '登录', onPressed: onLogin),
-          const SizedBox(height: AppSpacing.lg),
-          AuthPrimaryButton(
-            label: loginMode == LoginMode.code ? '密码登录' : '验证码登录',
+        ),
+      ),
+    );
+  }
+}
+
+class _LoginSecondaryActions extends StatelessWidget {
+  const _LoginSecondaryActions({
+    required this.loginMode,
+    required this.onToggleLoginMode,
+    required this.onGuestBrowse,
+  });
+
+  final LoginMode loginMode;
+  final VoidCallback onToggleLoginMode;
+  final VoidCallback onGuestBrowse;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: TextButton(
             onPressed: onToggleLoginMode,
-            isOutlined: true,
+            style: TextButton.styleFrom(
+              minimumSize: const Size(0, 38),
+              padding: EdgeInsets.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              loginMode == LoginMode.code ? '密码登录' : '验证码登录',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          TextButton(
+        ),
+        Container(width: 1, height: 14, color: AppColors.border),
+        Expanded(
+          child: TextButton(
             onPressed: onGuestBrowse,
+            style: TextButton.styleFrom(
+              minimumSize: const Size(0, 38),
+              padding: EdgeInsets.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
             child: Text(
               '游客浏览',
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: AppColors.primary,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                '没有账号？',
-                style: AppTextStyles.bodyLarge.copyWith(
-                  color: AppColors.textMuted,
-                ),
-              ),
-              TextButton(
-                onPressed: () => context.goNamed(RouteNames.register),
-                child: Text(
-                  '立即注册',
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.xxl),
-          AuthAgreementRow(isChecked: hasAgreed, onChanged: onAgreementChanged),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

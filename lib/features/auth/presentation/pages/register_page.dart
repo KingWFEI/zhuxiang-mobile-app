@@ -58,7 +58,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               children: [
                 const AuthPageHeader(title: '欢迎注册', subtitle: '创建账号，开启安心入住体验'),
                 Transform.translate(
-                  offset: const Offset(0, -22),
+                  offset: const Offset(0, -16),
                   child: _RegisterFormPanel(
                     nicknameController: _nicknameController,
                     phoneController: _phoneController,
@@ -211,115 +211,107 @@ class _RegisterFormPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.xl,
-        AppSpacing.xxl,
-        AppSpacing.xl,
-        AppSpacing.xl,
-      ),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(AppRadius.xxl),
-          topRight: Radius.circular(AppRadius.xxl),
-        ),
-        boxShadow: AppShadows.card,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AuthTextField(
-            controller: nicknameController,
-            hintText: '昵称',
-            icon: Icons.person_outline,
-            inputFormatters: [LengthLimitingTextInputFormatter(30)],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.md,
           ),
-          const SizedBox(height: AppSpacing.md),
-          AuthTextField(
-            controller: phoneController,
-            hintText: '手机号',
-            icon: Icons.phone_android_outlined,
-            keyboardType: TextInputType.phone,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(11),
-            ],
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            border: Border.all(color: AppColors.border),
+            boxShadow: AppShadows.card,
           ),
-          const SizedBox(height: AppSpacing.md),
-          AuthTextField(
-            controller: codeController,
-            hintText: '验证码',
-            icon: Icons.verified_user_outlined,
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(6),
-            ],
-            suffix: AuthCodeButton(onPressed: onGetCode),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          AuthTextField(
-            controller: passwordController,
-            hintText: '设置密码',
-            icon: Icons.lock_outline,
-            obscureText: !showPassword,
-            inputFormatters: [LengthLimitingTextInputFormatter(32)],
-            suffix: AuthVisibilityButton(
-              isVisible: showPassword,
-              onPressed: onPasswordVisibilityChanged,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          AuthTextField(
-            controller: confirmPasswordController,
-            hintText: '确认密码',
-            icon: Icons.lock_outline,
-            obscureText: !showConfirmPassword,
-            inputFormatters: [LengthLimitingTextInputFormatter(32)],
-            suffix: AuthVisibilityButton(
-              isVisible: showConfirmPassword,
-              onPressed: onConfirmPasswordVisibilityChanged,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          AuthPrimaryButton(label: '注册', onPressed: onRegister),
-          const SizedBox(height: AppSpacing.md),
-          AuthPrimaryButton(
-            label: '返回登录',
-            onPressed: () => context.goNamed(RouteNames.login),
-            isOutlined: true,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                '已有账号？',
-                style: AppTextStyles.bodyLarge.copyWith(
-                  color: AppColors.textMuted,
+              AuthTextField(
+                controller: nicknameController,
+                hintText: '昵称',
+                icon: Icons.person_outline,
+                inputFormatters: [LengthLimitingTextInputFormatter(30)],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AuthTextField(
+                controller: phoneController,
+                hintText: '手机号',
+                icon: Icons.phone_android_outlined,
+                keyboardType: TextInputType.phone,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(11),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AuthTextField(
+                controller: codeController,
+                hintText: '验证码',
+                icon: Icons.verified_user_outlined,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(6),
+                ],
+                suffix: AuthCodeButton(onPressed: onGetCode),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AuthTextField(
+                controller: passwordController,
+                hintText: '设置密码',
+                icon: Icons.lock_outline,
+                obscureText: !showPassword,
+                inputFormatters: [LengthLimitingTextInputFormatter(32)],
+                suffix: AuthVisibilityButton(
+                  isVisible: showPassword,
+                  onPressed: onPasswordVisibilityChanged,
                 ),
               ),
+              const SizedBox(height: AppSpacing.md),
+              AuthTextField(
+                controller: confirmPasswordController,
+                hintText: '确认密码',
+                icon: Icons.lock_outline,
+                obscureText: !showConfirmPassword,
+                inputFormatters: [LengthLimitingTextInputFormatter(32)],
+                suffix: AuthVisibilityButton(
+                  isVisible: showConfirmPassword,
+                  onPressed: onConfirmPasswordVisibilityChanged,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              AuthPrimaryButton(label: '注册', onPressed: onRegister),
+              const SizedBox(height: AppSpacing.sm),
               TextButton(
                 onPressed: () => context.goNamed(RouteNames.login),
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(0, 38),
+                  padding: EdgeInsets.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
                 child: Text(
-                  '立即登录',
-                  style: AppTextStyles.bodyLarge.copyWith(
+                  '返回登录',
+                  style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
+              const SizedBox(height: AppSpacing.md),
+              AuthAgreementRow(
+                isChecked: hasAgreed,
+                prefixText: '我已阅读并同意',
+                onChanged: onAgreementChanged,
+              ),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
-          AuthAgreementRow(
-            isChecked: hasAgreed,
-            prefixText: '我已阅读并同意',
-            onChanged: onAgreementChanged,
-          ),
-        ],
+        ),
       ),
     );
   }

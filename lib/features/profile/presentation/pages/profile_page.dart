@@ -27,11 +27,11 @@ class ProfilePage extends ConsumerWidget {
             AppSpacing.xl,
             AppSpacing.lg,
             AppSpacing.xl,
-            120,
+            96,
           ),
           children: [
             const _ProfileHeader(),
-            const SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.lg),
             if (user == null)
               _GuestCard(onLogin: () => context.goNamed(RouteNames.login))
             else
@@ -40,12 +40,17 @@ class ProfilePage extends ConsumerWidget {
                 phone: user.maskedPhone,
                 isVerified: user.isVerified,
               ),
-            const SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.lg),
             const _CurrentHomeCard(),
-            const SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.lg),
             const _MenuGrid(),
-            const SizedBox(height: AppSpacing.xl),
-            Text('更多服务', style: AppTextStyles.titleMedium),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              '更多服务',
+              style: AppTextStyles.bodyLarge.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: AppSpacing.md),
             Row(
               children: const [
@@ -68,7 +73,7 @@ class ProfilePage extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.lg),
             if (user != null)
               OutlinedButton(
                 onPressed: () => _confirmLogout(context, ref),
@@ -114,16 +119,16 @@ class _ProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 146,
+      height: 82,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           Positioned(
-            top: -50,
-            right: 0,
+            top: -18,
+            right: -40,
             child: Image.asset(
               "assets/home_bk.png",
-              width: 400,
+              width: 300,
               fit: BoxFit.fitWidth,
             ),
           ),
@@ -132,27 +137,20 @@ class _ProfileHeader extends StatelessWidget {
             children: [
               const Row(
                 children: [
-                  Icon(Icons.home_work, color: AppColors.primary, size: 34),
+                  Icon(Icons.home_work, color: AppColors.primary, size: 18),
                   SizedBox(width: AppSpacing.sm),
-                  Text(
-                    '住享',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+                  Text('住享', style: AppTextStyles.logoTitle),
                   Spacer(),
-                  Icon(Icons.notifications_none, size: 30),
+                  Icon(Icons.notifications_none, size: 20),
                 ],
               ),
               const Spacer(),
               Text(
                 '我的',
-                style: AppTextStyles.titleLarge.copyWith(fontSize: 34),
+                style: AppTextStyles.titleLarge.copyWith(fontSize: 20),
               ),
               const SizedBox(height: AppSpacing.sm),
-              Text('安心居住，住享相伴', style: AppTextStyles.bodyLarge),
+              Text('安心居住，住享相伴', style: AppTextStyles.bodySmall),
             ],
           ),
         ],
@@ -175,7 +173,7 @@ class _UserCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.xl),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -184,37 +182,47 @@ class _UserCard extends StatelessWidget {
       child: Row(
         children: [
           const CircleAvatar(
-            radius: 42,
+            radius: 28,
             backgroundColor: AppColors.primaryLight,
-            child: Icon(Icons.person, color: AppColors.primary, size: 50),
+            child: Icon(Icons.person, color: AppColors.primary, size: 30),
           ),
-          const SizedBox(width: AppSpacing.lg),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   nickname,
-                  style: AppTextStyles.titleLarge.copyWith(fontSize: 26),
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(phone, style: AppTextStyles.bodyLarge),
-                const SizedBox(height: AppSpacing.sm),
+                const SizedBox(height: AppSpacing.xs),
+                Text(phone, style: AppTextStyles.bodySmall),
+                if (isVerified) const SizedBox(height: AppSpacing.xs),
                 if (isVerified)
                   Chip(
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     avatar: const Icon(
                       Icons.verified_user,
-                      size: 18,
+                      size: 14,
                       color: AppColors.primary,
                     ),
-                    label: const Text('安心住户'),
+                    label: Text(
+                      '安心住户',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     backgroundColor: AppColors.primaryLight,
                     side: BorderSide.none,
                   ),
               ],
             ),
           ),
-          const Icon(Icons.chevron_right, color: AppColors.iconMuted),
+          const Icon(Icons.chevron_right, color: AppColors.iconMuted, size: 20),
         ],
       ),
     );
@@ -229,7 +237,7 @@ class _GuestCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.xl),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -238,32 +246,40 @@ class _GuestCard extends StatelessWidget {
       child: Row(
         children: [
           const CircleAvatar(
-            radius: 38,
+            radius: 26,
             backgroundColor: AppColors.primaryLight,
             child: Icon(
               Icons.person_outline,
               color: AppColors.primary,
-              size: 42,
+              size: 28,
             ),
           ),
-          const SizedBox(width: AppSpacing.lg),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('未登录', style: AppTextStyles.titleLarge),
-                const SizedBox(height: AppSpacing.sm),
-                Text('登录后查看租约、账单和门锁', style: AppTextStyles.bodyMedium),
+                Text(
+                  '未登录',
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text('登录后查看租约、账单和门锁', style: AppTextStyles.bodySmall),
               ],
             ),
           ),
           SizedBox(
-            width: 88,
+            width: 76,
             child: ElevatedButton(
               onPressed: onLogin,
               style: ElevatedButton.styleFrom(
-                minimumSize: const Size(0, 42),
+                minimumSize: const Size(0, 34),
                 padding: EdgeInsets.zero,
+                textStyle: AppTextStyles.bodySmall.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               child: const Text('去登录'),
             ),
@@ -280,7 +296,7 @@ class _CurrentHomeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg_2),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -297,11 +313,11 @@ class _CurrentHomeCard extends StatelessWidget {
         clipBehavior: Clip.none,
         children: [
           Positioned(
-            top: -10,
-            right: 120,
+            top: -8,
+            right: 96,
             child: Image.asset(
               "assets/lock_style.png",
-              width: 100,
+              width: 76,
               fit: BoxFit.fitWidth,
             ),
           ),
@@ -311,25 +327,32 @@ class _CurrentHomeCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('当前居住', style: AppTextStyles.bodyLarge),
-                    const SizedBox(height: AppSpacing.sm),
+                    Text('当前居住', style: AppTextStyles.bodySmall),
+                    const SizedBox(height: AppSpacing.xs),
                     Text(
                       '3栋2单元1201',
-                      style: AppTextStyles.titleLarge.copyWith(fontSize: 26),
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                    const SizedBox(height: AppSpacing.md),
+                    const SizedBox(height: AppSpacing.sm),
                     Chip(
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20), // 这里的值可以随意调整
                       ),
                       avatar: const Icon(
                         Icons.lock,
                         color: AppColors.secondary,
-                        size: 18,
+                        size: 14,
                       ),
-                      label: const Text(
+                      label: Text(
                         '门锁已上锁',
-                        style: TextStyle(color: AppColors.secondary),
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.secondary,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       backgroundColor: const Color(0xFFE3FAF4),
                       side: BorderSide.none,
@@ -340,16 +363,19 @@ class _CurrentHomeCard extends StatelessWidget {
 
               const SizedBox(width: AppSpacing.md),
               SizedBox(
-                width: 116,
+                width: 94,
                 child: OutlinedButton.icon(
                   onPressed: () {},
                   style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(0, 44),
+                    minimumSize: const Size(0, 34),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
+                      horizontal: AppSpacing.xs,
+                    ),
+                    textStyle: AppTextStyles.bodySmall.copyWith(
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  icon: const Icon(Icons.chevron_right),
+                  icon: const Icon(Icons.chevron_right, size: 16),
                   label: const Text('查看门锁'),
                 ),
               ),
@@ -378,7 +404,7 @@ class _MenuGrid extends StatelessWidget {
     ];
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.md), // 减小外间距
+      padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -390,9 +416,9 @@ class _MenuGrid extends StatelessWidget {
         itemCount: items.length,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 4,
-          childAspectRatio: 1.3, // 调整为正方形（或1.1）
-          mainAxisSpacing: AppSpacing.sm, // 行间距减小
-          crossAxisSpacing: AppSpacing.sm, // 列间距新增（避免文字挤在一起）
+          childAspectRatio: 1.18,
+          mainAxisSpacing: AppSpacing.xs,
+          crossAxisSpacing: AppSpacing.xs,
         ),
         itemBuilder: (context, index) {
           final item = items[index];
@@ -400,11 +426,14 @@ class _MenuGrid extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center, // 垂直居中
             children: [
-              Icon(item.$1, color: item.$3, size: 32), // 略微缩小图标
+              Icon(item.$1, color: item.$3, size: 24),
               const SizedBox(height: AppSpacing.xs), // 减小间距
               Text(
                 item.$2,
-                style: AppTextStyles.bodyLarge,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),

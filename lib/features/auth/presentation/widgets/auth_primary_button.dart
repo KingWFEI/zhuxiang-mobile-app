@@ -24,14 +24,14 @@ class AuthPrimaryButton extends StatelessWidget {
 
     if (isOutlined) {
       return SizedBox(
-        height: 58,
+        height: 46,
         child: OutlinedButton(
           onPressed: onPressed,
           style: OutlinedButton.styleFrom(
             side: const BorderSide(color: AppColors.primary),
             shape: shape,
             foregroundColor: AppColors.primary,
-            textStyle: AppTextStyles.titleMedium.copyWith(
+            textStyle: AppTextStyles.bodyMedium.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -41,7 +41,7 @@ class AuthPrimaryButton extends StatelessWidget {
     }
 
     return SizedBox(
-      height: 58,
+      height: 46,
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
@@ -49,7 +49,7 @@ class AuthPrimaryButton extends StatelessWidget {
           foregroundColor: AppColors.surface,
           elevation: 0,
           shape: shape,
-          textStyle: AppTextStyles.titleMedium.copyWith(
+          textStyle: AppTextStyles.bodyMedium.copyWith(
             color: AppColors.surface,
             fontWeight: FontWeight.w700,
           ),

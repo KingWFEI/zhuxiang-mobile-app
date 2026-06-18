@@ -27,42 +27,37 @@ class AuthAgreementRow extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           onTap: () => onChanged(!isChecked),
           child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.xs),
+            padding: const EdgeInsets.all(2),
             child: Icon(
               isChecked
                   ? Icons.check_circle
                   : Icons.radio_button_unchecked_outlined,
               color: isChecked ? AppColors.primary : AppColors.inputBorder,
-              size: 24,
+              size: 18,
             ),
           ),
         ),
-        const SizedBox(width: AppSpacing.sm),
+        const SizedBox(width: AppSpacing.xs),
         Flexible(
           child: Text.rich(
             TextSpan(
               text: prefixText,
-              style: AppTextStyles.bodyMedium.copyWith(fontSize: 15),
+              style: AppTextStyles.bodySmall,
               children: [
                 TextSpan(
                   text: '《用户协议》',
-                  style: AppTextStyles.bodyMedium.copyWith(
+                  style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.primary,
-                    fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),
                   recognizer: TapGestureRecognizer()
                     ..onTap = () => _showUnavailable(context),
                 ),
-                TextSpan(
-                  text: '  ',
-                  style: AppTextStyles.bodyMedium.copyWith(fontSize: 15),
-                ),
+                TextSpan(text: '  ', style: AppTextStyles.bodySmall),
                 TextSpan(
                   text: '《隐私政策》',
-                  style: AppTextStyles.bodyMedium.copyWith(
+                  style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.primary,
-                    fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),
                   recognizer: TapGestureRecognizer()
