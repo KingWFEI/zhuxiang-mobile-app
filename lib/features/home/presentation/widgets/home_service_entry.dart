@@ -37,12 +37,14 @@ class HomeServiceEntry extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 34),
+            Icon(icon, color: color, size: 24),
             const SizedBox(height: AppSpacing.sm),
             Text(
               label,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textPrimary,
+              style: TextStyle(
+                color: const Color.fromARGB(255, 0, 0, 0),
+                fontSize: 10,
+                fontWeight: FontWeight.w400,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

@@ -168,20 +168,20 @@ class _CompactContent extends StatelessWidget {
       children: [
         HouseImagePlaceholder(coverImage: house.coverImage, height: 120),
         Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
+          padding: const EdgeInsets.all(6),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 house.title,
-                style: AppTextStyles.titleMedium.copyWith(fontSize: 16),
+                style: AppTextStyles.houseCardH1,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: AppSpacing.sm),
+              const SizedBox(height: 3),
               Text(
                 '${house.roomType} | ${house.area}m² | ${house.orientation}',
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                style: AppTextStyles.houseCardH2,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),

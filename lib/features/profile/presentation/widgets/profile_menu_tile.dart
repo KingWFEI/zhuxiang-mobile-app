@@ -27,7 +27,7 @@ class ProfileMenuTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppRadius.lg),
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -35,19 +35,25 @@ class ProfileMenuTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(icon, color: color, size: 34),
-            const SizedBox(width: AppSpacing.md),
+            Icon(icon, color: color, size: 24),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(label, style: AppTextStyles.bodyLarge),
+                  Text(
+                    label,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   if (subtitle != null) ...[
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       subtitle!,
-                      style: AppTextStyles.bodyMedium,
+                      style: AppTextStyles.bodySmall.copyWith(fontSize: 10),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -55,7 +61,11 @@ class ProfileMenuTile extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.iconMuted),
+            const Icon(
+              Icons.chevron_right,
+              color: AppColors.iconMuted,
+              size: 18,
+            ),
           ],
         ),
       ),

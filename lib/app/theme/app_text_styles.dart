@@ -5,6 +5,25 @@ import 'app_colors.dart';
 class AppTextStyles {
   const AppTextStyles._();
 
+  static const logoTitle = TextStyle(
+    color: AppColors.primary,
+    fontSize: 12,
+    fontWeight: FontWeight.w800,
+  );
+  static const houseCardH1 = TextStyle(
+    color: Color.fromARGB(255, 0, 0, 0),
+    fontSize: 12,
+    fontFamily: 'NotoSansSC',
+  );
+  static const houseCardH2 = TextStyle(
+    fontSize: 8,
+    color: Color.fromARGB(255, 65, 66, 66),
+  );
+  static const bottomTextStyle = TextStyle(
+    color: AppColors.textSecondary,
+    fontSize: 10,
+    fontWeight: FontWeight.w500,
+  );
   static const titleLarge = TextStyle(
     color: AppColors.textPrimary,
     fontSize: 22,

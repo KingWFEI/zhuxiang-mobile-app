@@ -29,25 +29,28 @@ class AuthTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 56,
+      height: 46,
       child: TextField(
         controller: controller,
         keyboardType: keyboardType,
         obscureText: obscureText,
         inputFormatters: inputFormatters,
-        style: AppTextStyles.bodyLarge.copyWith(fontSize: 18),
+        style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: AppTextStyles.bodyLarge.copyWith(
+          hintStyle: AppTextStyles.bodyMedium.copyWith(
             color: AppColors.textMuted,
-            fontSize: 20,
           ),
-          prefixIcon: Icon(icon, color: AppColors.iconMuted, size: 28),
+          prefixIcon: Icon(icon, color: AppColors.iconMuted, size: 20),
+          prefixIconConstraints: const BoxConstraints(minWidth: 40),
           suffixIcon: suffix,
-          suffixIconConstraints: const BoxConstraints(minWidth: 0),
+          suffixIconConstraints: const BoxConstraints(
+            minWidth: 0,
+            minHeight: 38,
+          ),
           contentPadding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.md,
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.xs,
           ),
           filled: true,
           fillColor: AppColors.surface,
@@ -81,12 +84,17 @@ class AuthCodeButton extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(width: 1, height: 24, color: AppColors.border),
+          Container(width: 1, height: 18, color: AppColors.border),
           TextButton(
             onPressed: onPressed,
+            style: TextButton.styleFrom(
+              minimumSize: const Size(0, 34),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
             child: Text(
               '获取验证码',
-              style: AppTextStyles.bodyLarge.copyWith(
+              style: AppTextStyles.bodySmall.copyWith(
                 color: AppColors.primary,
                 fontWeight: FontWeight.w600,
               ),
@@ -112,6 +120,9 @@ class AuthVisibilityButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return IconButton(
       onPressed: onPressed,
+      iconSize: 18,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints.tightFor(width: 38, height: 38),
       icon: Icon(
         isVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
         color: AppColors.iconMuted,

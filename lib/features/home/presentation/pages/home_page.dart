@@ -27,13 +27,6 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage> {
   String? _selectedTabKey;
 
-  static const _categorySubtitles = {
-    'recommended': '品质房源，住得舒心',
-    'short_rent': '按需入住，轻松出发',
-    'homestay': '发现更有温度的居住体验',
-    'long_rent': '稳定生活，从理想住所开始',
-  };
-
   @override
   Widget build(BuildContext context) {
     final homeAsync = ref.watch(homeDataProvider);
@@ -64,7 +57,6 @@ class _HomePageState extends ConsumerState<HomePage> {
       _selectedTabKey = tabs.isNotEmpty ? tabs.first.key : '';
     }
     final selectedKey = _selectedTabKey!;
-    final selectedTab = tabs.firstWhere((t) => t.key == selectedKey);
     final houseGroup = data.houseGroups[selectedKey];
 
     return Column(
@@ -79,7 +71,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           child: Column(
             children: [
               _HomeHeader(data: data.header),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: 12),
               Align(
                 alignment: Alignment.centerLeft,
                 child: SizedBox(
@@ -122,7 +114,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 SliverPersistentHeader(
                   pinned: true,
                   delegate: HomeCategoryTabsDelegate(
-                    height: _DynamicTabs.height,
+                    height: _DynamicTabs.preferredHeight(context, tabs),
                     child: _DynamicTabs(
                       tabs: tabs,
                       selectedKey: selectedKey,
@@ -134,8 +126,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                 if (houseGroup != null)
                   _HomeContent(
                     key: PageStorageKey(selectedKey),
-                    title: selectedTab.title,
-                    subtitle: _categorySubtitles[selectedKey] ?? '',
                     items: houseGroup.items,
                     onHouseTap: _openDetail,
                   ),
@@ -182,7 +172,7 @@ class _HomeHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 120,
+      height: 80,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -201,21 +191,27 @@ class _HomeHeader extends StatelessWidget {
                     const SizedBox(width: AppSpacing.sm),
                     Text(
                       data.cityName.isNotEmpty ? '住享 · ${data.cityName}' : '住享',
-                      style: const TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: AppTextStyles.logoTitle,
                     ),
                   ],
                 ),
                 const Spacer(),
                 Text(
                   data.greeting,
-                  style: AppTextStyles.titleLarge.copyWith(fontSize: 32),
+                  style: TextStyle(
+                    color: const Color.fromARGB(255, 0, 0, 0),
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                Text(data.subtitle, style: AppTextStyles.bodyMedium),
+                Text(
+                  data.subtitle,
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
               ],
             ),
           ),
@@ -231,10 +227,10 @@ class _HeaderBuilding extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      top: 10,
-      right: -20,
-      width: 320,
-      height: 220,
+      top: -20,
+      right: -40,
+      width: 300,
+      height: 200,
       child: IgnorePointer(
         child: ClipRRect(
           borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -256,31 +252,56 @@ class _DynamicTabs extends StatelessWidget {
     required this.onSelected,
   });
 
-  static const double height = 60;
+  static const _tabPadding = EdgeInsets.symmetric(
+    horizontal: AppSpacing.lg,
+    vertical: AppSpacing.sm,
+  );
 
   final List<HomeTab> tabs;
   final String selectedKey;
   final ValueChanged<String> onSelected;
 
+  static double preferredHeight(BuildContext context, List<HomeTab> tabs) {
+    final style = AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w700);
+    final textMaxWidth =
+        (MediaQuery.sizeOf(context).width -
+                AppSpacing.xl * 2 -
+                _tabPadding.horizontal)
+            .clamp(0.0, double.infinity);
+    final textScaler = MediaQuery.textScalerOf(context);
+    final textDirection = Directionality.of(context);
+
+    final maxTextHeight =
+        (tabs.isEmpty ? const ['Tab'] : tabs.map((t) => t.title))
+            .map((title) {
+              final painter = TextPainter(
+                text: TextSpan(text: title, style: style),
+                textDirection: textDirection,
+                textScaler: textScaler,
+              )..layout(maxWidth: textMaxWidth);
+              return painter.height;
+            })
+            .fold<double>(0, (height, itemHeight) {
+              return itemHeight > height ? itemHeight : height;
+            });
+
+    return (maxTextHeight + _tabPadding.vertical + 1).ceilToDouble();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: height,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+      decoration: const BoxDecoration(color: AppColors.background),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           for (final tab in tabs)
-            Expanded(
-              child: _DynamicTab(
-                key: ValueKey('home-tab-${tab.key}'),
-                tab: tab,
-                isSelected: selectedKey == tab.key,
-                onTap: () => onSelected(tab.key),
-              ),
+            _DynamicTab(
+              key: ValueKey('home-tab-${tab.key}'),
+              tab: tab,
+              isSelected: selectedKey == tab.key,
+              onTap: () => onSelected(tab.key),
             ),
         ],
       ),
@@ -303,16 +324,12 @@ class _DynamicTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(AppRadius.lg),
       onTap: onTap,
       child: Center(
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
           curve: Curves.easeOut,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.sm,
-          ),
+          padding: _DynamicTabs._tabPadding,
           // decoration: BoxDecoration(
           //   // color: isSelected ? AppColors.primaryLight : Colors.transparent,
           //   borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -321,6 +338,7 @@ class _DynamicTab extends StatelessWidget {
             tab.title,
             style: AppTextStyles.bodyLarge.copyWith(
               color: isSelected ? AppColors.primary : AppColors.textSecondary,
+              fontSize: 12,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
             ),
           ),
@@ -358,7 +376,7 @@ class _DynamicServices extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -399,63 +417,44 @@ class _DynamicServices extends StatelessWidget {
 
 class _HomeContent extends StatelessWidget {
   const _HomeContent({
-    required this.title,
-    required this.subtitle,
     required this.items,
     required this.onHouseTap,
     super.key,
   });
 
-  final String title;
-  final String subtitle;
   final List<HomeFeedItem> items;
   final ValueChanged<House> onHouseTap;
 
   @override
   Widget build(BuildContext context) {
-    return SliverMainAxisGroup(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.xl,
-            AppSpacing.xl,
-            AppSpacing.xl,
-            AppSpacing.md,
-          ),
-          sliver: SliverToBoxAdapter(
-            child: _CategoryIntroduction(title: title, subtitle: subtitle),
-          ),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.xl,
-            0,
-            AppSpacing.xl,
-            AppSpacing.xl,
-          ),
-          sliver: SliverMasonryGrid.count(
-            crossAxisCount: 2,
-            mainAxisSpacing: AppSpacing.md,
-            crossAxisSpacing: AppSpacing.md,
-            childCount: items.length,
-            itemBuilder: (context, index) {
-              final item = items[index];
-              if (item.type == 'house' && item.house != null) {
-                return HouseCard(
-                  house: item.house!.toHouse(),
-                  compact: true,
-                  onTap: () => onHouseTap(item.house!.toHouse()),
-                );
-              } else if (item.type == 'advertisement' &&
-                  item.advertisement != null) {
-                return _FeedAdCard(ad: item.advertisement!);
-              } else {
-                return const SizedBox.shrink();
-              }
-            },
-          ),
-        ),
-      ],
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xl,
+        AppSpacing.md,
+        AppSpacing.xl,
+        AppSpacing.xl,
+      ),
+      sliver: SliverMasonryGrid.count(
+        crossAxisCount: 2,
+        mainAxisSpacing: AppSpacing.md,
+        crossAxisSpacing: AppSpacing.md,
+        childCount: items.length,
+        itemBuilder: (context, index) {
+          final item = items[index];
+          if (item.type == 'house' && item.house != null) {
+            return HouseCard(
+              house: item.house!.toHouse(),
+              compact: true,
+              onTap: () => onHouseTap(item.house!.toHouse()),
+            );
+          } else if (item.type == 'advertisement' &&
+              item.advertisement != null) {
+            return _FeedAdCard(ad: item.advertisement!);
+          } else {
+            return const SizedBox.shrink();
+          }
+        },
+      ),
     );
   }
 }
@@ -544,46 +543,6 @@ class _FeedAdCard extends StatelessWidget {
                 size: 16,
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CategoryIntroduction extends StatelessWidget {
-  const _CategoryIntroduction({required this.title, required this.subtitle});
-
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: AppTextStyles.titleLarge),
-                const SizedBox(height: AppSpacing.xs),
-                Text(subtitle, style: AppTextStyles.bodyMedium),
-              ],
-            ),
-          ),
-          Container(
-            width: 42,
-            height: 42,
-            decoration: const BoxDecoration(
-              color: AppColors.primaryLight,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.apartment_rounded,
-              color: AppColors.primary,
-            ),
           ),
         ],
       ),

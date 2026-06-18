@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../theme/app_colors.dart';
-import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 
 class AppShell extends StatelessWidget {
@@ -38,19 +37,9 @@ class _BottomTabBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        height: 88,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x14000000),
-              blurRadius: 18,
-              offset: Offset(0, -6),
-            ),
-          ],
-        ),
+        height: 50,
+        padding: const EdgeInsets.only(top: 10),
+        decoration: const BoxDecoration(color: AppColors.surface),
         child: Row(
           children: [
             Expanded(
@@ -125,7 +114,7 @@ class _TabItem extends StatelessWidget {
           Stack(
             clipBehavior: Clip.none,
             children: [
-              Icon(isSelected ? selectedIcon : icon, color: color, size: 30),
+              Icon(isSelected ? selectedIcon : icon, color: color, size: 18),
               if (showBadge)
                 const Positioned(
                   right: -2,
@@ -137,10 +126,10 @@ class _TabItem extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: AppSpacing.xs),
+          const SizedBox(height: 2),
           Text(
             label,
-            style: AppTextStyles.bodyMedium.copyWith(
+            style: AppTextStyles.bottomTextStyle.copyWith(
               color: color,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
             ),
