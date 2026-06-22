@@ -9,6 +9,8 @@ import '../../features/house/presentation/pages/house_filter_page.dart';
 import '../../features/house/presentation/pages/house_search_page.dart';
 import '../../features/house/presentation/pages/house_search_result_page.dart';
 import '../../features/house/presentation/pages/house_detail_page.dart';
+import '../../features/lease/presentation/pages/lease_detail_page.dart';
+import '../../features/lease/presentation/pages/my_leases_page.dart';
 import '../../features/message/presentation/pages/message_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/rental_flow/presentation/pages/lease_contract_page.dart';
@@ -97,6 +99,22 @@ class AppRouter {
                 path: RoutePaths.profile,
                 builder: (context, state) => const ProfilePage(),
               ),
+              GoRoute(
+                name: RouteNames.lease,
+                path: RoutePaths.lease,
+                // TODO: 联调完成后移除 enforceAuthentication，恢复租约登录拦截。
+                builder: (context, state) =>
+                    const MyLeasesPage(enforceAuthentication: false),
+                routes: [
+                  GoRoute(
+                    name: RouteNames.leaseDetail,
+                    path: RoutePaths.leaseDetail,
+                    builder: (context, state) => LeaseDetailPage(
+                      leaseId: state.pathParameters['leaseId'] ?? '',
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ],
@@ -133,16 +151,6 @@ class AppRouter {
         name: RouteNames.realNameAuth,
         path: RoutePaths.realNameAuth,
         builder: (context, state) => const AppPlaceholderPage(title: '实名认证'),
-      ),
-      GoRoute(
-        name: RouteNames.lease,
-        path: RoutePaths.lease,
-        builder: (context, state) => const AppPlaceholderPage(
-          title: '租约',
-          actions: [
-            AppPlaceholderAction(label: '账单', routeName: RouteNames.bill),
-          ],
-        ),
       ),
       GoRoute(
         name: RouteNames.bill,

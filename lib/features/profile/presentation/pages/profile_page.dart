@@ -422,22 +422,29 @@ class _MenuGrid extends StatelessWidget {
         ),
         itemBuilder: (context, index) {
           final item = items[index];
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center, // 垂直居中
-            children: [
-              Icon(item.$1, color: item.$3, size: 24),
-              const SizedBox(height: AppSpacing.xs), // 减小间距
-              Text(
-                item.$2,
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w500,
+          return InkWell(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            onTap: index == 0
+                // TODO: 联调完成后恢复登录校验，未登录用户应跳转登录页。
+                ? () => context.pushNamed(RouteNames.lease)
+                : null,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(item.$1, color: item.$3, size: 24),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  item.$2,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+              ],
+            ),
           );
         },
       ),
