@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:zhuxiang_app/features/house/data/providers/house_providers_mock.dart';
 
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_spacing.dart';
-import '../../data/providers/house_providers.dart';
+import '../../application/house_search_notifier.dart';
 import '../widgets/search_discovery_widgets.dart';
 
 /// 房源搜索发现页
@@ -18,6 +19,7 @@ class HouseSearchPage extends ConsumerStatefulWidget {
 class _HouseSearchPageState extends ConsumerState<HouseSearchPage> {
   final TextEditingController _controller = TextEditingController();
   String _keyword = '';
+  bool _isNavigating = false;
 
   @override
   void dispose() {
@@ -28,7 +30,9 @@ class _HouseSearchPageState extends ConsumerState<HouseSearchPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(houseSearchProvider);
-    final communities = ref.watch(houseServiceProvider).getHotCommunities();
+    final communities = ref
+        .watch(houseMockServiceProvider)
+        .getMockHotCommunities();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F9FF),
@@ -57,9 +61,9 @@ class _HouseSearchPageState extends ConsumerState<HouseSearchPage> {
                 onClear: () =>
                     ref.read(houseSearchProvider.notifier).clearSearchHistory(),
               ),
-              const SizedBox(height: AppSpacing.xxl),
+              const SizedBox(height: 14),
               HotSearchSection(onItemTap: _submitSearch),
-              const SizedBox(height: AppSpacing.xxl),
+              const SizedBox(height: 14),
               HotCommunitySection(
                 communities: communities,
                 onItemTap: _submitSearch,
@@ -79,8 +83,8 @@ class _HouseSearchPageState extends ConsumerState<HouseSearchPage> {
   /// 搜索按钮使用输入框当前内容。
   void _searchCurrent() => _submitSearch(_controller.text);
 
-  /// 校验关键词、保存搜索历史并跳转到搜索结果页。
-  Future<void> _submitSearch(String value) async {
+  /// 校验关键词并跳转到搜索结果页（搜索历史由结果页在搜索完成后自动保存）。
+  void _submitSearch(String value) {
     final keyword = value.trim();
     if (keyword.isEmpty) {
       ScaffoldMessenger.of(context)
@@ -88,13 +92,14 @@ class _HouseSearchPageState extends ConsumerState<HouseSearchPage> {
         ..showSnackBar(const SnackBar(content: Text('请输入搜索关键词')));
       return;
     }
+    // 防止 onSubmitted 和 onAction 短时间内重复触发导致 Navigator key 冲突
+    if (_isNavigating) return;
+    _isNavigating = true;
 
-    await ref.read(houseSearchProvider.notifier).saveSearchHistory(keyword);
-    if (!mounted) return;
     context.pushNamed(
       RouteNames.houseSearchResult,
       queryParameters: {'keyword': keyword},
-    );
+    ).then((_) => _isNavigating = false);
   }
 
   void _closePage() {

@@ -71,15 +71,6 @@ class AppRouter {
                 name: RouteNames.search,
                 path: RoutePaths.search,
                 builder: (context, state) => const FindHomePage(),
-                routes: [
-                  GoRoute(
-                    name: RouteNames.houseSearchResult,
-                    path: RoutePaths.houseSearchResult,
-                    builder: (context, state) => HouseSearchResultPage(
-                      keyword: state.uri.queryParameters['keyword'] ?? '',
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
@@ -128,6 +119,13 @@ class AppRouter {
         name: RouteNames.houseSearch,
         path: RoutePaths.houseSearch,
         builder: (context, state) => const HouseSearchPage(),
+      ),
+      GoRoute(
+        name: RouteNames.houseSearchResult,
+        path: RoutePaths.houseSearchResult,
+        builder: (context, state) => HouseSearchResultPage(
+          keyword: state.uri.queryParameters['keyword'] ?? '',
+        ),
       ),
       GoRoute(
         name: RouteNames.houseFilter,

@@ -1,4 +1,4 @@
-import 'entities/house.dart';
+import 'house.dart';
 
 class HouseSearchState {
   const HouseSearchState({
