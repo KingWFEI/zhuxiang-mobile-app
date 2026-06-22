@@ -5,7 +5,7 @@ import '../../../core/storage/local_storage.dart';
 import '../../../shared/models/page_result.dart';
 import '../domain/entities/house.dart';
 import '../domain/house_search_state.dart';
-import 'house_service.dart';
+import 'services/house_service.dart';
 
 class HouseRepository {
   HouseRepository({
@@ -26,7 +26,9 @@ class HouseRepository {
 
   Future<List<String>> getSearchHistory() async {
     final raw = _localStorage.getString(StorageKeys.houseSearchHistory);
-    if (raw == null || raw.isEmpty) return const [];
+    if (raw == null || raw.isEmpty) {
+      return const ['中央公园', '朝阳公园', '望京', '三里屯', '整租两居', '近地铁', '可月付', '智能门锁'];
+    }
 
     try {
       return (jsonDecode(raw) as List<dynamic>)
@@ -56,11 +58,11 @@ class HouseRepository {
   }
 
   Future<void> clearSearchHistory() {
-    return _localStorage.remove(StorageKeys.houseSearchHistory);
+    return _localStorage.setString(StorageKeys.houseSearchHistory, '[]');
   }
 
   Future<List<String>> getHotKeywords() async {
-    return const ['近地铁', '整租一居', '精装修', '可月付', '智能门锁', '拎包入住'];
+    return const ['近地铁', '整租', '两居室', '可月付', '智能门锁'];
   }
 
   Map<String, dynamic> _buildQuery(HouseSearchState state) {

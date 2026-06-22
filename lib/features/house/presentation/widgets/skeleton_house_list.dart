@@ -25,7 +25,7 @@ class _SkeletonHouseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 170,
+      height: 92,
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -33,15 +33,15 @@ class _SkeletonHouseCard extends StatelessWidget {
       ),
       child: const Row(
         children: [
-          _SkeletonBox(width: 150, height: double.infinity),
+          _SkeletonBox(width: 110, height: double.infinity),
           SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _SkeletonBox(width: double.infinity, height: 20),
-                SizedBox(height: AppSpacing.md),
-                _SkeletonBox(width: 110, height: 18),
+                _SkeletonBox(width: double.infinity, height: 16),
+                SizedBox(height: AppSpacing.sm),
+                _SkeletonBox(width: 90, height: 16),
                 SizedBox(height: AppSpacing.sm),
                 _SkeletonBox(width: double.infinity, height: 14),
                 SizedBox(height: AppSpacing.sm),

@@ -8,6 +8,9 @@ class RouteNames {
   static const home = 'home';
   static const search = 'search';
   static const houseList = 'houseList';
+  static const houseSearch = 'houseSearch';
+  static const houseSearchResult = 'houseSearchResult';
+  static const houseFilter = 'houseFilter';
   static const houseDetail = 'houseDetail';
   static const appointment = 'appointment';
   static const realNameAuth = 'realNameAuth';

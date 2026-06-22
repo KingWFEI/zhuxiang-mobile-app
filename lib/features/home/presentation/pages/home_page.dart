@@ -8,11 +8,11 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
-import '../../../../core/network/api_exception.dart';
+import '../../../../core/network/api_result.dart';
 import '../../../house/domain/entities/house.dart';
 import '../../../house/presentation/widgets/house_card.dart';
-import '../../domain/home_model.dart';
-import '../providers/home_provider.dart';
+import '../../data/models/home_data.dart';
+import '../../data/providers/home_providers.dart';
 import '../widgets/home_category_tabs_delegate.dart';
 import '../widgets/home_search_bar.dart';
 import '../widgets/home_service_entry.dart';
@@ -37,18 +37,27 @@ class _HomePageState extends ConsumerState<HomePage> {
         child: homeAsync.when(
           loading: () => const _HomeSkeleton(),
           error: (error, _) => _HomeErrorView(
-            message: _errorMessage(error),
+            message: '首页数据加载异常：$error',
             onRetry: () => ref.invalidate(homeDataProvider),
           ),
-          data: _buildContent,
+          data: (result) {
+            if (result is ApiFailure<HomeData>) {
+              return _HomeErrorView(
+                message: result.message,
+                onRetry: () => ref.invalidate(homeDataProvider),
+              );
+            }
+            if (result is ApiSuccess<HomeData>) {
+              return _buildContent(result.data);
+            }
+            return _HomeErrorView(
+              message: '首页数据加载失败',
+              onRetry: () => ref.invalidate(homeDataProvider),
+            );
+          },
         ),
       ),
     );
-  }
-
-  String _errorMessage(Object error) {
-    if (error is ApiException) return error.message;
-    return '加载失败，请检查网络后重试';
   }
 
   Widget _buildContent(HomeData data) {
@@ -100,7 +109,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     AppSpacing.xl,
                     AppSpacing.xs,
                     AppSpacing.xl,
-                    AppSpacing.xl,
+                    0,
                   ),
                   sliver: SliverToBoxAdapter(
                     child: _DynamicServices(
@@ -188,7 +197,7 @@ class _HomeHeader extends StatelessWidget {
                       color: AppColors.primary,
                       size: 18,
                     ),
-                    const SizedBox(width: AppSpacing.sm),
+                    const SizedBox(width: 4),
                     Text(
                       data.cityName.isNotEmpty ? '住享 · ${data.cityName}' : '住享',
                       style: AppTextStyles.logoTitle,
@@ -376,7 +385,7 @@ class _DynamicServices extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(2),
+      padding: const EdgeInsets.only(left: 2, top: 2, right: 2),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.xl),

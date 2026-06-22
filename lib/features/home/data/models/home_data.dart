@@ -1,4 +1,4 @@
-import '../../house/domain/entities/house.dart';
+import '../../../house/domain/entities/house.dart';
 
 class HomeData {
   final HomeHeaderData header;
@@ -23,9 +23,7 @@ class HomeData {
       unreadMessageCount: json['unreadMessageCount'] as int? ?? 0,
       serviceEntries:
           (json['serviceEntries'] as List<dynamic>?)
-              ?.map(
-                (e) => ServiceEntry.fromJson(e as Map<String, dynamic>),
-              )
+              ?.map((e) => ServiceEntry.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
       tabs:
@@ -35,18 +33,15 @@ class HomeData {
           [],
       houseGroups:
           (json['houseGroups'] as Map<String, dynamic>?)?.map(
-                (key, value) => MapEntry(
-                  key,
-                  HomeHouseGroup.fromJson(value as Map<String, dynamic>),
-                ),
-              ) ??
+            (key, value) => MapEntry(
+              key,
+              HomeHouseGroup.fromJson(value as Map<String, dynamic>),
+            ),
+          ) ??
           {},
-      advertisements:
-          (json['advertisements'] as List<dynamic>?)
-              ?.map(
-                (e) => HomeBanner.fromJson(e as Map<String, dynamic>),
-              )
-              .toList(),
+      advertisements: (json['advertisements'] as List<dynamic>?)
+          ?.map((e) => HomeBanner.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 }
@@ -149,9 +144,7 @@ class HomeHouseGroup {
     return HomeHouseGroup(
       items:
           (json['items'] as List<dynamic>?)
-              ?.map(
-                (e) => HomeFeedItem.fromJson(e as Map<String, dynamic>),
-              )
+              ?.map((e) => HomeFeedItem.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
       page: json['page'] as int? ?? 1,
@@ -171,16 +164,12 @@ class HomeFeedItem {
   factory HomeFeedItem.fromJson(Map<String, dynamic> json) {
     return HomeFeedItem(
       type: json['type'] as String? ?? '',
-      house:
-          json['house'] != null
-              ? HomeHouseItem.fromJson(json['house'] as Map<String, dynamic>)
-              : null,
-      advertisement:
-          json['advertisement'] != null
-              ? HomeAdItem.fromJson(
-                json['advertisement'] as Map<String, dynamic>,
-              )
-              : null,
+      house: json['house'] != null
+          ? HomeHouseItem.fromJson(json['house'] as Map<String, dynamic>)
+          : null,
+      advertisement: json['advertisement'] != null
+          ? HomeAdItem.fromJson(json['advertisement'] as Map<String, dynamic>)
+          : null,
     );
   }
 }
@@ -239,9 +228,7 @@ class HomeHouseItem {
       floor: json['floor'] as String? ?? '',
       orientation: json['orientation'] as String? ?? '',
       tags:
-          (json['tags'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
+          (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
           [],
       facilities:
           (json['facilities'] as List<dynamic>?)

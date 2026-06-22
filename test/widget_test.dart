@@ -5,14 +5,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:zhuxiang_app/app/app.dart';
 import 'package:zhuxiang_app/app/router/app_router.dart';
 import 'package:zhuxiang_app/app/router/route_paths.dart';
+import 'package:zhuxiang_app/core/network/api_result.dart';
 import 'package:zhuxiang_app/core/storage/guest_mode_storage.dart';
 import 'package:zhuxiang_app/core/storage/token_storage.dart';
 import 'package:zhuxiang_app/features/auth/presentation/auth_controller.dart';
 import 'package:zhuxiang_app/features/auth/presentation/pages/login_page.dart';
 import 'package:zhuxiang_app/features/auth/presentation/pages/register_page.dart';
-import 'package:zhuxiang_app/features/home/domain/home_model.dart';
+import 'package:zhuxiang_app/features/home/data/models/home_data.dart';
+import 'package:zhuxiang_app/features/home/data/providers/home_providers.dart';
 import 'package:zhuxiang_app/features/home/presentation/pages/home_page.dart';
-import 'package:zhuxiang_app/features/home/presentation/providers/home_provider.dart';
 
 void main() {
   testWidgets('Zhuxiang app renders loading page', (tester) async {
@@ -22,7 +23,9 @@ void main() {
         overrides: [
           tokenStorageProvider.overrideWithValue(_EmptyTokenStorage()),
           guestModeStorageProvider.overrideWithValue(_FakeGuestModeStorage()),
-          homeDataProvider.overrideWith((ref) async => _testHomeData),
+          homeDataProvider.overrideWith(
+            (ref) async => const ApiSuccess(_testHomeData),
+          ),
         ],
         child: const ZhuxiangApp(),
       ),
@@ -47,7 +50,9 @@ void main() {
         overrides: [
           tokenStorageProvider.overrideWithValue(_EmptyTokenStorage()),
           guestModeStorageProvider.overrideWithValue(_FakeGuestModeStorage()),
-          homeDataProvider.overrideWith((ref) async => _testHomeData),
+          homeDataProvider.overrideWith(
+            (ref) async => const ApiSuccess(_testHomeData),
+          ),
         ],
         child: const ZhuxiangApp(),
       ),
@@ -75,7 +80,9 @@ void main() {
         overrides: [
           tokenStorageProvider.overrideWithValue(_EmptyTokenStorage()),
           guestModeStorageProvider.overrideWithValue(guestStorage),
-          homeDataProvider.overrideWith((ref) async => _testHomeData),
+          homeDataProvider.overrideWith(
+            (ref) async => const ApiSuccess(_testHomeData),
+          ),
         ],
         child: const ZhuxiangApp(),
       ),
@@ -104,7 +111,9 @@ void main() {
         overrides: [
           tokenStorageProvider.overrideWithValue(_EmptyTokenStorage()),
           guestModeStorageProvider.overrideWithValue(guestStorage),
-          homeDataProvider.overrideWith((ref) async => _testHomeData),
+          homeDataProvider.overrideWith(
+            (ref) async => const ApiSuccess(_testHomeData),
+          ),
         ],
         child: const ZhuxiangApp(),
       ),
@@ -131,7 +140,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          homeDataProvider.overrideWith((ref) async => _testHomeData),
+          homeDataProvider.overrideWith(
+            (ref) async => const ApiSuccess(_testHomeData),
+          ),
         ],
         child: const MaterialApp(home: HomePage()),
       ),

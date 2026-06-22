@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:zhuxiang_app/app/theme/app_icon.dart';
+import 'package:zhuxiang_app/core/network/api_result.dart';
+import 'package:zhuxiang_app/features/house/data/models/house_detail.dart';
+import 'package:zhuxiang_app/features/house/data/providers/house_providers.dart';
 
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -10,80 +13,70 @@ import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../rental_flow/presentation/providers/rental_flow_providers.dart';
-import '../../domain/entities/house.dart';
-import '../../data/house_service.dart';
 
-class HouseDetailPage extends StatefulWidget {
+class HouseDetailPage extends ConsumerWidget {
   const HouseDetailPage({required this.houseId, super.key});
 
   final String houseId;
 
   @override
-  State<HouseDetailPage> createState() => _HouseDetailPageState();
-}
-
-class _HouseDetailPageState extends State<HouseDetailPage> {
-  final _service = HouseService();
-  House? _house;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    setState(() => _error = null);
-    try {
-      final house = await _service.getHouseDetail(widget.houseId);
-      if (!mounted) return;
-      setState(() => _house = house);
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _error = e.toString());
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_error != null) {
-      return Scaffold(
-        backgroundColor: AppColors.background,
-        body: _DetailErrorView(message: _error!, onRetry: _load),
-      );
-    }
-
-    if (_house == null) {
-      return const Scaffold(
-        backgroundColor: AppColors.background,
-        body: _DetailSkeleton(),
-      );
-    }
-
-    final house = _house!;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final houseDetailAsync = ref.watch(houseDetailProvider(houseId));
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          CustomScrollView(
-            slivers: [
-              _DetailAppBar(house: house),
-              SliverToBoxAdapter(
-                child: Transform.translate(
-                  offset: const Offset(0, -26),
-                  child: _DetailContent(house: house),
+      body: houseDetailAsync.when(
+        data: (result) {
+          if (result is ApiFailure<HouseDetail>) {
+            return _DetailErrorView(
+              message: result.message,
+              onRetry: () {
+                ref.invalidate(houseDetailProvider(houseId));
+              },
+            );
+          }
+          if (result is ApiSuccess<HouseDetail>) {
+            final house = result.data;
+            return Stack(
+              children: [
+                CustomScrollView(
+                  slivers: [
+                    _DetailAppBar(house: house),
+                    SliverToBoxAdapter(
+                      child: Transform.translate(
+                        offset: const Offset(0, -26),
+                        child: _DetailContent(house: house),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _BottomActionBar(house: house),
-          ),
-        ],
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: _BottomActionBar(house: house),
+                ),
+              ],
+            );
+          }
+
+          return _DetailErrorView(
+            message: '房源详情加载失败',
+            onRetry: () {
+              ref.invalidate(houseDetailProvider(houseId));
+            },
+          );
+        },
+        error: (error, stackTrace) {
+          return _DetailErrorView(
+            message: '房源详情加载异常：$error',
+            onRetry: () {
+              ref.invalidate(houseDetailProvider(houseId));
+            },
+          );
+        },
+        loading: () {
+          return const _DetailSkeleton();
+        },
       ),
     );
   }
@@ -92,7 +85,7 @@ class _HouseDetailPageState extends State<HouseDetailPage> {
 class _DetailAppBar extends StatelessWidget {
   const _DetailAppBar({required this.house});
 
-  final House house;
+  final HouseDetail house;
 
   @override
   Widget build(BuildContext context) {
@@ -249,7 +242,7 @@ class _ImageCarouselState extends State<_ImageCarousel> {
 class _DetailContent extends StatelessWidget {
   const _DetailContent({required this.house});
 
-  final House house;
+  final HouseDetail house;
 
   @override
   Widget build(BuildContext context) {
@@ -464,7 +457,7 @@ class _InfoMetric extends StatelessWidget {
 class _FacilitiesCard extends StatelessWidget {
   const _FacilitiesCard({required this.house});
 
-  final House house;
+  final HouseDetail house;
 
   @override
   Widget build(BuildContext context) {
@@ -538,7 +531,7 @@ class _FacilitiesCard extends StatelessWidget {
 class _LandlordCard extends StatelessWidget {
   const _LandlordCard({required this.house});
 
-  final House house;
+  final HouseDetail house;
 
   @override
   Widget build(BuildContext context) {
@@ -618,7 +611,7 @@ class _LandlordCard extends StatelessWidget {
 class _SmartLifeCard extends StatelessWidget {
   const _SmartLifeCard({required this.house});
 
-  final House house;
+  final HouseDetail house;
 
   @override
   Widget build(BuildContext context) {
@@ -656,7 +649,7 @@ class _SmartLifeCard extends StatelessWidget {
 class _DescriptionCard extends StatelessWidget {
   const _DescriptionCard({required this.house});
 
-  final House house;
+  final HouseDetail house;
 
   @override
   Widget build(BuildContext context) {
@@ -711,7 +704,7 @@ class _DetailTag extends StatelessWidget {
 class _BottomActionBar extends ConsumerWidget {
   const _BottomActionBar({required this.house});
 
-  final House house;
+  final HouseDetail house;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
