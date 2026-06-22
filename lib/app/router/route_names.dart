@@ -19,6 +19,7 @@ class RouteNames {
   static const leaseDetail = 'leaseDetail';
   static const bill = 'bill';
   static const lock = 'lock';
+  static const unlockRecords = 'unlockRecords';
   static const repair = 'repair';
   static const messageCenter = 'messageCenter';
   static const customerService = 'customerService';

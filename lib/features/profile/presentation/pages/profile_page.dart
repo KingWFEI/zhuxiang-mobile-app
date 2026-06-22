@@ -424,9 +424,14 @@ class _MenuGrid extends StatelessWidget {
           final item = items[index];
           return InkWell(
             borderRadius: BorderRadius.circular(AppRadius.lg),
+<<<<<<< HEAD
             onTap: index == 0
                 // TODO: 联调完成后恢复登录校验，未登录用户应跳转登录页。
                 ? () => context.pushNamed(RouteNames.lease)
+=======
+            onTap: index == 1
+                ? () => context.pushNamed(RouteNames.unlockRecords)
+>>>>>>> 9033dd8 (添加了开门记录lock_records)
                 : null,
             child: Column(
               mainAxisSize: MainAxisSize.min,
