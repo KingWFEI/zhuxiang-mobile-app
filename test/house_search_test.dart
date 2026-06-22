@@ -4,78 +4,74 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zhuxiang_app/core/network/api_client.dart';
-import 'package:zhuxiang_app/core/storage/local_storage.dart';
+import 'package:zhuxiang_app/core/storage/storage_service.dart';
 import 'package:zhuxiang_app/core/network/api_client_provider.dart';
 import 'package:zhuxiang_app/core/network/api_result.dart';
 import 'package:zhuxiang_app/features/house/application/house_search_notifier.dart';
-import 'package:zhuxiang_app/features/house/data/house_cache.dart';
-import 'package:zhuxiang_app/features/house/data/house_repository.dart';
 import 'package:zhuxiang_app/features/house/data/models/house_detail.dart';
+import 'package:zhuxiang_app/features/house/data/providers/house_providers.dart';
 import 'package:zhuxiang_app/features/house/data/services/house_service.dart';
-import 'package:zhuxiang_app/features/house/domain/entities/hot_community.dart';
-import 'package:zhuxiang_app/features/house/domain/entities/house.dart';
-import 'package:zhuxiang_app/features/house/domain/house_search_state.dart';
+import 'package:zhuxiang_app/features/house/data/models/hot_community.dart';
+import 'package:zhuxiang_app/features/house/data/models/house.dart';
+import 'package:zhuxiang_app/features/house/data/models/house_search_state.dart';
 import 'package:zhuxiang_app/features/house/presentation/pages/find_house_page.dart';
 import 'package:zhuxiang_app/features/house/presentation/pages/house_filter_page.dart';
 import 'package:zhuxiang_app/features/house/presentation/pages/house_search_page.dart';
 import 'package:zhuxiang_app/features/house/presentation/pages/house_search_result_page.dart';
-import 'package:zhuxiang_app/features/house/data/providers/house_providers.dart';
 import 'package:zhuxiang_app/shared/models/page_result.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test(
-    'repository builds backend query and persists deduplicated history',
-    () async {
-      SharedPreferences.setMockInitialValues({});
-      final preferences = await SharedPreferences.getInstance();
-      final service = _RecordingHouseService();
-      final repository = HouseRepository(
-        service: service,
-        localStorage: LocalStorage(preferences),
-      );
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    await StorageService.initialize();
+  });
 
-      await repository.search(
-        const HouseSearchState(
-          keyword: ' 地铁 ',
-          category: 'long_rent',
-          region: 'jiangbei',
-          minPrice: 100000,
-          maxPrice: 500000,
-          roomType: '2室1厅1卫',
-          sort: 'price_asc',
-          page: 2,
-        ),
-      );
+  ProviderContainer _containerWithService(HouseService service) {
+    return ProviderContainer(
+      overrides: [
+        houseServiceProvider.overrideWith((ref) => service),
+      ],
+    );
+  }
 
-      expect(service.lastQuery, {
-        'keyword': '地铁',
-        'category': 'long_rent',
-        'region': 'jiangbei',
-        'minPrice': 100000,
-        'maxPrice': 500000,
-        'roomType': '2室1厅1卫',
-        'sort': 'price_asc',
-        'page': 2,
-        'pageSize': 20,
-      });
+  test('notifier builds backend query from search state', () async {
+    final service = _RecordingHouseService();
+    final container = _containerWithService(service);
+    addTearDown(container.dispose);
 
-      await repository.saveSearchKeyword('地铁');
-      await repository.saveSearchKeyword('两居');
-      final history = await repository.saveSearchKeyword('地铁');
-      expect(history.take(2), ['地铁', '两居']);
-    },
-  );
+    final notifier = container.read(houseSearchProvider.notifier);
+    notifier.updateKeyword(' 地铁 ');
+    notifier.updateCategory('long_rent');
+    notifier.updateFilter(
+      region: 'jiangbei',
+      minPrice: 100000,
+      maxPrice: 500000,
+      roomType: '2室1厅1卫',
+      sort: 'price_asc',
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+
+    expect(service.lastQuery, {
+      'keyword': '地铁',
+      'category': 'long_rent',
+      'region': 'jiangbei',
+      'minPrice': 100000,
+      'maxPrice': 500000,
+      'roomType': '2室1厅1卫',
+      'sort': 'price_asc',
+      'page': 1,
+      'pageSize': 20,
+    });
+  });
 
   test('keyword updates debounce into one request', () async {
-    final repository = _FakeHouseRepository();
-    final notifier = HouseSearchNotifier(
-      repository: repository,
-      cache: HouseCache(),
-    );
-    addTearDown(notifier.dispose);
+    final service = _RecordingHouseService();
+    final container = _containerWithService(service);
+    addTearDown(container.dispose);
 
+    final notifier = container.read(houseSearchProvider.notifier);
     notifier
       ..updateKeyword('近')
       ..updateKeyword('近地')
@@ -83,28 +79,21 @@ void main() {
 
     await Future<void>.delayed(const Duration(milliseconds: 350));
 
-    expect(repository.searchCount, 1);
-    expect(repository.queries.single.keyword, '近地铁');
+    expect(service.callCount, 1);
+    expect(service.lastQuery?['keyword'], '近地铁');
   });
 
-  test('same query uses cache and pagination appends unique houses', () async {
-    final repository = _FakeHouseRepository();
-    final notifier = HouseSearchNotifier(
-      repository: repository,
-      cache: HouseCache(),
-    );
-    addTearDown(notifier.dispose);
+  test('pagination appends unique houses', () async {
+    final service = _PaginationHouseService();
+    final container = _containerWithService(service);
+    addTearDown(container.dispose);
 
+    final notifier = container.read(houseSearchProvider.notifier);
     await notifier.search();
-    await notifier.search();
-
-    expect(repository.searchCount, 1);
     expect(notifier.state.houses.map((house) => house.id), ['house-1']);
     expect(notifier.state.hasMore, isTrue);
 
     await notifier.loadMore();
-
-    expect(repository.searchCount, 2);
     expect(notifier.state.houses.map((house) => house.id), [
       'house-1',
       'house-2',
@@ -144,11 +133,16 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final repository = _FakeHouseRepository()..history = ['中央公园'];
-    final notifier = HouseSearchNotifier(
-      repository: repository,
-      cache: HouseCache(),
-    );
+    final container = ProviderContainer(overrides: [
+      houseServiceProvider.overrideWith((ref) => _FakeHouseService()),
+      localStorageProvider.overrideWith((ref) {
+        SharedPreferences.setMockInitialValues({});
+        return LocalStorage(SharedPreferences.getInstance() as dynamic);
+      }),
+    ]);
+    addTearDown(container.dispose);
+
+    final notifier = container.read(houseSearchProvider.notifier);
     await Future.wait([
       notifier.loadHotKeywords(),
       notifier.loadSearchHistory(),
@@ -157,7 +151,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [houseSearchProvider.overrideWith((ref) => notifier)],
+        parent: container,
         child: const MaterialApp(home: FindHomePage()),
       ),
     );
@@ -184,15 +178,21 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final notifier = HouseSearchNotifier(
-      repository: _FakeHouseRepository(),
-      cache: HouseCache(),
-    );
+    final container = ProviderContainer(overrides: [
+      houseServiceProvider.overrideWith((ref) => _FakeHouseService()),
+      localStorageProvider.overrideWith((ref) {
+        SharedPreferences.setMockInitialValues({});
+        return LocalStorage(SharedPreferences.getInstance() as dynamic);
+      }),
+    ]);
+    addTearDown(container.dispose);
+
+    final notifier = container.read(houseSearchProvider.notifier);
     await notifier.search();
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [houseSearchProvider.overrideWith((ref) => notifier)],
+        parent: container,
         child: const MaterialApp(home: FindHomePage()),
       ),
     );
@@ -209,11 +209,16 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final repository = _FakeHouseRepository()..history = ['中央公园'];
-    final notifier = HouseSearchNotifier(
-      repository: repository,
-      cache: HouseCache(),
-    );
+    final container = ProviderContainer(overrides: [
+      houseServiceProvider.overrideWith((ref) => _FakeHouseService()),
+      localStorageProvider.overrideWith((ref) {
+        SharedPreferences.setMockInitialValues({});
+        return LocalStorage(SharedPreferences.getInstance() as dynamic);
+      }),
+    ]);
+    addTearDown(container.dispose);
+
+    final notifier = container.read(houseSearchProvider.notifier);
     await Future.wait([
       notifier.loadHotKeywords(),
       notifier.loadSearchHistory(),
@@ -221,7 +226,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [houseSearchProvider.overrideWith((ref) => notifier)],
+        parent: container,
         child: const MaterialApp(home: HouseSearchPage()),
       ),
     );
@@ -246,14 +251,18 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final notifier = HouseSearchNotifier(
-      repository: _FakeHouseRepository(),
-      cache: HouseCache(),
-    );
+    final container = ProviderContainer(overrides: [
+      houseServiceProvider.overrideWith((ref) => _FakeHouseService()),
+      localStorageProvider.overrideWith((ref) {
+        SharedPreferences.setMockInitialValues({});
+        return LocalStorage(SharedPreferences.getInstance() as dynamic);
+      }),
+    ]);
+    addTearDown(container.dispose);
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [houseSearchProvider.overrideWith((ref) => notifier)],
+        parent: container,
         child: const MaterialApp(home: HouseSearchResultPage(keyword: '测试')),
       ),
     );
@@ -273,14 +282,18 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final notifier = HouseSearchNotifier(
-      repository: _FakeHouseRepository(),
-      cache: HouseCache(),
-    );
+    final container = ProviderContainer(overrides: [
+      houseServiceProvider.overrideWith((ref) => _FakeHouseService()),
+      localStorageProvider.overrideWith((ref) {
+        SharedPreferences.setMockInitialValues({});
+        return LocalStorage(SharedPreferences.getInstance() as dynamic);
+      }),
+    ]);
+    addTearDown(container.dispose);
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [houseSearchProvider.overrideWith((ref) => notifier)],
+        parent: container,
         child: const MaterialApp(home: HouseFilterPage()),
       ),
     );
@@ -299,10 +312,16 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final notifier = HouseSearchNotifier(
-      repository: _FakeHouseRepository(),
-      cache: HouseCache(),
-    );
+    final container = ProviderContainer(overrides: [
+      houseServiceProvider.overrideWith((ref) => _FakeHouseService()),
+      localStorageProvider.overrideWith((ref) {
+        SharedPreferences.setMockInitialValues({});
+        return LocalStorage(SharedPreferences.getInstance() as dynamic);
+      }),
+    ]);
+    addTearDown(container.dispose);
+
+    final notifier = container.read(houseSearchProvider.notifier);
     await notifier.search();
 
     final router = GoRouter(
@@ -312,20 +331,18 @@ void main() {
           name: 'search',
           path: '/houses',
           builder: (_, _) => const FindHomePage(),
-          routes: [
-            GoRoute(
-              name: 'houseSearchResult',
-              path: 'results',
-              builder: (_, state) => HouseSearchResultPage(
-                keyword: state.uri.queryParameters['keyword'] ?? '',
-              ),
-            ),
-          ],
         ),
         GoRoute(
           name: 'houseSearch',
           path: '/house-search',
           builder: (_, _) => const HouseSearchPage(),
+        ),
+        GoRoute(
+          name: 'houseSearchResult',
+          path: '/house-search-result',
+          builder: (_, state) => HouseSearchResultPage(
+            keyword: state.uri.queryParameters['keyword'] ?? '',
+          ),
         ),
         GoRoute(
           name: 'houseDetail',
@@ -339,7 +356,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [houseSearchProvider.overrideWith((ref) => notifier)],
+        parent: container,
         child: MaterialApp.router(routerConfig: router),
       ),
     );
@@ -364,6 +381,7 @@ class _RecordingHouseService extends HouseService {
   _RecordingHouseService() : super(ApiClient());
 
   Map<String, dynamic>? lastQuery;
+  int callCount = 0;
 
   @override
   List<HotCommunity> getHotCommunities() => const [];
@@ -371,6 +389,7 @@ class _RecordingHouseService extends HouseService {
   @override
   Future<PageResult<House>> fetchHouses(Map<String, dynamic> query) async {
     lastQuery = query;
+    callCount++;
     return const PageResult(
       items: [],
       page: 1,
@@ -386,16 +405,19 @@ class _RecordingHouseService extends HouseService {
   }
 }
 
-class _FakeHouseRepository implements HouseRepository {
-  int searchCount = 0;
-  final List<HouseSearchState> queries = [];
-  List<String> history = [];
+class _PaginationHouseService extends HouseService {
+  _PaginationHouseService() : super(ApiClient());
+
+  int callCount = 0;
 
   @override
-  Future<PageResult<House>> search(HouseSearchState state) async {
-    searchCount++;
-    queries.add(state);
-    if (state.page == 1) {
+  List<HotCommunity> getHotCommunities() => const [];
+
+  @override
+  Future<PageResult<House>> fetchHouses(Map<String, dynamic> query) async {
+    callCount++;
+    final page = query['page'] as int? ?? 1;
+    if (page == 1) {
       return PageResult(
         items: [_house('house-1')],
         page: 1,
@@ -414,20 +436,35 @@ class _FakeHouseRepository implements HouseRepository {
   }
 
   @override
-  Future<void> clearSearchHistory() async {
-    history = [];
+  Future<ApiResult<HouseDetail>> getHouseDetail(String houseId) {
+    throw UnimplementedError();
+  }
+}
+
+class _FakeHouseService extends HouseService {
+  _FakeHouseService() : super(ApiClient());
+
+  @override
+  List<HotCommunity> getHotCommunities() => const [];
+
+  @override
+  Future<PageResult<House>> fetchHouses(Map<String, dynamic> query) async {
+    return PageResult(
+      items: [
+        _house('house-1'),
+        _house('house-2'),
+        _house('house-3'),
+      ],
+      page: query['page'] as int? ?? 1,
+      pageSize: 20,
+      total: 1286,
+      hasMore: true,
+    );
   }
 
   @override
-  Future<List<String>> getHotKeywords() async => const ['近地铁'];
-
-  @override
-  Future<List<String>> getSearchHistory() async => history;
-
-  @override
-  Future<List<String>> saveSearchKeyword(String keyword) async {
-    history = [keyword, ...history.where((item) => item != keyword)];
-    return history;
+  Future<ApiResult<HouseDetail>> getHouseDetail(String houseId) {
+    throw UnimplementedError();
   }
 }
 

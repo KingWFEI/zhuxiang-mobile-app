@@ -9,7 +9,7 @@ class RoutePaths {
   static const search = '/houses';
   static const houseList = '/house-list';
   static const houseSearch = '/house-search';
-  static const houseSearchResult = 'results';
+  static const houseSearchResult = '/house-search-result';
   static const houseFilter = '/house-filter';
   static const houseDetail = '/houses/:houseId';
   static const appointment = '/appointment';

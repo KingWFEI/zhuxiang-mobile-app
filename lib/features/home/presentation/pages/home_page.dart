@@ -9,7 +9,7 @@ import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/network/api_result.dart';
-import '../../../house/domain/entities/house.dart';
+import '../../../house/data/models/house.dart';
 import '../../../house/presentation/widgets/house_card.dart';
 import '../../data/models/home_data.dart';
 import '../../data/providers/home_providers.dart';

@@ -1,3 +1,4 @@
+/// 房源列表使用的数据模型。
 class House {
   const House({
     required this.id,

@@ -4,7 +4,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
-import '../../domain/entities/hot_community.dart';
+import '../../data/models/hot_community.dart';
 
 /// 搜索页顶部输入区，包含返回、清除和搜索/取消操作。
 class SearchInputHeader extends StatelessWidget {
@@ -140,6 +140,7 @@ class SearchHistorySection extends StatelessWidget {
             onPressed: onClear,
             icon: const Icon(Icons.delete_outline_rounded, size: 16),
             color: AppColors.iconMuted,
+            visualDensity: VisualDensity.compact,
           ),
         ),
         Wrap(
@@ -147,13 +148,24 @@ class SearchHistorySection extends StatelessWidget {
           runSpacing: 4,
           children: items
               .map(
-                (item) => ActionChip(
-                  label: Text(item, style: TextStyle()),
-                  onPressed: () => onItemTap(item),
-                  side: BorderSide.none,
-                  backgroundColor: AppColors.surface,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                (item) => GestureDetector(
+                  onTap: () => onItemTap(item),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface, // 白色背景
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      item,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                   ),
                 ),
               )
@@ -184,7 +196,7 @@ class HotSearchSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const _SectionHeader(title: '热门搜索'),
-        const SizedBox(height: AppSpacing.md),
+        const SizedBox(height: 10),
         Row(
           children: [
             for (var index = 0; index < _items.length; index++) ...[
@@ -228,19 +240,19 @@ class _HotSearchCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.xl),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+          padding: const EdgeInsets.symmetric(vertical: 6),
           child: Column(
             children: [
               Container(
-                width: 34,
-                height: 34,
+                width: 30,
+                height: 30,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
                 child: Icon(icon, color: color, size: 21),
               ),
-              const SizedBox(height: AppSpacing.sm),
+              const SizedBox(height: 4),
               Text(
                 label,
                 maxLines: 1,
@@ -273,19 +285,20 @@ class HotCommunitySection extends StatelessWidget {
       children: [
         const _SectionHeader(title: '热门小区', trailingText: '查看更多 ›'),
         const SizedBox(height: AppSpacing.md),
-        SizedBox(
-          height: 172,
-          child: ListView.separated(
+        IntrinsicHeight(
+          child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            itemCount: communities.length,
-            separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.md),
-            itemBuilder: (context, index) {
-              final community = communities[index];
-              return _CommunityCard(
-                community: community,
-                onTap: () => onItemTap(community.name),
-              );
-            },
+            child: Row(
+              children: [
+                for (int i = 0; i < communities.length; i++) ...[
+                  if (i > 0) const SizedBox(width: AppSpacing.md),
+                  _CommunityCard(
+                    community: communities[i],
+                    onTap: () => onItemTap(communities[i].name),
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ],
@@ -308,12 +321,13 @@ class _CommunityCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.xl),
         child: SizedBox(
-          width: 146,
+          width: 106,
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                height: 94,
+                height: 80,
                 decoration: BoxDecoration(
                   color: Color(community.colorValue),
                   borderRadius: const BorderRadius.vertical(
@@ -328,7 +342,7 @@ class _CommunityCard extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(AppSpacing.sm),
+                padding: const EdgeInsets.all(4),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -336,20 +350,23 @@ class _CommunityCard extends StatelessWidget {
                       community.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(community.district, style: AppTextStyles.bodySmall),
+                    Text(
+                      community.district,
+                      style: TextStyle(
+                        fontSize: 8,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                     const SizedBox(height: 2),
                     Text(
                       '¥ ${community.startingRent} 起',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: TextStyle(fontSize: 10, color: AppColors.primary),
                     ),
                   ],
                 ),
@@ -396,20 +413,21 @@ class SearchSuggestionSection extends StatelessWidget {
                   const Icon(
                     Icons.search_rounded,
                     color: AppColors.iconMuted,
-                    size: 18,
+                    size: 12,
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Text(
                     normalized,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.primary,
-                    ),
+                    style: TextStyle(fontSize: 10, color: AppColors.primary),
                   ),
-                  const SizedBox(width: AppSpacing.xs),
+                  const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       suffix,
-                      style: AppTextStyles.bodySmall,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AppColors.textSecondary,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -444,7 +462,10 @@ class _SectionHeader extends StatelessWidget {
         const Spacer(),
         ?trailing,
         if (trailingText != null)
-          Text(trailingText!, style: AppTextStyles.bodySmall),
+          Text(
+            trailingText!,
+            style: TextStyle(fontSize: 10, color: AppColors.textSecondary),
+          ),
       ],
     );
   }
