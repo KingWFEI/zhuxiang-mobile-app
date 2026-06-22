@@ -26,26 +26,46 @@ class SearchDiscoverySection extends StatelessWidget {
         if (history.isNotEmpty) ...[
           Row(
             children: [
-              Text('搜索历史', style: AppTextStyles.titleMedium),
+              Text(
+                '搜索历史',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               const Spacer(),
               TextButton.icon(
                 onPressed: onClearHistory,
-                icon: const Icon(Icons.delete_outline, size: 18),
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                  ),
+                  textStyle: AppTextStyles.bodySmall,
+                ),
+                icon: const Icon(Icons.delete_outline, size: 16),
                 label: const Text('清空'),
               ),
             ],
           ),
           _KeywordWrap(keywords: history, onKeywordTap: onKeywordTap),
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.md),
         ],
         Row(
           children: [
             const Icon(
               Icons.local_fire_department_outlined,
               color: AppColors.warning,
+              size: 18,
             ),
             const SizedBox(width: AppSpacing.sm),
-            Text('热门搜索', style: AppTextStyles.titleMedium),
+            Text(
+              '热门搜索',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -69,8 +89,13 @@ class _KeywordWrap extends StatelessWidget {
       children: keywords
           .map(
             (keyword) => ActionChip(
-              label: Text(keyword),
+              label: Text(keyword, style: AppTextStyles.bodySmall),
               onPressed: () => onKeywordTap(keyword),
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+              labelPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.xs,
+              ),
               side: BorderSide.none,
               backgroundColor: AppColors.surface,
             ),

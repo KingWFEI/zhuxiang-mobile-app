@@ -13,22 +13,27 @@ class HouseCard extends StatelessWidget {
     required this.onTap,
     super.key,
     this.compact = false,
+    this.isFavorite,
+    this.onFavoriteTap,
   });
 
   final House house;
   final VoidCallback onTap;
   final bool compact;
+  final bool? isFavorite;
+  final VoidCallback? onFavoriteTap;
 
   @override
   Widget build(BuildContext context) {
+    const radius = AppRadius.xl;
     return InkWell(
-      borderRadius: BorderRadius.all(Radius.circular(AppRadius.xl)),
+      borderRadius: BorderRadius.all(Radius.circular(radius)),
       onTap: onTap,
       child: Container(
         // padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.all(Radius.circular(AppRadius.xl)),
+          borderRadius: BorderRadius.all(Radius.circular(radius)),
           boxShadow: const [
             BoxShadow(
               color: Color(0x0F000000),
@@ -39,119 +44,162 @@ class HouseCard extends StatelessWidget {
         ),
         child: compact
             ? _CompactContent(house: house)
-            : _ListContent(house: house),
+            : _ListContent(
+                house: house,
+                isFavorite: isFavorite ?? house.isFavorite,
+                onFavoriteTap: onFavoriteTap,
+              ),
       ),
     );
   }
 }
 
 class _ListContent extends StatelessWidget {
-  const _ListContent({required this.house});
+  const _ListContent({
+    required this.house,
+    required this.isFavorite,
+    this.onFavoriteTap,
+  });
 
   final House house;
+  final bool isFavorite;
+  final VoidCallback? onFavoriteTap;
 
   @override
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: IntrinsicHeight(
-        // 强制子组件等高
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch, //  拉伸所有子组件
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              child: SizedBox(
-                width: 160, // 只固定宽度，不固定高度
-                child: HouseImagePlaceholder(
-                  coverImage: house.coverImage, // 传入实际图片
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 340;
+
+        // 卡片整体高度
+        final cardHeight = isNarrow ? 100.0 : 92.0;
+
+        // 卡片内部 padding
+        const padding = 4.0;
+
+        // 内容区域高度 = 卡片高度 - 上下 padding
+        final contentHeight = cardHeight - padding * 2;
+
+        // 图片高度占满内容高度
+        final imageHeight = contentHeight;
+
+        // 图片宽度按照高度的 1.5 倍
+        final imageWidth = imageHeight * 1.35;
+
+        return SizedBox(
+          height: cardHeight,
+          child: Padding(
+            padding: const EdgeInsets.all(padding),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  child: SizedBox(
+                    width: imageWidth,
+                    height: imageHeight,
+                    child: HouseImagePlaceholder(coverImage: house.coverImage),
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          house.title,
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: SizedBox(
+                    height: contentHeight,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                house.title,
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            InkResponse(
+                              onTap: onFavoriteTap,
+                              radius: 20,
+                              child: Padding(
+                                padding: const EdgeInsets.all(3),
+                                child: Icon(
+                                  isFavorite
+                                      ? Icons.favorite_rounded
+                                      : Icons.favorite_border_rounded,
+                                  color: isFavorite
+                                      ? AppColors.error
+                                      : const Color(0xFF718096),
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${house.location} · ${house.community}  ${house.metro}',
+                          style: const TextStyle(
+                            color: Color(0xFF76839A),
+                            fontSize: 8,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      Icon(
-                        house.isFavorite
-                            ? Icons.favorite
-                            : Icons.favorite_border,
-                        color: house.isFavorite
-                            ? AppColors.error
-                            : AppColors.iconMuted,
-                        size: 20,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Wrap(
-                    spacing: AppSpacing.sm,
-                    runSpacing: AppSpacing.xs,
-                    children: house.tags
-                        .take(3)
-                        .map((tag) => _HouseTag(tag))
-                        .toList(),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    '${house.roomType}  |  ${house.area}m²  |  ${house.floor}',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    house.metro,
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text.rich(
-                    TextSpan(
-                      text: '¥ ${_displayPrice(house.price)}',
-                      style: AppTextStyles.titleMedium.copyWith(
-                        color: AppColors.primary,
-                        fontSize: 16,
-                      ),
-                      children: [
-                        TextSpan(
-                          text: ' /月',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
+                        const SizedBox(height: 2),
+                        Text(
+                          '${house.roomType}  |  ${house.area}m²  |  ${house.orientation}  |  ${house.floor}',
+                          style: const TextStyle(
+                            color: Color(0xFF7F8A9E),
+                            fontSize: 8,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Wrap(
+                          spacing: 5,
+                          runSpacing: 4,
+                          children: house.tags
+                              .take(isNarrow ? 2 : 3)
+                              .map((tag) => _HouseTag(tag, dense: true))
+                              .toList(growable: false),
+                        ),
+                        const Spacer(),
+                        Text.rich(
+                          TextSpan(
+                            text: '¥ ${_displayPrice(house.price)}',
+                            style: AppTextStyles.titleMedium.copyWith(
+                              color: AppColors.primary,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            children: const [
+                              TextSpan(
+                                text: ' /月',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -230,17 +278,15 @@ String _displayPrice(int price) {
 }
 
 class _HouseTag extends StatelessWidget {
-  const _HouseTag(this.label);
+  const _HouseTag(this.label, {this.dense = false});
 
   final String label;
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       decoration: BoxDecoration(
         color: AppColors.primaryLight,
         borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -249,7 +295,7 @@ class _HouseTag extends StatelessWidget {
         label,
         style: AppTextStyles.bodyMedium.copyWith(
           color: AppColors.primary,
-          fontSize: 10,
+          fontSize: 8,
           fontWeight: FontWeight.w600,
         ),
       ),

@@ -71,8 +71,38 @@ class _ImageFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Icon(Icons.apartment_rounded, color: Color(0xFF9CA3AF), size: 42),
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFE9F2FF), Color(0xFFD6E7FF)],
+            ),
+          ),
+        ),
+        Positioned(
+          left: -18,
+          bottom: -20,
+          child: Container(
+            width: 90,
+            height: 90,
+            decoration: const BoxDecoration(
+              color: Color(0x66FFFFFF),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+        const Center(
+          child: Icon(
+            Icons.weekend_rounded,
+            color: Color(0xFF76A8EE),
+            size: 42,
+          ),
+        ),
+      ],
     );
   }
 }

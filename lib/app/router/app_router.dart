@@ -4,7 +4,10 @@ import '../../core/widgets/app_placeholder_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
-import '../../features/house/presentation/pages/find_home_page.dart';
+import '../../features/house/presentation/pages/find_house_page.dart';
+import '../../features/house/presentation/pages/house_filter_page.dart';
+import '../../features/house/presentation/pages/house_search_page.dart';
+import '../../features/house/presentation/pages/house_search_result_page.dart';
 import '../../features/house/presentation/pages/house_detail_page.dart';
 import '../../features/message/presentation/pages/message_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
@@ -66,6 +69,15 @@ class AppRouter {
                 name: RouteNames.search,
                 path: RoutePaths.search,
                 builder: (context, state) => const FindHomePage(),
+                routes: [
+                  GoRoute(
+                    name: RouteNames.houseSearchResult,
+                    path: RoutePaths.houseSearchResult,
+                    builder: (context, state) => HouseSearchResultPage(
+                      keyword: state.uri.queryParameters['keyword'] ?? '',
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -93,6 +105,16 @@ class AppRouter {
         name: RouteNames.houseList,
         path: RoutePaths.houseList,
         redirect: (context, state) => RoutePaths.search,
+      ),
+      GoRoute(
+        name: RouteNames.houseSearch,
+        path: RoutePaths.houseSearch,
+        builder: (context, state) => const HouseSearchPage(),
+      ),
+      GoRoute(
+        name: RouteNames.houseFilter,
+        path: RoutePaths.houseFilter,
+        builder: (context, state) => const HouseFilterPage(),
       ),
       GoRoute(
         name: RouteNames.houseDetail,
