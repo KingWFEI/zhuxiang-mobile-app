@@ -425,7 +425,7 @@ class _MenuGrid extends StatelessWidget {
           VoidCallback? onTap;
 
           if (index == 0) {
-            onTap = () => context.pushNamed(RouteNames.myLeases);
+            onTap = () => context.pushNamed(RouteNames.lease);
           } else if (index == 1) {
             onTap = () => context.pushNamed(RouteNames.unlockRecords);
           }
