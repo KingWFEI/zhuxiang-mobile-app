@@ -18,6 +18,7 @@ class RoutePaths {
   static const lease = '/lease';
   static const bill = '/bill';
   static const lock = '/lock';
+  static const unlockRecords = '/locks/records';
   static const repair = '/repair';
   static const messageCenter = '/messages';
   static const customerService = '/customer-service';

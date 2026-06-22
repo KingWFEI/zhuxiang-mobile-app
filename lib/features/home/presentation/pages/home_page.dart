@@ -151,9 +151,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       case 'lease':
         context.pushNamed(RouteNames.lease);
       case 'unlock_records':
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(const SnackBar(content: Text('开门记录功能开发中')));
+        context.pushNamed(RouteNames.unlockRecords);
       case 'repairs':
         context.pushNamed(RouteNames.repair);
       case 'customer_service':
