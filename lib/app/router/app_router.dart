@@ -9,8 +9,9 @@ import '../../features/house/presentation/pages/house_filter_page.dart';
 import '../../features/house/presentation/pages/house_search_page.dart';
 import '../../features/house/presentation/pages/house_search_result_page.dart';
 import '../../features/house/presentation/pages/house_detail_page.dart';
-import '../../features/lease/presentation/pages/lease_detail_page.dart';
-import '../../features/lease/presentation/pages/my_leases_page.dart';
+import '../../../features/lease/presentation/pages/lease_detail_page.dart';
+import '../../../features/lease/presentation/pages/my_leases_page.dart';
+import '../../../features/lock/presentation/pages/unlock_records_page.dart';
 import '../../features/message/presentation/pages/message_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/rental_flow/presentation/pages/lease_contract_page.dart';
@@ -109,6 +110,11 @@ class AppRouter {
             ],
           ),
         ],
+      ),
+      GoRoute(
+        name: RouteNames.unlockRecords,
+        path: RoutePaths.unlockRecords,
+        builder: (context, state) => const UnlockRecordsPage(),
       ),
       GoRoute(
         name: RouteNames.houseList,
