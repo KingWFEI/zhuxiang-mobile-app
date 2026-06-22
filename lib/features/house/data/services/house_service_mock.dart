@@ -1,138 +1,62 @@
-import 'package:dio/dio.dart';
-import 'package:zhuxiang_app/core/network/api_result.dart';
-import 'package:zhuxiang_app/features/house/data/models/house_detail.dart';
-
-import '../../../../core/network/api_client.dart';
-import '../../../../shared/models/page_result.dart';
 import '../models/hot_community.dart';
 import '../models/house.dart';
 
 /// 房源数据服务。
-///
-class HouseService {
-  final ApiClient apiClient;
-  HouseService(this.apiClient);
+class HouseMockService {
+  HouseMockService();
 
   //返回搜索页热门小区。
-  List<HotCommunity> getHotCommunities() {
-    // final result=apiClient.get(path)
-    return const [];
-  }
-
-  //按查询参数筛选、排序并分页。
-  Future<PageResult<House>> fetchHouses(Map<String, dynamic> query) async {
-    await Future<void>.delayed(const Duration(milliseconds: 180));
-
-    var houses = _mockHouses.toList(growable: true);
-    final keyword = (query['keyword'] as String? ?? '').trim().toLowerCase();
-    final region = query['region'] as String? ?? '';
-    final roomType = query['roomType'] as String? ?? '';
-    final category = query['category'] as String? ?? '';
-    final minPrice = query['minPrice'] as int? ?? 0;
-    final maxPrice = query['maxPrice'] as int? ?? 0;
-    final sort = query['sort'] as String? ?? 'default';
-
-    if (keyword.isNotEmpty) {
-      houses = houses
-          .where((house) {
-            final searchable = [
-              house.title,
-              house.location,
-              house.community,
-              house.metro,
-              house.roomType,
-              ...house.tags,
-            ].join(' ').toLowerCase();
-            return searchable.contains(keyword);
-          })
-          .toList(growable: true);
-    }
-
-    if (region.isNotEmpty) {
-      final regionName = _regionNames[region] ?? region;
-      houses = houses
-          .where((house) => house.location.contains(regionName))
-          .toList(growable: true);
-    }
-    if (roomType.isNotEmpty) {
-      houses = houses
-          .where((house) => house.roomType == roomType)
-          .toList(growable: true);
-    }
-    if (minPrice > 0) {
-      houses = houses
-          .where((house) => house.price >= minPrice)
-          .toList(growable: true);
-    }
-    if (maxPrice > 0) {
-      houses = houses
-          .where((house) => house.price <= maxPrice)
-          .toList(growable: true);
-    }
-    if (category == 'short_rent') {
-      houses = houses
-          .where((house) => house.tags.contains('可月付'))
-          .toList(growable: true);
-    } else if (category == 'long_rent') {
-      houses = houses
-          .where((house) => house.tags.contains('整租'))
-          .toList(growable: true);
-    }
-
-    switch (sort) {
-      case 'price_asc':
-        houses.sort((a, b) => a.price.compareTo(b.price));
-      case 'price_desc':
-        houses.sort((a, b) => b.price.compareTo(a.price));
-      case 'smart_lock':
-        houses.sort((a, b) {
-          final aScore = a.isSmartLockSupported ? 1 : 0;
-          final bScore = b.isSmartLockSupported ? 1 : 0;
-          return bScore.compareTo(aScore);
-        });
-      case 'latest':
-        houses = houses.reversed.toList(growable: true);
-      case 'default':
-      case 'distance':
-        break;
-    }
-
-    final page = query['page'] as int? ?? 1;
-    final pageSize = query['pageSize'] as int? ?? 20;
-    final start = (page - 1) * pageSize;
-    final items = start >= houses.length
-        ? const <House>[]
-        : houses.skip(start).take(pageSize).toList(growable: false);
-
-    return PageResult(
-      items: items,
-      page: page,
-      pageSize: pageSize,
-      total: houses.length,
-      hasMore: start + items.length < houses.length,
-    );
-  }
-
-  // 根据 ID 返回房源详情。
-  Future<ApiResult<HouseDetail>> getHouseDetail(String houseId) async {
-    final result = await apiClient.get('/houses/$houseId');
-
-    if (result is ApiSuccess<Response<dynamic>>) {
-      final response = result.data;
-      final responseData = response.data;
-
-      if (responseData is! Map<String, dynamic>) {
-        return ApiFailure(message: '房源详情数据格式错误');
-      }
-
-      return ApiSuccess(HouseDetail.fromJson(responseData));
-    }
-
-    if (result is ApiFailure<Response<dynamic>>) {
-      return ApiFailure(message: result.message, error: result.error);
-    }
-
-    return ApiFailure(message: '获取房源详情失败');
+  List<HotCommunity> getMockHotCommunities() {
+    return const [
+      HotCommunity(
+        name: '中央公园',
+        district: '渝北区',
+        startingRent: 1980,
+        colorValue: 0xFF5B8FF9,
+      ),
+      HotCommunity(
+        name: '寰宇天下',
+        district: '江北区',
+        startingRent: 3880,
+        colorValue: 0xFF5AD8A6,
+      ),
+      HotCommunity(
+        name: '重庆天地',
+        district: '渝中区',
+        startingRent: 3580,
+        colorValue: 0xFFF6BD16,
+      ),
+      HotCommunity(
+        name: '龙湖时代天街',
+        district: '渝中区',
+        startingRent: 2680,
+        colorValue: 0xFFE8684A,
+      ),
+      HotCommunity(
+        name: '万象城',
+        district: '九龙坡区',
+        startingRent: 2200,
+        colorValue: 0xFF6E5CE7,
+      ),
+      HotCommunity(
+        name: '南滨国际',
+        district: '南岸区',
+        startingRent: 2580,
+        colorValue: 0xFF33C6DB,
+      ),
+      HotCommunity(
+        name: '大学城富力城',
+        district: '沙坪坝区',
+        startingRent: 1580,
+        colorValue: 0xFFFF9845,
+      ),
+      HotCommunity(
+        name: '照母山',
+        district: '渝北区',
+        startingRent: 3200,
+        colorValue: 0xFF5D7092,
+      ),
+    ];
   }
 }
 

@@ -6,7 +6,7 @@ import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
-import '../../data/providers/house_providers.dart';
+import '../../application/house_search_notifier.dart';
 import '../widgets/filter_bottom_sheet.dart';
 
 /// 参照设计图实现的全屏房源筛选页。

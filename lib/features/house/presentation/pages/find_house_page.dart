@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:zhuxiang_app/features/house/data/models/house.dart';
 
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -8,8 +9,7 @@ import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/widgets/app_empty_view.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../../home/presentation/widgets/home_search_bar.dart';
-import '../../domain/entities/house.dart';
-import '../../data/providers/house_providers.dart';
+import '../../application/house_search_notifier.dart';
 import '../widgets/filter_bottom_sheet.dart';
 import '../widgets/house_card.dart';
 import '../widgets/house_filter_bar.dart';
@@ -36,6 +36,10 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
   void initState() {
     super.initState();
     _scrollController.addListener(_loadMoreWhenNeeded);
+    // 进入页面时执行一次不带关键词的搜索
+    Future<void>.microtask(
+      () => ref.read(houseSearchProvider.notifier).search(),
+    );
   }
 
   @override

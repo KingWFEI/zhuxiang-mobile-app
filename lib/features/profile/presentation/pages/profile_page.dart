@@ -422,11 +422,17 @@ class _MenuGrid extends StatelessWidget {
         ),
         itemBuilder: (context, index) {
           final item = items[index];
+          VoidCallback? onTap;
+
+          if (index == 0) {
+            onTap = () => context.pushNamed(RouteNames.myLeases);
+          } else if (index == 1) {
+            onTap = () => context.pushNamed(RouteNames.unlockRecords);
+          }
+
           return InkWell(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            onTap: index == 1
-                ? () => context.pushNamed(RouteNames.unlockRecords)
-                : null,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            onTap: onTap,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,

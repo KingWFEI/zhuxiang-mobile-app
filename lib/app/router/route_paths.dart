@@ -9,13 +9,14 @@ class RoutePaths {
   static const search = '/houses';
   static const houseList = '/house-list';
   static const houseSearch = '/house-search';
-  static const houseSearchResult = 'results';
+  static const houseSearchResult = '/house-search-result';
   static const houseFilter = '/house-filter';
   static const houseDetail = '/houses/:houseId';
   static const appointment = '/appointment';
   static const realNameAuth = '/real-name-auth';
   static const profile = '/profile';
-  static const lease = '/lease';
+  static const lease = '/leases';
+  static const leaseDetail = ':leaseId';
   static const bill = '/bill';
   static const lock = '/lock';
   static const unlockRecords = '/locks/records';

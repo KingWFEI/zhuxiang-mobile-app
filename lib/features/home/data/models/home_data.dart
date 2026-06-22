@@ -1,4 +1,4 @@
-import '../../../house/domain/entities/house.dart';
+import '../../../house/data/models/house.dart';
 
 class HomeData {
   final HomeHeaderData header;

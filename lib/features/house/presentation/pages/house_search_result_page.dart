@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:zhuxiang_app/features/house/data/models/house.dart';
 
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
-import '../../domain/entities/house.dart';
-import '../../data/providers/house_providers.dart';
+import '../../application/house_search_notifier.dart';
 import '../widgets/filter_bottom_sheet.dart';
 import '../widgets/house_card.dart';
 import '../widgets/house_filter_bar.dart';
@@ -51,7 +51,6 @@ class _HouseSearchResultPageState extends ConsumerState<HouseSearchResultPage> {
     super.dispose();
   }
 
-  /// 使用路由关键词触发 repository 搜索。
   Future<void> _searchKeyword() async {
     await ref
         .read(houseSearchProvider.notifier)
@@ -102,7 +101,7 @@ class _HouseSearchResultPageState extends ConsumerState<HouseSearchResultPage> {
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(
                   AppSpacing.xl,
-                  AppSpacing.lg,
+                  10,
                   AppSpacing.xl,
                   0,
                 ),
@@ -119,7 +118,7 @@ class _HouseSearchResultPageState extends ConsumerState<HouseSearchResultPage> {
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(
                   AppSpacing.xl,
-                  AppSpacing.md,
+                  10,
                   AppSpacing.xl,
                   0,
                 ),

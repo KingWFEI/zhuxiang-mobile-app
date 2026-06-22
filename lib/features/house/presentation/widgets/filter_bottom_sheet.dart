@@ -4,7 +4,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
-import '../../domain/house_search_state.dart';
+import '../../data/models/house_search_state.dart';
 
 class HouseFilterSelection {
   const HouseFilterSelection({
