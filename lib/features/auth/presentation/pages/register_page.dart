@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/role_navigation_config.dart';
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
@@ -142,7 +143,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     if (!mounted) return;
     if (success) {
       _showMessage('注册成功');
-      context.goNamed(RouteNames.main);
+      context.go(_entryLocation());
       return;
     }
 
@@ -175,6 +176,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  String _entryLocation() {
+    final user = ref.read(authControllerProvider).user;
+    if (user == null) return RoleNavigationConfig.tenant.entryLocation;
+    return RoleNavigationConfig.entryLocationForRole(user.role);
   }
 }
 

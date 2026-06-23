@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/role_navigation_config.dart';
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
@@ -119,7 +120,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     };
     if (!mounted) return;
     if (success) {
-      context.goNamed(RouteNames.main);
+      context.go(_entryLocation());
       return;
     }
 
@@ -151,7 +152,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Future<void> _handleGuestBrowse() async {
     await ref.read(authControllerProvider.notifier).enterGuestMode();
     if (!mounted) return;
-    context.goNamed(RouteNames.main);
+    context.go(RoleNavigationConfig.tenant.entryLocation);
   }
 
   void _toggleLoginMode() {
@@ -168,6 +169,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  String _entryLocation() {
+    final user = ref.read(authControllerProvider).user;
+    if (user == null) return RoleNavigationConfig.tenant.entryLocation;
+    return RoleNavigationConfig.entryLocationForRole(user.role);
   }
 }
 

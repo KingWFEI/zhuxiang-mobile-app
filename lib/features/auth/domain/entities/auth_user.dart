@@ -1,3 +1,5 @@
+import 'user_role.dart';
+
 class AuthUser {
   const AuthUser({
     required this.id,
@@ -5,6 +7,7 @@ class AuthUser {
     required this.nickname,
     required this.avatarUrl,
     required this.isVerified,
+    this.role = UserRole.tenant,
   });
 
   final String id;
@@ -12,6 +15,7 @@ class AuthUser {
   final String nickname;
   final String avatarUrl;
   final bool isVerified;
+  final UserRole role;
 
   factory AuthUser.fromJson(Map<String, dynamic> json) {
     return AuthUser(
@@ -20,6 +24,7 @@ class AuthUser {
       nickname: json['nickname'] as String,
       avatarUrl: json['avatarUrl'] as String? ?? '',
       isVerified: json['isVerified'] as bool? ?? false,
+      role: UserRole.fromCode(json['role'] as String?),
     );
   }
 
@@ -30,6 +35,7 @@ class AuthUser {
       'nickname': nickname,
       'avatarUrl': avatarUrl,
       'isVerified': isVerified,
+      'role': role.code,
     };
   }
 

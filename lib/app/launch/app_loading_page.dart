@@ -5,7 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/auth_controller.dart';
-import '../router/route_names.dart';
+import '../router/role_navigation_config.dart';
+import '../router/route_paths.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
 import '../theme/app_spacing.dart';
@@ -47,10 +48,15 @@ class _AppLoadingPageState extends ConsumerState<AppLoadingPage> {
       return;
     }
     final authState = ref.read(authControllerProvider);
-    context.goNamed(
-      authState.isLoggedIn || authState.isGuest
-          ? RouteNames.main
-          : RouteNames.login,
+    if (authState.isGuest) {
+      context.go(RoleNavigationConfig.tenant.entryLocation);
+      return;
+    }
+    final user = authState.user;
+    context.go(
+      user == null
+          ? RoutePaths.login
+          : RoleNavigationConfig.entryLocationForRole(user.role),
     );
   }
 

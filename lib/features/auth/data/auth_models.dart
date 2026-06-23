@@ -41,11 +41,15 @@ class AuthResult extends TokenResult {
   final AuthUser user;
 
   factory AuthResult.fromJson(Map<String, dynamic> json) {
+    final userJson = Map<String, dynamic>.from(
+      json['user'] as Map<String, dynamic>,
+    );
+    userJson['role'] ??= json['role'];
     return AuthResult(
       accessToken: json['accessToken'] as String,
       refreshToken: json['refreshToken'] as String,
       expiresIn: (json['expiresIn'] as num).toInt(),
-      user: AuthUser.fromJson(json['user'] as Map<String, dynamic>),
+      user: AuthUser.fromJson(userJson),
     );
   }
 }
