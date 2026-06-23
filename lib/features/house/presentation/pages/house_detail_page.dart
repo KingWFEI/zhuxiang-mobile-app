@@ -90,49 +90,71 @@ class _DetailAppBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SliverAppBar(
-      expandedHeight: 200,
+      expandedHeight: 150,
       pinned: true,
       backgroundColor: AppColors.surface,
+      leadingWidth: 44,
       leading: Padding(
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        child: CircleAvatar(
-          backgroundColor: AppColors.surface,
-          child: IconButton(
-            onPressed: () {
-              if (context.canPop()) {
-                context.pop();
-                return;
-              }
-              context.goNamed(RouteNames.search);
-            },
-            icon: AppIcon.iconBack,
+        padding: const EdgeInsets.only(left: AppSpacing.sm),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: SizedBox.square(
+            dimension: 28,
+            child: IconButton(
+              style: IconButton.styleFrom(
+                backgroundColor: AppColors.surface,
+                shape: const CircleBorder(),
+                fixedSize: const Size.square(28),
+                minimumSize: const Size.square(28),
+                padding: EdgeInsets.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              onPressed: () {
+                if (context.canPop()) {
+                  context.pop();
+                  return;
+                }
+                context.goNamed(RouteNames.search);
+              },
+              icon: const Icon(Icons.arrow_back_ios_new, size: 16),
+            ),
           ),
         ),
       ),
       actions: [
         Padding(
-          padding: const EdgeInsets.all(AppSpacing.sm),
-          child: CircleAvatar(
-            backgroundColor: AppColors.surface,
-            child: IconButton(
-              onPressed: () => _showMessage(context, '分享功能暂未接入'),
-              icon: AppIcon.iconNormal(Icons.share_outlined),
+          padding: const EdgeInsets.all(2),
+          child: IconButton(
+            style: IconButton.styleFrom(
+              backgroundColor: AppColors.surface,
+              shape: const CircleBorder(),
+              minimumSize: const Size(28, 28),
+              padding: EdgeInsets.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
+            iconSize: 16,
+            onPressed: () => _showMessage(context, '分享功能暂未接入'),
+            icon: AppIcon.iconNormal(Icons.share_outlined),
           ),
         ),
         Padding(
           padding: const EdgeInsets.all(AppSpacing.sm),
-          child: CircleAvatar(
-            backgroundColor: AppColors.surface,
-            child: IconButton(
-              onPressed: () => _showMessage(context, '收藏状态已模拟更新'),
-              icon: Icon(
-                house.isFavorite ? Icons.favorite : Icons.favorite_border,
-                color: house.isFavorite
-                    ? AppColors.error
-                    : AppColors.textPrimary,
-              ),
+          child: IconButton(
+            style: IconButton.styleFrom(
+              backgroundColor: AppColors.surface,
+              shape: const CircleBorder(),
+              minimumSize: const Size(28, 28),
+              padding: EdgeInsets.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
+            iconSize: 16,
+            onPressed: () => _showMessage(context, '收藏状态已模拟更新'),
+            icon: house.isFavorite
+                ? AppIcon.iconNormal(Icons.favorite, color: AppColors.error)
+                : AppIcon.iconNormal(
+                    Icons.favorite_border,
+                    color: AppColors.textPrimary,
+                  ),
           ),
         ),
       ],
@@ -247,19 +269,8 @@ class _DetailContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.xl,
-        AppSpacing.xl,
-        AppSpacing.xl,
-        AppSpacing.xl,
-      ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(AppRadius.xxl),
-          topRight: Radius.circular(AppRadius.xxl),
-        ),
-      ),
+      padding: const EdgeInsets.all(20),
+      decoration: const BoxDecoration(color: Colors.white),
       margin: const EdgeInsets.only(bottom: 40),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,7 +280,7 @@ class _DetailContent extends StatelessWidget {
             children: [
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.only(top: AppSpacing.lg_2),
+                  padding: const EdgeInsets.only(top: AppSpacing.lg),
                   child: Stack(
                     children: [
                       Column(
@@ -278,7 +289,7 @@ class _DetailContent extends StatelessWidget {
                           Text(
                             house.title,
                             style: AppTextStyles.titleLarge.copyWith(
-                              fontSize: 20,
+                              fontSize: 18,
                             ),
                           ),
                           const SizedBox(height: AppSpacing.xs),
@@ -287,12 +298,15 @@ class _DetailContent extends StatelessWidget {
                               text: '¥ ${house.price}',
                               style: AppTextStyles.titleLarge.copyWith(
                                 color: AppColors.primary,
-                                fontSize: 24,
+                                fontSize: 18,
                               ),
                               children: [
                                 TextSpan(
                                   text: ' /月',
-                                  style: AppTextStyles.bodyLarge,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                  ),
                                 ),
                               ],
                             ),
@@ -302,20 +316,33 @@ class _DetailContent extends StatelessWidget {
                       Positioned(
                         top: 10,
                         right: 0,
-                        child: Chip(
-                          avatar: const Icon(
-                            Icons.verified_user,
-                            size: 14,
-                            color: AppColors.primary,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.sm,
+                            vertical: AppSpacing.xs,
                           ),
-                          label: const Text(
-                            '平台验真',
-                            style: TextStyle(fontSize: 12),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryLight,
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          backgroundColor: AppColors.primaryLight,
-                          side: BorderSide.none,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.xl),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.verified_user,
+                                size: 10,
+                                color: AppColors.primary,
+                              ),
+                              SizedBox(width: AppSpacing.xs),
+                              Text(
+                                '平台验真',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -337,7 +364,8 @@ class _DetailContent extends StatelessWidget {
               Expanded(
                 child: Text(
                   '${house.location} · ${house.community}',
-                  style: AppTextStyles.bodyMedium.copyWith(
+                  style: TextStyle(
+                    fontSize: 10,
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -414,7 +442,7 @@ class _InfoCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title, style: AppTextStyles.housedetailtoolTitle),
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: 6),
           Row(children: children),
         ],
       ),
@@ -439,7 +467,7 @@ class _InfoMetric extends StatelessWidget {
       child: Column(
         children: [
           Icon(icon, color: AppColors.textSecondary, size: 24),
-          const SizedBox(height: AppSpacing.xs),
+          const SizedBox(height: 2),
           Text(
             value,
             style: AppTextStyles.housedetailtoolL1,
@@ -485,7 +513,7 @@ class _FacilitiesCard extends StatelessWidget {
               const Spacer(),
               Text(
                 '查看全部',
-                style: TextStyle(color: AppColors.primary, fontSize: 10),
+                style: TextStyle(color: AppColors.primary, fontSize: 8),
               ),
               const Icon(
                 Icons.chevron_right,
@@ -664,9 +692,14 @@ class _DescriptionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('房源描述', style: AppTextStyles.titleMedium),
-          const SizedBox(height: AppSpacing.md),
-          Text(house.description, style: AppTextStyles.bodyLarge),
+          Text('房源描述', style: AppTextStyles.housedetailtoolTitle),
+          const SizedBox(height: 4),
+          Text(
+            house.description,
+            style: AppTextStyles.housedetailtoolTitle.copyWith(
+              color: const Color.fromARGB(255, 78, 78, 78),
+            ),
+          ),
         ],
       ),
     );
@@ -681,20 +714,17 @@ class _DetailTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.xs,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: AppColors.primaryLight,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
         label,
         style: AppTextStyles.bodyMedium.copyWith(
           color: AppColors.primary,
           fontWeight: FontWeight.w600,
-          fontSize: 10,
+          fontSize: 9,
         ),
       ),
     );
@@ -731,30 +761,33 @@ class _BottomActionBar extends ConsumerWidget {
         child: Row(
           children: [
             Expanded(
-              child: OutlinedButton.icon(
-                onPressed: flow.isLoading
-                    ? null
-                    : () => _startConsultation(context, ref),
-                icon: const Icon(Icons.chat_bubble_outline, size: 18),
-                label: const Text('在线咨询'),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: OutlinedButton.icon(
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: AppColors.surface,
+                  side: const BorderSide(color: AppColors.primary, width: 1),
+                  foregroundColor: AppColors.primary,
+                  fixedSize: const Size.fromHeight(36),
+                  padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
                 onPressed: flow.isLoading ? null : () => _openViewing(context),
-                icon: const Icon(Icons.event_available_outlined, size: 18),
-                label: const Text('预约看房'),
+                child: const Text('预约看房'),
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
-              child: ElevatedButton.icon(
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  fixedSize: const Size.fromHeight(36),
+                  padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
                 onPressed: flow.isLoading
                     ? null
                     : () => _openApplication(context),
-                icon: const Icon(Icons.assignment_outlined, size: 18),
-                label: const Text('立即申请'),
+                child: const Text('立即申请'),
               ),
             ),
           ],
@@ -802,7 +835,7 @@ class _DetailSkeleton extends StatelessWidget {
         CustomScrollView(
           slivers: [
             SliverAppBar(
-              expandedHeight: 300,
+              expandedHeight: 150,
               pinned: true,
               backgroundColor: AppColors.surface,
               flexibleSpace: FlexibleSpaceBar(
@@ -819,6 +852,7 @@ class _DetailSkeleton extends StatelessWidget {
                     AppSpacing.xl,
                     AppSpacing.xl,
                   ),
+                  margin: const EdgeInsets.only(bottom: 40),
                   decoration: const BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.only(
@@ -829,38 +863,63 @@ class _DetailSkeleton extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _SkeletonBox(width: 200, height: 30),
+                      // 标题 + 价格 + 验真 chip
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                top: AppSpacing.lg_2,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _SkeletonBox(width: 200, height: 20),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  _SkeletonBox(width: 150, height: 24),
+                                ],
+                              ),
+                            ),
+                          ),
+                          _SkeletonBox(width: 64, height: 24),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      // 位置
+                      Row(
+                        children: [
+                          _SkeletonBox(width: 14, height: 14),
+                          const SizedBox(width: AppSpacing.xs),
+                          Expanded(child: _SkeletonBox(height: 16)),
+                          _SkeletonBox(width: 16, height: 16),
+                        ],
+                      ),
                       const SizedBox(height: AppSpacing.sm),
-                      _SkeletonBox(width: 150, height: 34),
-                      const SizedBox(height: AppSpacing.md),
-                      _SkeletonBox(width: 250, height: 16),
-                      const SizedBox(height: AppSpacing.md),
+                      // 标签
                       Row(
                         children: List.generate(
-                          3,
+                          4,
                           (_) => Padding(
                             padding: const EdgeInsets.only(
-                              right: AppSpacing.sm,
+                              right: AppSpacing.xs,
                             ),
                             child: _SkeletonBox(width: 64, height: 24),
                           ),
                         ),
                       ),
-                      const SizedBox(height: AppSpacing.xl),
-                      _SkeletonBox(width: 80, height: 18),
-                      const SizedBox(height: AppSpacing.lg),
-                      Row(
-                        children: List.generate(
-                          4,
-                          (_) => Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.sm,
-                              ),
+                      const SizedBox(height: AppSpacing.sm),
+                      // 房屋信息
+                      _SkeletonCard(
+                        titleWidth: 60,
+                        child: Row(
+                          children: List.generate(
+                            4,
+                            (_) => Expanded(
                               child: Column(
                                 children: [
-                                  _SkeletonBox(width: 34, height: 34),
-                                  const SizedBox(height: AppSpacing.sm),
+                                  _SkeletonBox(width: 24, height: 24),
+                                  const SizedBox(height: AppSpacing.xs),
                                   _SkeletonBox(width: 40, height: 14),
                                   const SizedBox(height: AppSpacing.xs),
                                   _SkeletonBox(width: 30, height: 12),
@@ -870,14 +929,92 @@ class _DetailSkeleton extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(height: AppSpacing.md),
-                      _SkeletonBox(width: double.infinity, height: 140),
-                      const SizedBox(height: AppSpacing.md),
-                      _SkeletonBox(width: double.infinity, height: 80),
-                      const SizedBox(height: AppSpacing.md),
-                      _SkeletonBox(width: double.infinity, height: 70),
-                      const SizedBox(height: AppSpacing.md),
-                      _SkeletonBox(width: double.infinity, height: 100),
+                      const SizedBox(height: AppSpacing.sm),
+                      // 房屋设施
+                      _SkeletonCard(
+                        titleWidth: 60,
+                        child: Column(
+                          children: [
+                            const SizedBox(height: AppSpacing.lg),
+                            Row(
+                              children: List.generate(
+                                6,
+                                (_) => Expanded(
+                                  child: Column(
+                                    children: [
+                                      _SkeletonBox(width: 24, height: 24),
+                                      const SizedBox(height: AppSpacing.sm),
+                                      _SkeletonBox(width: 40, height: 12),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      // 房东信息
+                      _SkeletonCard(
+                        titleWidth: 80,
+                        child: Row(
+                          children: [
+                            const _SkeletonBox(width: 48, height: 48),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _SkeletonBox(width: 120, height: 16),
+                                  const SizedBox(height: 2),
+                                  _SkeletonBox(width: 200, height: 12),
+                                ],
+                              ),
+                            ),
+                            _SkeletonBox(width: 40, height: 40),
+                            const SizedBox(width: AppSpacing.sm),
+                            _SkeletonBox(width: 40, height: 40),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      // 智能生活
+                      _SkeletonCard(
+                        titleWidth: 80,
+                        child: Row(
+                          children: [
+                            const _SkeletonBox(width: 24, height: 24),
+                            const SizedBox(width: AppSpacing.lg),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _SkeletonBox(width: 80, height: 16),
+                                  const SizedBox(height: AppSpacing.sm),
+                                  _SkeletonBox(width: 200, height: 12),
+                                ],
+                              ),
+                            ),
+                            _SkeletonBox(width: 14, height: 14),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      // 房源描述
+                      _SkeletonCard(
+                        titleWidth: 60,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: AppSpacing.md),
+                            _SkeletonBox(width: double.infinity, height: 14),
+                            const SizedBox(height: AppSpacing.xs),
+                            _SkeletonBox(width: double.infinity, height: 14),
+                            const SizedBox(height: AppSpacing.xs),
+                            _SkeletonBox(width: 200, height: 14),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -910,10 +1047,10 @@ class _DetailSkeleton extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  _SkeletonBox(width: 40, height: 40),
-                  const SizedBox(width: AppSpacing.md),
                   Expanded(child: _SkeletonBox(height: 40)),
-                  const SizedBox(width: AppSpacing.md),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(child: _SkeletonBox(height: 40)),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(child: _SkeletonBox(height: 40)),
                 ],
               ),
@@ -921,6 +1058,32 @@ class _DetailSkeleton extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _SkeletonCard extends StatelessWidget {
+  const _SkeletonCard({required this.titleWidth, required this.child});
+
+  final double titleWidth;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        boxShadow: AppShadows.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SkeletonBox(width: titleWidth, height: 16),
+          child,
+        ],
+      ),
     );
   }
 }

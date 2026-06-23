@@ -83,12 +83,18 @@ class HouseService {
         return ApiFailure(message: '房源详情数据格式错误');
       }
 
-      final detailData = responseData['data'] as Map<String, dynamic>?;
-      if (detailData == null) {
-        return ApiFailure(message: '房源详情数据为空');
+      if (responseData['code'] != 200) {
+        return ApiFailure(
+          message: responseData['message'] as String? ?? '获取房源详情失败',
+        );
       }
 
-      return ApiSuccess(HouseDetail.fromJson(detailData));
+      final data = responseData['data'];
+      if (data is! Map<String, dynamic>) {
+        return ApiFailure(message: '房源详情数据结构错误');
+      }
+
+      return ApiSuccess(HouseDetail.fromJson(data));
     }
 
     if (result is ApiFailure<Response<dynamic>>) {
