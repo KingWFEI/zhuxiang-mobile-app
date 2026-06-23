@@ -9,6 +9,8 @@ import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../auth/presentation/providers/auth_controller.dart';
+import '../../data/models/profile_models.dart';
+import '../../data/providers/profile_providers.dart';
 import '../widgets/profile_menu_tile.dart';
 
 class ProfilePage extends ConsumerWidget {
@@ -41,7 +43,7 @@ class ProfilePage extends ConsumerWidget {
                 isVerified: user.isVerified,
               ),
             const SizedBox(height: AppSpacing.lg),
-            const _CurrentHomeCard(),
+            if (user != null) const _CurrentHomeCard(),
             const SizedBox(height: AppSpacing.lg),
             const _MenuGrid(),
             const SizedBox(height: AppSpacing.lg),
@@ -119,7 +121,7 @@ class _ProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 82,
+      height: 46,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -143,11 +145,6 @@ class _ProfileHeader extends StatelessWidget {
                   Spacer(),
                   Icon(Icons.notifications_none, size: 20),
                 ],
-              ),
-              const Spacer(),
-              Text(
-                '我的',
-                style: AppTextStyles.titleLarge.copyWith(fontSize: 20),
               ),
               const SizedBox(height: AppSpacing.sm),
               Text('安心居住，住享相伴', style: AppTextStyles.bodySmall),
@@ -266,23 +263,33 @@ class _GuestCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
-                Text('登录后查看租约、账单和门锁', style: AppTextStyles.bodySmall),
+                Text(
+                  '登录后查看租约、账单和门锁',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ],
             ),
           ),
-          SizedBox(
-            width: 76,
-            child: ElevatedButton(
-              onPressed: onLogin,
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(0, 34),
-                padding: EdgeInsets.zero,
-                textStyle: AppTextStyles.bodySmall.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+          ElevatedButton(
+            onPressed: onLogin,
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              minimumSize: Size.zero,
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.xl),
               ),
-              child: const Text('去登录'),
+              textStyle: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+              ),
             ),
+            child: const Text('去登录'),
           ),
         ],
       ),
@@ -290,99 +297,127 @@ class _GuestCard extends StatelessWidget {
   }
 }
 
-class _CurrentHomeCard extends StatelessWidget {
+class _CurrentHomeCard extends ConsumerWidget {
   const _CurrentHomeCard();
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: const [
-            Color(0xFFE0F2FE), // 浅蓝色
-            Colors.white, // 白色
-          ],
-        ),
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        boxShadow: AppShadows.card,
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned(
-            top: -8,
-            right: 96,
-            child: Image.asset(
-              "assets/lock_style.png",
-              width: 76,
-              fit: BoxFit.fitWidth,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final result = ref.watch(currentHomeProvider);
+
+    return result.when(
+      data: (data) {
+        if (data == null) return const SizedBox.shrink();
+        final home = data.home;
+        final lock = data.lock;
+
+        return Container(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFE0F2FE), Colors.white],
             ),
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            boxShadow: AppShadows.card,
           ),
-          Row(
+          child: Stack(
+            clipBehavior: Clip.none,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('当前居住', style: AppTextStyles.bodySmall),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      '3栋2单元1201',
-                      style: AppTextStyles.bodyLarge.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+              Positioned(
+                top: -8,
+                right: 96,
+                child: Image.asset(
+                  'assets/lock_style.png',
+                  width: 76,
+                  fit: BoxFit.fitWidth,
+                ),
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('当前居住', style: AppTextStyles.bodySmall),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          home?.addressLabel ?? '--',
+                          style: AppTextStyles.bodyLarge.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        _LockStatusChip(lock: lock),
+                      ],
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Chip(
-                      visualDensity: VisualDensity.compact,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20), // 这里的值可以随意调整
-                      ),
-                      avatar: const Icon(
-                        Icons.lock,
-                        color: AppColors.secondary,
-                        size: 14,
-                      ),
-                      label: Text(
-                        '门锁已上锁',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.secondary,
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  SizedBox(
+                    width: 94,
+                    child: OutlinedButton(
+                      onPressed: () {},
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 34),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.xs,
+                        ),
+                        textStyle: AppTextStyles.bodySmall.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      backgroundColor: const Color(0xFFE3FAF4),
-                      side: BorderSide.none,
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(width: AppSpacing.md),
-              SizedBox(
-                width: 94,
-                child: OutlinedButton.icon(
-                  onPressed: () {},
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(0, 34),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.xs,
-                    ),
-                    textStyle: AppTextStyles.bodySmall.copyWith(
-                      fontWeight: FontWeight.w600,
+                      child: const Text('查看门锁'),
                     ),
                   ),
-                  icon: const Icon(Icons.chevron_right, size: 16),
-                  label: const Text('查看门锁'),
-                ),
+                ],
               ),
             ],
           ),
-        ],
+        );
+      },
+      error: (_, __) => const SizedBox.shrink(),
+      loading: () => const SizedBox.shrink(),
+    );
+  }
+}
+
+class _LockStatusChip extends StatelessWidget {
+  const _LockStatusChip({required this.lock});
+
+  final LockInfo? lock;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasLock = lock != null;
+    final label = lock?.statusLabel ?? '未绑定门锁';
+    final iconColor = hasLock && lock!.isOnline && !lock!.isLowBattery
+        ? AppColors.secondary
+        : AppColors.warning;
+    final bgColor = hasLock && lock!.isOnline && !lock!.isLowBattery
+        ? const Color(0xFFE3FAF4)
+        : const Color(0xFFFFF4E5);
+    final textColor = hasLock && lock!.isOnline && !lock!.isLowBattery
+        ? AppColors.secondary
+        : AppColors.warning;
+
+    return Chip(
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      avatar: Icon(
+        hasLock ? Icons.lock : Icons.lock_open,
+        color: iconColor,
+        size: 14,
       ),
+      label: Text(
+        label,
+        style: AppTextStyles.bodySmall.copyWith(
+          color: textColor,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      backgroundColor: bgColor,
+      side: BorderSide.none,
     );
   }
 }
