@@ -90,7 +90,7 @@ class _MoveInCompletePageState extends ConsumerState<MoveInCompletePage> {
           _EntryButton(
             icon: Icons.build_outlined,
             label: '提交报修',
-            onTap: () => context.pushNamed(RouteNames.repair),
+            onTap: () => context.pushNamed(RouteNames.repairs),
           ),
         ],
       ),

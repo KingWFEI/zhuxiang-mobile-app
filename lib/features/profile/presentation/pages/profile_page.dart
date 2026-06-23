@@ -375,7 +375,7 @@ class _CurrentHomeCard extends ConsumerWidget {
           ),
         );
       },
-      error: (_, __) => const SizedBox.shrink(),
+      error: (error, stackTrace) => const SizedBox.shrink(),
       loading: () => const SizedBox.shrink(),
     );
   }
@@ -463,6 +463,8 @@ class _MenuGrid extends StatelessWidget {
             onTap = () => context.pushNamed(RouteNames.lease);
           } else if (index == 1) {
             onTap = () => context.pushNamed(RouteNames.unlockRecords);
+          } else if (index == 3) {
+            onTap = () => context.pushNamed(RouteNames.repairs);
           }
 
           return InkWell(

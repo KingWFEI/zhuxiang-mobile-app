@@ -21,6 +21,10 @@ class RouteNames {
   static const lock = 'lock';
   static const unlockRecords = 'unlockRecords';
   static const repair = 'repair';
+  static const repairs = 'repairs';
+  static const createRepair = 'createRepair';
+  static const repairRecords = 'repairRecords';
+  static const repairDetail = 'repairDetail';
   static const messageCenter = 'messageCenter';
   static const customerService = 'customerService';
   static const viewingAppointment = 'viewingAppointment';

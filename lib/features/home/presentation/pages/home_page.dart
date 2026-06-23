@@ -153,7 +153,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       case 'unlock_records':
         context.pushNamed(RouteNames.unlockRecords);
       case 'repairs':
-        context.pushNamed(RouteNames.repair);
+        context.pushNamed(RouteNames.repairs);
       case 'customer_service':
         context.pushNamed(RouteNames.customerService);
       default:

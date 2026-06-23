@@ -21,6 +21,10 @@ class RoutePaths {
   static const lock = '/lock';
   static const unlockRecords = '/locks/records';
   static const repair = '/repair';
+  static const repairs = '/repairs';
+  static const createRepair = '/repairs/create';
+  static const repairRecords = '/repairs/records';
+  static const repairDetail = '/repairs/:repairId';
   static const messageCenter = '/messages';
   static const customerService = '/customer-service';
   static const viewingAppointment = '/rental-flow/:houseId/viewing-appointment';

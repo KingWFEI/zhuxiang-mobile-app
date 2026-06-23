@@ -14,6 +14,11 @@ import '../../features/lease/presentation/pages/lease_detail_page.dart';
 import '../../features/lease/presentation/pages/my_leases_page.dart';
 import '../../features/message/presentation/pages/message_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/repair/domain/entities/repair_order.dart';
+import '../../features/repair/presentation/pages/create_repair_page.dart';
+import '../../features/repair/presentation/pages/repair_detail_page.dart';
+import '../../features/repair/presentation/pages/repair_records_page.dart';
+import '../../features/repair/presentation/pages/repair_service_page.dart';
 import '../../features/rental_flow/presentation/pages/lease_contract_page.dart';
 import '../../features/rental_flow/presentation/pages/move_in_complete_page.dart';
 import '../../features/rental_flow/presentation/pages/payment_page.dart';
@@ -163,9 +168,32 @@ class AppRouter {
         builder: (context, state) => const AppPlaceholderPage(title: '智能门锁'),
       ),
       GoRoute(
+        name: RouteNames.repairs,
+        path: RoutePaths.repairs,
+        builder: (context, state) => const RepairServicePage(),
+      ),
+      GoRoute(
+        name: RouteNames.createRepair,
+        path: RoutePaths.createRepair,
+        builder: (context, state) => CreateRepairPage(
+          initialType: RepairType.fromValue(state.uri.queryParameters['type']),
+        ),
+      ),
+      GoRoute(
+        name: RouteNames.repairRecords,
+        path: RoutePaths.repairRecords,
+        builder: (context, state) => const RepairRecordsPage(),
+      ),
+      GoRoute(
+        name: RouteNames.repairDetail,
+        path: RoutePaths.repairDetail,
+        builder: (context, state) =>
+            RepairDetailPage(repairId: state.pathParameters['repairId'] ?? ''),
+      ),
+      GoRoute(
         name: RouteNames.repair,
         path: RoutePaths.repair,
-        builder: (context, state) => const AppPlaceholderPage(title: '报修'),
+        redirect: (context, state) => RoutePaths.repairs,
       ),
       GoRoute(
         name: RouteNames.customerService,
