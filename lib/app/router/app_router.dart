@@ -98,17 +98,14 @@ class AppRouter {
       GoRoute(
         name: RouteNames.lease,
         path: RoutePaths.lease,
-        // TODO: 联调完成后移除 enforceAuthentication，恢复租约登录拦截。
         builder: (context, state) =>
             const MyLeasesPage(enforceAuthentication: false),
-        routes: [
-          GoRoute(
-            name: RouteNames.leaseDetail,
-            path: RoutePaths.leaseDetail,
-            builder: (context, state) =>
-                LeaseDetailPage(leaseId: state.pathParameters['leaseId'] ?? ''),
-          ),
-        ],
+      ),
+      GoRoute(
+        name: RouteNames.leaseDetail,
+        path: RoutePaths.leaseDetail,
+        builder: (context, state) =>
+            LeaseDetailPage(leaseId: state.pathParameters['leaseId'] ?? ''),
       ),
       GoRoute(
         name: RouteNames.lease,
