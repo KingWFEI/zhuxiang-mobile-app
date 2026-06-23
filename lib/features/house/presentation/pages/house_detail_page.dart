@@ -316,20 +316,33 @@ class _DetailContent extends StatelessWidget {
                       Positioned(
                         top: 10,
                         right: 0,
-                        child: Chip(
-                          avatar: const Icon(
-                            Icons.verified_user,
-                            size: 14,
-                            color: AppColors.primary,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.sm,
+                            vertical: AppSpacing.xs,
                           ),
-                          label: const Text(
-                            '平台验真',
-                            style: TextStyle(fontSize: 12),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryLight,
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          backgroundColor: AppColors.primaryLight,
-                          side: BorderSide.none,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.xl),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.verified_user,
+                                size: 10,
+                                color: AppColors.primary,
+                              ),
+                              SizedBox(width: AppSpacing.xs),
+                              Text(
+                                '平台验真',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -351,7 +364,8 @@ class _DetailContent extends StatelessWidget {
               Expanded(
                 child: Text(
                   '${house.location} · ${house.community}',
-                  style: AppTextStyles.bodyMedium.copyWith(
+                  style: TextStyle(
+                    fontSize: 10,
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -428,7 +442,7 @@ class _InfoCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title, style: AppTextStyles.housedetailtoolTitle),
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: 6),
           Row(children: children),
         ],
       ),
@@ -453,7 +467,7 @@ class _InfoMetric extends StatelessWidget {
       child: Column(
         children: [
           Icon(icon, color: AppColors.textSecondary, size: 24),
-          const SizedBox(height: AppSpacing.xs),
+          const SizedBox(height: 2),
           Text(
             value,
             style: AppTextStyles.housedetailtoolL1,
@@ -499,7 +513,7 @@ class _FacilitiesCard extends StatelessWidget {
               const Spacer(),
               Text(
                 '查看全部',
-                style: TextStyle(color: AppColors.primary, fontSize: 10),
+                style: TextStyle(color: AppColors.primary, fontSize: 8),
               ),
               const Icon(
                 Icons.chevron_right,
@@ -678,9 +692,14 @@ class _DescriptionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('房源描述', style: AppTextStyles.titleMedium),
-          const SizedBox(height: AppSpacing.md),
-          Text(house.description, style: AppTextStyles.bodyLarge),
+          Text('房源描述', style: AppTextStyles.housedetailtoolTitle),
+          const SizedBox(height: 4),
+          Text(
+            house.description,
+            style: AppTextStyles.housedetailtoolTitle.copyWith(
+              color: const Color.fromARGB(255, 78, 78, 78),
+            ),
+          ),
         ],
       ),
     );
@@ -695,20 +714,17 @@ class _DetailTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.xs,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: AppColors.primaryLight,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
         label,
         style: AppTextStyles.bodyMedium.copyWith(
           color: AppColors.primary,
           fontWeight: FontWeight.w600,
-          fontSize: 10,
+          fontSize: 9,
         ),
       ),
     );
@@ -745,30 +761,33 @@ class _BottomActionBar extends ConsumerWidget {
         child: Row(
           children: [
             Expanded(
-              child: OutlinedButton.icon(
-                onPressed: flow.isLoading
-                    ? null
-                    : () => _startConsultation(context, ref),
-                icon: const Icon(Icons.chat_bubble_outline, size: 18),
-                label: const Text('在线咨询'),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: OutlinedButton.icon(
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: AppColors.surface,
+                  side: const BorderSide(color: AppColors.primary, width: 1),
+                  foregroundColor: AppColors.primary,
+                  fixedSize: const Size.fromHeight(36),
+                  padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
                 onPressed: flow.isLoading ? null : () => _openViewing(context),
-                icon: const Icon(Icons.event_available_outlined, size: 18),
-                label: const Text('预约看房'),
+                child: const Text('预约看房'),
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
-              child: ElevatedButton.icon(
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  fixedSize: const Size.fromHeight(36),
+                  padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
                 onPressed: flow.isLoading
                     ? null
                     : () => _openApplication(context),
-                icon: const Icon(Icons.assignment_outlined, size: 18),
-                label: const Text('立即申请'),
+                child: const Text('立即申请'),
               ),
             ),
           ],

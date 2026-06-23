@@ -9,6 +9,7 @@ import '../../features/house/presentation/pages/house_filter_page.dart';
 import '../../features/house/presentation/pages/house_search_page.dart';
 import '../../features/house/presentation/pages/house_search_result_page.dart';
 import '../../features/house/presentation/pages/house_detail_page.dart';
+import '../../features/lock/presentation/pages/unlock_records_page.dart';
 import '../../features/lease/presentation/pages/lease_detail_page.dart';
 import '../../features/lease/presentation/pages/my_leases_page.dart';
 import '../../features/message/presentation/pages/message_page.dart';
@@ -90,25 +91,26 @@ class AppRouter {
                 path: RoutePaths.profile,
                 builder: (context, state) => const ProfilePage(),
               ),
-              GoRoute(
-                name: RouteNames.lease,
-                path: RoutePaths.lease,
-                // TODO: 联调完成后移除 enforceAuthentication，恢复租约登录拦截。
-                builder: (context, state) =>
-                    const MyLeasesPage(enforceAuthentication: false),
-                routes: [
-                  GoRoute(
-                    name: RouteNames.leaseDetail,
-                    path: RoutePaths.leaseDetail,
-                    builder: (context, state) => LeaseDetailPage(
-                      leaseId: state.pathParameters['leaseId'] ?? '',
-                    ),
-                  ),
-                ],
-              ),
             ],
           ),
         ],
+      ),
+      GoRoute(
+        name: RouteNames.lease,
+        path: RoutePaths.lease,
+        builder: (context, state) =>
+            const MyLeasesPage(enforceAuthentication: false),
+      ),
+      GoRoute(
+        name: RouteNames.leaseDetail,
+        path: RoutePaths.leaseDetail,
+        builder: (context, state) =>
+            LeaseDetailPage(leaseId: state.pathParameters['leaseId'] ?? ''),
+      ),
+      GoRoute(
+        name: RouteNames.unlockRecords,
+        path: RoutePaths.unlockRecords,
+        builder: (context, state) => const UnlockRecordsPage(),
       ),
       GoRoute(
         name: RouteNames.houseList,

@@ -35,7 +35,7 @@ class AppColors {
   static const textPrimary = Color(0xFF1F2937);
 
   /// 次要文本色（中灰）- 用于辅助文字、描述、提示
-  static const textSecondary = Color.fromARGB(255, 122, 124, 128);
+  static const textSecondary = Color(0xFF7B8190);
 
   /// 禁用/占位文本色（浅灰）- 用于占位符、禁用状态的文字
   static const textMuted = Color(0xFF9CA3AF);
