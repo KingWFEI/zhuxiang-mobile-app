@@ -457,12 +457,17 @@ class _MenuGrid extends StatelessWidget {
         ),
         itemBuilder: (context, index) {
           final item = items[index];
+          VoidCallback? onTap;
+
+          if (index == 0) {
+            onTap = () => context.pushNamed(RouteNames.lease);
+          } else if (index == 1) {
+            onTap = () => context.pushNamed(RouteNames.unlockRecords);
+          }
+
           return InkWell(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            onTap: index == 0
-                // TODO: 联调完成后恢复登录校验，未登录用户应跳转登录页。
-                ? () => context.pushNamed(RouteNames.lease)
-                : null,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            onTap: onTap,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
