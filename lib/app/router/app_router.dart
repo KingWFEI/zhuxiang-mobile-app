@@ -108,18 +108,6 @@ class AppRouter {
             LeaseDetailPage(leaseId: state.pathParameters['leaseId'] ?? ''),
       ),
       GoRoute(
-        name: RouteNames.lease,
-        path: RoutePaths.lease,
-        builder: (context, state) =>
-            const MyLeasesPage(enforceAuthentication: false),
-      ),
-      GoRoute(
-        name: RouteNames.leaseDetail,
-        path: RoutePaths.leaseDetail,
-        builder: (context, state) =>
-            LeaseDetailPage(leaseId: state.pathParameters['leaseId'] ?? ''),
-      ),
-      GoRoute(
         name: RouteNames.unlockRecords,
         path: RoutePaths.unlockRecords,
         builder: (context, state) => const UnlockRecordsPage(),
