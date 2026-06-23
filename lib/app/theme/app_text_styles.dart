@@ -60,12 +60,14 @@ class AppTextStyles {
   );
   // 房屋详情页的专属标签样式
   static const housedetailtoolTitle = TextStyle(
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: FontWeight.w600,
+    color: AppColors.textPrimary,
   );
   static const housedetailtoolL1 = TextStyle(
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: FontWeight.w600,
+    color: AppColors.textSecondary,
   );
   static const housedetailtoolL2 = TextStyle(
     fontSize: 10,

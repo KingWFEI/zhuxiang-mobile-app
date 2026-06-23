@@ -69,122 +69,80 @@ flutter run
 4. 接入预约、实名认证、租约、账单等租住流程。
 5. 在明确 SDK 方案后接入智能门锁能力。
 
-# 新增功能后提交git流程：每次都需要先走这个流程提交代码
+# 分支提交标准流程
 
-git branch
+假设新功能分支叫：feature/add-search-page
 
-git status
+1. 从最新 develop 创建分支
+   git checkout develop
+   git pull origin develop
+   git checkout -b feature/add-search-page
+2. 开发功能，提交代码
+   写完代码后：
+   git status
+   git add .
+   git commit -m "新增搜索页面"
+3. 合并前同步最新 develop
+   git fetch origin
+   git merge origin/develop
+   把别人已经合并进 develop 的最新代码，同步到你的 feature/add-search-page 分支里。
 
-dart format lib test
-
-flutter analyze
-
-flutter test
-
-git status
-
-git add .
-
-git status
-
-<!-- git commit -m "feat: 优化首页便捷服务与分类吸顶效果" -->
-
-git commit -m "你的提交信息"
-
-<!-- 例如 git push -u origin feature/add_main_page -->
-
-git push origin 当前分支名
-
-## github代码审批流程
-
-提交当前功能分支
-→ push 到 GitHub
-→ 创建 PR 合并到 develop
-→ 本地切回 develop
-→ 拉取最新 develop
-→ 删除旧功能分支
-→ 从 develop 新建下一个功能分支
-
-## 本地提交功能分支代码，github合并代码到develop分支后
-
-<!-- 切回开发分支 -->
-
-git checkout develop
-
-<!-- 从开发分支拉去代码 -->
-
-git pull origin develop
-
-git status
-
-<!-- 确认当前是最新的代码 ：
-理想状态
-On branch develop
-Your branch is up to date with 'origin/develop'.
-nothing to commit, working tree clean
-
--->
-
-## 新建功能分支
-
-<!-- 比如下一个要做搜索页： -->
-
-git checkout -b feature/search_page
-
-<!-- 比如下一个要做预约看房： -->
-
-git checkout -b feature/appointment
-
-<!-- 比如下一个要做实名认证： -->
-
-git checkout -b feature/real_name_auth
-
-<!-- 然后开始开发。 -->
+4. 如果没有冲突
+   如果执行 git merge origin/develop 后提示类似：
+   Already up to date.
+   或者自动合并成功，没有冲突，那你不需要手动 git add . 和 git commit。
+   直接推送：
+   git push -u origin feature/add-search-page
+   然后去 GitHub 创建 PR：feature/add-search-page → develop
+5. 如果有冲突
+   如果出现冲突，比如：
+   CONFLICT (content): lib/app/router/app_router.dart
+   Automatic merge failed; fix conflicts and then commit the result.
+   你就需要手动解决冲突。
+   解决完后执行：
+   git add .
+   git commit -m "合并最新develop并解决冲突"
+   git push -u origin feature/add-search-page
+   然后再去 GitHub 创建 PR：
+   feature/add-search-page → develop
 
 ## 踩坑日记
 
-在错误的分支上提交了commit：
+### 场景：在错误的分支上提交了代码
 
-729b7e6 修改md中git提交流程规范
+某次提交 `729b7e6`（修改 md 中 git 提交流程规范）不小心提交到了 `feature/add_main_page` 分支上，而不是目标分支 `docs/update-git-workflow`。更麻烦的是，`feature/add_main_page` 已经被删除了。
 
-是提交在：
+切换到 `docs/update-git-workflow` 后，`git status` 显示没有任何未提交的修改（`nothing to commit`），因为改动已经以 commit 的形式存在于另一个分支的历史中，不会自动带到当前分支。
 
-feature/add_main_page(该分支已经删除)
+### 解决方法：用 cherry-pick 把 commit「搬运」过来
 
-分支上的，不是在 develop 上，也不是在 docs/update-git-workflow 上。
+1. 先切到 develop 并拉取最新代码：
 
-所以切到 docs/update-git-workflow 后看到：
-
-nothing to commit
-
-因为文件修改已经被提交成 commit 了，不再是“未提交状态”。
-
-现在正确做法：把这个 commit 拿到 docs 分支
-
-把：
-
-729b7e6
-
-这个提交 cherry-pick 到 docs/update-git-workflow 分支。
-
-正确执行流程：
-
-先回到最新的 develop：
-
+```bash
 git checkout develop
-
-<!-- 拉去下来最新代码保持最新代码内容一致 -->
-
 git pull --ff-only origin develop
+```
 
-然后重新创建或重置文档分支：
+2. 基于 develop 重建目标分支：
 
+```bash
 git checkout -B docs/update-git-workflow develop
+```
 
-再把那个 MD 提交复制过来：
+> `checkout -B` 会重置该分支指向 develop，相当于重新创建。
 
+3. 把那个 commit 搬运到当前分支：
+
+```bash
 git cherry-pick 729b7e6
+```
 
-然后推送文档分支：
+4. 推送到远程：
 
+```bash
 git push -u origin docs/update-git-workflow
+```
+
+### 一句话总结
+
+**commit 提交到错误分支后，用 `git cherry-pick <commit-hash>` 把它复制到正确的分支。**
