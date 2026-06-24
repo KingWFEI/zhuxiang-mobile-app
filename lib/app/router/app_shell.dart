@@ -3,11 +3,17 @@ import 'package:go_router/go_router.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
+import 'role_navigation_config.dart';
 
 class AppShell extends StatelessWidget {
-  const AppShell({required this.navigationShell, super.key});
+  const AppShell({
+    required this.navigationShell,
+    required this.tabs,
+    super.key,
+  });
 
   final StatefulNavigationShell navigationShell;
+  final List<AppTabConfig> tabs;
 
   @override
   Widget build(BuildContext context) {
@@ -15,6 +21,7 @@ class AppShell extends StatelessWidget {
       body: navigationShell,
       bottomNavigationBar: _BottomTabBar(
         currentIndex: navigationShell.currentIndex,
+        tabs: tabs,
         onSelected: (index) {
           navigationShell.goBranch(
             index,
@@ -27,60 +34,48 @@ class AppShell extends StatelessWidget {
 }
 
 class _BottomTabBar extends StatelessWidget {
-  const _BottomTabBar({required this.currentIndex, required this.onSelected});
+  const _BottomTabBar({
+    required this.currentIndex,
+    required this.tabs,
+    required this.onSelected,
+  });
 
   final int currentIndex;
+  final List<AppTabConfig> tabs;
   final ValueChanged<int> onSelected;
 
   @override
   Widget build(BuildContext context) {
+    final tabItems = List.generate(tabs.length, (index) {
+      final tab = tabs[index];
+      return _TabItem(
+        icon: tab.icon,
+        selectedIcon: tab.selectedIcon,
+        label: tab.label,
+        isSelected: currentIndex == index,
+        showBadge: tab.showBadge,
+        onTap: () => onSelected(index),
+      );
+    });
+
     return SafeArea(
       top: false,
       child: Container(
         height: 50,
         padding: const EdgeInsets.only(top: 10),
         decoration: const BoxDecoration(color: AppColors.surface),
-        child: Row(
-          children: [
-            Expanded(
-              child: _TabItem(
-                icon: Icons.home_outlined,
-                selectedIcon: Icons.home,
-                label: '首页',
-                isSelected: currentIndex == 0,
-                onTap: () => onSelected(0),
+        child: tabs.length <= 4
+            ? Row(
+                children: [for (final item in tabItems) Expanded(child: item)],
+              )
+            : ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                itemCount: tabItems.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 2),
+                itemBuilder: (context, index) =>
+                    SizedBox(width: 72, child: tabItems[index]),
               ),
-            ),
-            Expanded(
-              child: _TabItem(
-                icon: Icons.search,
-                selectedIcon: Icons.manage_search,
-                label: '找房',
-                isSelected: currentIndex == 1,
-                onTap: () => onSelected(1),
-              ),
-            ),
-            Expanded(
-              child: _TabItem(
-                icon: Icons.chat_bubble_outline,
-                selectedIcon: Icons.chat_bubble,
-                label: '消息',
-                isSelected: currentIndex == 2,
-                showBadge: true,
-                onTap: () => onSelected(2),
-              ),
-            ),
-            Expanded(
-              child: _TabItem(
-                icon: Icons.person_outline,
-                selectedIcon: Icons.person,
-                label: '我的',
-                isSelected: currentIndex == 3,
-                onTap: () => onSelected(3),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -129,6 +124,8 @@ class _TabItem extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: AppTextStyles.bottomTextStyle.copyWith(
               color: color,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,

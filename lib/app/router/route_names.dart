@@ -5,6 +5,7 @@ class RouteNames {
   static const login = 'login';
   static const register = 'register';
   static const main = 'main';
+  static const webAdminRequired = 'webAdminRequired';
   static const home = 'home';
   static const search = 'search';
   static const houseList = 'houseList';
@@ -34,4 +35,10 @@ class RouteNames {
   static const leaseContract = 'leaseContract';
   static const rentalPayment = 'rentalPayment';
   static const moveInComplete = 'moveInComplete';
+  static const staffWorkbench = 'staffWorkbench';
+  static const staffLockInit = 'staffLockInit';
+  static const staffLockBindRoom = 'staffLockBindRoom';
+  static const staffLockTestUnlock = 'staffLockTestUnlock';
+  static const staffUnlockRecords = 'staffUnlockRecords';
+  static const staffDebug = 'staffDebug';
 }

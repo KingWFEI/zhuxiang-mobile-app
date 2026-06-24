@@ -4,8 +4,11 @@ class RoutePaths {
   static const splash = '/';
   static const login = '/login';
   static const register = '/register';
+  static const webAdminRequired = '/web-admin-required';
   static const main = '/main';
-  static const home = '/home';
+  static const tenant = '/tenant';
+  static const legacyHome = '/home';
+  static const home = tenant;
   static const search = '/houses';
   static const houseList = '/house-list';
   static const houseSearch = '/house-search';
@@ -34,4 +37,10 @@ class RoutePaths {
   static const leaseContract = '/rental-flow/:houseId/lease-contract';
   static const rentalPayment = '/rental-flow/:houseId/payment';
   static const moveInComplete = '/rental-flow/:houseId/move-in-complete';
+  static const staff = '/staff';
+  static const staffLockInit = '/staff/locks/init';
+  static const staffLockBindRoom = '/staff/locks/bind-room';
+  static const staffLockTestUnlock = '/staff/locks/test-unlock';
+  static const staffUnlockRecords = '/staff/unlock-records';
+  static const staffDebug = '/staff/debug';
 }
