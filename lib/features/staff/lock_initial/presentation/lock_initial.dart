@@ -1,12 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:zhuxiang_app/core/utils/app_logger.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
-import '../data/staff_house.dart';
-import '../data/staff_house_providers.dart';
+import '../data/models/staff_house.dart';
+import '../data/providers/nearby_locks_provider.dart';
+import '../data/providers/staff_house_providers.dart';
 import '../services/ttlock_ble_service.dart';
 
 class LockInitial extends ConsumerStatefulWidget {
@@ -21,22 +25,31 @@ class _LockInitialState extends ConsumerState<LockInitial> {
   final _ttlockService = TtlockBleService();
 
   StaffHouse? _selectedHouse;
-  bool _isScanningLocks = false;
-  List<ScannedLockDevice> _nearbyLocks = const [];
   String _keyword = '';
 
-  bool get _canScanLocks => _selectedHouse != null && !_isScanningLocks;
+  bool get _canScanLocks {
+    return _selectedHouse != null && !ref.read(nearbyLocksProvider).isScanning;
+  }
+
+  Timer? _scanTimer;
+  bool _foundLockInCurrentScan = false;
+
+  final StreamController<String> _logController = StreamController<String>();
 
   @override
   void dispose() {
+    _scanTimer?.cancel();
     _searchController.dispose();
-    _ttlockService.stopScanning();
+    unawaited(_ttlockService.stopScanning());
+    _logController.close();
+    ref.read(nearbyLocksProvider.notifier).onScanStopped();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final housesAsync = ref.watch(unboundSmartLockHousesProvider);
+    final nearbyState = ref.watch(nearbyLocksProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('初始化门锁')),
@@ -59,8 +72,8 @@ class _LockInitialState extends ConsumerState<LockInitial> {
                 children: [
                   _SelectedHousePanel(
                     house: _selectedHouse,
-                    resultCount: _nearbyLocks.length,
-                    isScanningLocks: _isScanningLocks,
+                    resultCount: nearbyState.locks.length,
+                    isScanningLocks: nearbyState.isScanning,
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   _HouseSearchField(
@@ -92,19 +105,24 @@ class _LockInitialState extends ConsumerState<LockInitial> {
                       onSelected: _selectHouse,
                     ),
                   const SizedBox(height: AppSpacing.lg),
+                  TextLog(stream: _logController.stream),
+                  const SizedBox(height: AppSpacing.lg),
                   ElevatedButton.icon(
                     onPressed: _canScanLocks ? _startScanLocks : null,
-                    icon: _isScanningLocks
+                    icon: nearbyState.isScanning
                         ? const SizedBox.square(
                             dimension: 16,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.bluetooth_searching, size: 18),
-                    label: Text(_isScanningLocks ? '正在搜索' : '开始搜索附近门锁'),
+                    label: Text(nearbyState.isScanning ? '正在搜索' : '开始搜索附近门锁'),
                   ),
-                  if (_nearbyLocks.isNotEmpty) ...[
+                  if (nearbyState.locks.isNotEmpty) ...[
                     const SizedBox(height: AppSpacing.lg),
-                    _NearbyLockList(locks: _nearbyLocks),
+                    _NearbyLockList(
+                      locks: nearbyState.locks,
+                      onInitializeLock: _confirmInitializeLock,
+                    ),
                   ],
                 ],
               ),
@@ -123,46 +141,141 @@ class _LockInitialState extends ConsumerState<LockInitial> {
   }
 
   void _selectHouse(StaffHouse house) {
-    setState(() {
-      _selectedHouse = house;
-      _nearbyLocks = const [];
-    });
+    setState(() => _selectedHouse = house);
+    ref.read(nearbyLocksProvider.notifier).onScanStopped();
   }
 
   Future<void> _startScanLocks() async {
-    if (!_canScanLocks) return;
+    final scanNotifier = ref.read(nearbyLocksProvider.notifier);
+    if (!_canScanLocks || ref.read(nearbyLocksProvider).isScanning) return;
 
-    setState(() {
-      _isScanningLocks = true;
-      _nearbyLocks = const [];
-    });
+    AppLoggerDebug.lock('开始扫描附近门锁');
+    _logController.add('开始扫描附近门锁');
+    _foundLockInCurrentScan = false;
+    scanNotifier.onScanStarted();
+
+    _scanTimer?.cancel();
 
     try {
       await _ttlockService.init();
-      await _ttlockService.startScanning(
-        onDeviceFound: (device) {
-          if (!mounted) return;
-          setState(() {
-            final existingIndex = _nearbyLocks.indexWhere(
-              (item) => item.mac == device.mac,
+
+      await Future.any([
+        _ttlockService.startScanning(
+          onDeviceFound: (device) {
+            if (_foundLockInCurrentScan) return;
+            _foundLockInCurrentScan = true;
+
+            AppLoggerDebug.lock(
+              '扫描到门锁：${device.name}，MAC：${device.mac}，信号：${device.rssi} dBm',
             );
-            if (existingIndex == -1) {
-              _nearbyLocks = [..._nearbyLocks, device];
-              return;
-            }
-            final updated = _nearbyLocks.toList();
-            updated[existingIndex] = device;
-            _nearbyLocks = updated;
-          });
-        },
-      );
+            ref.read(nearbyLocksProvider.notifier).onDeviceFound(device);
+            unawaited(_stopScanLocks());
+          },
+        ),
+        Future.delayed(const Duration(seconds: 10), () {
+          throw TimeoutException('扫描启动超时');
+        }),
+      ]);
+
+      _scanTimer = Timer(const Duration(seconds: 10), () {
+        AppLoggerDebug.lock('扫描时间结束，自动停止扫描');
+        _stopScanLocks();
+      });
     } catch (error) {
+      _scanTimer?.cancel();
+      scanNotifier.onScanStopped();
+
       if (!mounted) return;
-      setState(() => _isScanningLocks = false);
+
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('扫描门锁失败：$error')));
     }
+  }
+
+  Future<void> _stopScanLocks() async {
+    _scanTimer?.cancel();
+    _scanTimer = null;
+
+    try {
+      await _ttlockService.stopScanning();
+    } catch (_) {}
+
+    AppLoggerDebug.lock('扫描已停止');
+    _logController.add('门锁扫描已停止');
+    ref.read(nearbyLocksProvider.notifier).onScanStopped();
+  }
+
+  Future<void> _confirmInitializeLock(ScannedLockDevice lock) async {
+    if (_selectedHouse == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('确认初始化门锁'),
+          content: Text(
+            '确定要将门锁 ${lock.name.isEmpty ? lock.mac : lock.name} '
+            '初始化并绑定到房源「${_selectedHouse!.title}」吗？\n\n'
+            'MAC：${lock.mac}\n'
+            '信号：${lock.rssi} dBm',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('取消'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('确认初始化'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    AppLoggerDebug.lock(
+      '准备初始化门锁：${lock.name}，MAC：${lock.mac}，绑定房源：${_selectedHouse!.title}',
+    );
+
+    // 下一步再在这里调用真正的 TTLock.initLock
+  }
+}
+
+class TextLog extends StatelessWidget {
+  const TextLog({super.key, required this.stream});
+  final Stream<String> stream;
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<String>(
+      stream: stream,
+      initialData: '暂无日志，等待写入...',
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text("错误：${snapshot.error}"));
+        }
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: Text("等待写入..."));
+        }
+        final String logText = snapshot.data ?? "无数据";
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.primaryLight,
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: SingleChildScrollView(
+            reverse: true,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Text(logText),
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -342,9 +455,10 @@ class _HouseTile extends StatelessWidget {
 }
 
 class _NearbyLockList extends StatelessWidget {
-  const _NearbyLockList({required this.locks});
+  const _NearbyLockList({required this.locks, required this.onInitializeLock});
 
   final List<ScannedLockDevice> locks;
+  final ValueChanged<ScannedLockDevice> onInitializeLock;
 
   @override
   Widget build(BuildContext context) {
@@ -366,7 +480,11 @@ class _NearbyLockList extends StatelessWidget {
             ),
             child: Text('附近门锁', style: AppTextStyles.titleMedium),
           ),
-          for (final lock in locks) _NearbyLockTile(lock: lock),
+          for (final lock in locks)
+            _NearbyLockTile(
+              lock: lock,
+              onInitialize: lock.isInited ? null : () => onInitializeLock(lock),
+            ),
         ],
       ),
     );
@@ -374,10 +492,10 @@ class _NearbyLockList extends StatelessWidget {
 }
 
 class _NearbyLockTile extends StatelessWidget {
-  const _NearbyLockTile({required this.lock});
+  const _NearbyLockTile({required this.lock, required this.onInitialize});
 
   final ScannedLockDevice lock;
-
+  final VoidCallback? onInitialize;
   @override
   Widget build(BuildContext context) {
     return ListTile(
@@ -390,10 +508,12 @@ class _NearbyLockTile extends StatelessWidget {
         '${lock.mac}  信号 ${lock.rssi} dBm  ${lock.isInited ? '已初始化' : '未初始化'}',
         style: AppTextStyles.bodySmall,
       ),
-      trailing: Text(
-        lock.battery < 0 ? '--%' : '${lock.battery}%',
-        style: AppTextStyles.bodyMedium,
-      ),
+      trailing: lock.isInited
+          ? Text(
+              lock.battery < 0 ? '--%' : '${lock.battery}%',
+              style: AppTextStyles.bodyMedium,
+            )
+          : ElevatedButton(onPressed: onInitialize, child: const Text('初始化')),
     );
   }
 }
