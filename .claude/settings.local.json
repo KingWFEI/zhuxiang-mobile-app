@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "mcp__ide__getDiagnostics",
-      "Bash(git update-index *)"
+      "Bash(git update-index *)",
+      "Bash(dart analyze *)",
+      "Bash(flutter pub *)"
     ]
   }
 }
