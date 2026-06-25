@@ -114,17 +114,33 @@ class LeaseService implements LeaseServiceContract {
       source =
           payload['items'] ??
           payload['records'] ??
+          payload['rows'] ??
+          payload['content'] ??
           payload['list'] ??
           payload['leases'];
       if (source == null) {
-        final current = payload['current'];
-        final history = payload['history'] ?? payload['historical'];
+        final current =
+            payload['current'] ??
+            payload['currentLease'] ??
+            payload['currentLeases'] ??
+            payload['activeLease'] ??
+            payload['activeLeases'];
+        final history =
+            payload['history'] ??
+            payload['historical'] ??
+            payload['historyLease'] ??
+            payload['historyLeases'] ??
+            payload['historicalLeases'];
         source = [
           if (current is Map<String, dynamic>) current,
           if (current is List) ...current,
+          if (history is Map<String, dynamic>) history,
           if (history is List) ...history,
         ];
       }
+    }
+    if (source == null && payload is Map<String, dynamic>) {
+      source = [payload];
     }
     if (source is! List) {
       throw const ApiException(

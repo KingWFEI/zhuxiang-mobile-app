@@ -33,10 +33,11 @@ class RoutePaths {
   static const viewingAppointment = '/rental-flow/:houseId/viewing-appointment';
   static const viewingDetail = '/rental-flow/:houseId/viewing-detail';
   static const rentalApplication = '/rental-flow/:houseId/rental-application';
-  static const realNameVerify = '/rental-flow/:houseId/real-name-verify';
-  static const leaseContract = '/rental-flow/:houseId/lease-contract';
-  static const rentalPayment = '/rental-flow/:houseId/payment';
-  static const moveInComplete = '/rental-flow/:houseId/move-in-complete';
+  static const realNameVerify = '/rental-flow/:orderId/real-name';
+  static const leaseContract = '/rental-flow/:orderId/contract';
+  static const rentalPayment = '/rental-flow/:orderId/payment';
+  static const onlineSign = '/rental-flow/:orderId/sign';
+  static const moveInComplete = '/rental-flow/:orderId/success';
   static const staff = '/staff';
   static const staffLockInit = '/staff/locks/init';
   static const staffLockBindRoom = '/staff/locks/bind-room';

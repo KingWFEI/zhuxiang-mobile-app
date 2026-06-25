@@ -24,6 +24,7 @@ import '../../features/repair/presentation/pages/repair_records_page.dart';
 import '../../features/repair/presentation/pages/repair_service_page.dart';
 import '../../features/rental_flow/presentation/pages/lease_contract_page.dart';
 import '../../features/rental_flow/presentation/pages/move_in_complete_page.dart';
+import '../../features/rental_flow/presentation/pages/online_sign_page.dart';
 import '../../features/rental_flow/presentation/pages/payment_page.dart';
 import '../../features/rental_flow/presentation/pages/real_name_verify_page.dart';
 import '../../features/rental_flow/presentation/pages/rental_application_page.dart';
@@ -360,32 +361,40 @@ class AppRouter {
         name: RouteNames.realNameVerify,
         path: RoutePaths.realNameVerify,
         builder: (context, state) {
-          final houseId = state.pathParameters['houseId'] ?? '';
-          return RealNameVerifyPage(houseId: houseId);
+          final orderId = state.pathParameters['orderId'] ?? '';
+          return RealNameVerifyPage(orderId: orderId);
         },
       ),
       GoRoute(
         name: RouteNames.leaseContract,
         path: RoutePaths.leaseContract,
         builder: (context, state) {
-          final houseId = state.pathParameters['houseId'] ?? '';
-          return LeaseContractPage(houseId: houseId);
+          final orderId = state.pathParameters['orderId'] ?? '';
+          return LeaseContractPage(orderId: orderId);
         },
       ),
       GoRoute(
         name: RouteNames.rentalPayment,
         path: RoutePaths.rentalPayment,
         builder: (context, state) {
-          final houseId = state.pathParameters['houseId'] ?? '';
-          return PaymentPage(houseId: houseId);
+          final orderId = state.pathParameters['orderId'] ?? '';
+          return PaymentPage(orderId: orderId);
+        },
+      ),
+      GoRoute(
+        name: RouteNames.onlineSign,
+        path: RoutePaths.onlineSign,
+        builder: (context, state) {
+          final orderId = state.pathParameters['orderId'] ?? '';
+          return OnlineSignPage(orderId: orderId);
         },
       ),
       GoRoute(
         name: RouteNames.moveInComplete,
         path: RoutePaths.moveInComplete,
         builder: (context, state) {
-          final houseId = state.pathParameters['houseId'] ?? '';
-          return MoveInCompletePage(houseId: houseId);
+          final orderId = state.pathParameters['orderId'] ?? '';
+          return MoveInCompletePage(orderId: orderId);
         },
       ),
     ];
@@ -407,8 +416,8 @@ class AppRouter {
     }
 
     if (authState.isGuest) {
-      if (_isAuthRoute(routeName)) {
-        return RoleNavigationConfig.tenant.entryLocation;
+      if (routeName == null || _isAuthRoute(routeName)) {
+        return null;
       }
       return RoleNavigationConfig.tenant.allowedRouteNames.contains(routeName)
           ? null

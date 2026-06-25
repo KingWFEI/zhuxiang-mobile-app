@@ -9,14 +9,13 @@ import '../models/hot_community.dart';
 import '../models/house.dart';
 
 /// 房源数据服务。
-///
 class HouseService {
-  final ApiClient apiClient;
   HouseService(this.apiClient);
 
-  //返回搜索页热门小区。
+  final ApiClient apiClient;
+
+  /// 返回搜索页热门小区。
   List<HotCommunity> getHotCommunities() {
-    // final result=apiClient.get(path)
     return const [];
   }
 
@@ -44,6 +43,7 @@ class HouseService {
       final items =
           (pageData['items'] as List<dynamic>?)
               ?.map((e) => House.fromJson(e as Map<String, dynamic>))
+              .where((house) => !house.isRented)
               .toList(growable: false) ??
           const <House>[];
 
@@ -71,13 +71,12 @@ class HouseService {
     );
   }
 
-  // 根据 ID 返回房源详情。
+  /// 根据 ID 返回房源详情。
   Future<ApiResult<HouseDetail>> getHouseDetail(String houseId) async {
     final result = await apiClient.get('/houses/$houseId');
 
     if (result is ApiSuccess<Response<dynamic>>) {
-      final response = result.data;
-      final responseData = response.data;
+      final responseData = result.data.data;
 
       if (responseData is! Map<String, dynamic>) {
         return ApiFailure(message: '房源详情数据格式错误');
@@ -94,7 +93,12 @@ class HouseService {
         return ApiFailure(message: '房源详情数据结构错误');
       }
 
-      return ApiSuccess(HouseDetail.fromJson(data));
+      final detail = HouseDetail.fromJson(data);
+      if (detail.isRented) {
+        return ApiFailure(message: '该房源已出租');
+      }
+
+      return ApiSuccess(detail);
     }
 
     if (result is ApiFailure<Response<dynamic>>) {

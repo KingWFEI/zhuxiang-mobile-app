@@ -6,81 +6,126 @@ class LeaseModel {
   final Map<String, dynamic> json;
 
   Lease toEntity() {
-    final house = _map(json['house'] ?? json['houseInfo']);
-    final tenant = _map(json['tenant'] ?? json['tenantInfo']);
+    final house = _map(
+      json['house'] ?? json['houseInfo'] ?? json['houseSnapshot'],
+    );
+    final tenant = _map(
+      json['tenant'] ?? json['tenantInfo'] ?? json['tenantSnapshot'],
+    );
     final bill = _map(json['pendingBill'] ?? json['latestBill']);
     final keeper = _map(json['keeper'] ?? json['houseKeeper']);
 
     return Lease(
-      id: _string(json, ['id', 'leaseId']),
-      houseId: _string(json, ['houseId'], fallback: _string(house, ['id'])),
+      id: _string(json, ['id', 'leaseId', 'lease_id']),
+      houseId: _string(json, [
+        'houseId',
+        'house_id',
+      ], fallback: _string(house, ['id', 'houseId', 'house_id'])),
       houseName: _string(
         json,
-        ['houseName', 'houseTitle'],
+        ['houseName', 'houseTitle', 'roomName', 'title', 'house_name'],
         fallback: _string(house, [
           'name',
           'title',
           'roomNumber',
-        ], fallback: '租住房屋'),
+          'roomName',
+        ], fallback: _buildFlatHouseName(json)),
       ),
-      houseAddress: _string(json, [
-        'houseAddress',
-        'address',
-      ], fallback: _string(house, ['address', 'fullAddress'])),
+      houseAddress: _string(
+        json,
+        ['houseAddress', 'address', 'fullAddress', 'house_address'],
+        fallback: _string(house, [
+          'address',
+          'fullAddress',
+        ], fallback: _buildFlatHouseName(json)),
+      ),
       houseSummary: _string(json, [
         'houseSummary',
         'roomSummary',
       ], fallback: _buildHouseSummary(house)),
       houseImageUrl: _string(json, [
         'houseImageUrl',
+        'houseCoverUrl',
         'coverImage',
-      ], fallback: _string(house, ['coverImage', 'imageUrl'])),
+        'coverUrl',
+      ], fallback: _string(house, ['coverImage', 'imageUrl', 'coverUrl'])),
       tenantName: _string(json, [
         'tenantName',
+        'tenant_name',
       ], fallback: _string(tenant, ['name', 'realName'], fallback: '住享租客')),
       tenantPhone: _string(json, [
         'tenantPhone',
+        'tenant_phone',
       ], fallback: _string(tenant, ['phone', 'mobile'])),
       tenantIdCard: _string(json, [
         'tenantIdCard',
         'idCardNumber',
+        'tenant_id_card',
+        'id_card_number',
       ], fallback: _string(tenant, ['idCardNumber', 'idCard'])),
-      startDate: _date(json, ['startDate', 'leaseStartDate']),
-      endDate: _date(json, ['endDate', 'leaseEndDate']),
-      monthlyRent: _money(json, ['monthlyRent', 'rentAmount', 'rent']),
-      deposit: _money(json, ['deposit', 'depositAmount']),
+      startDate: _date(json, ['startDate', 'leaseStartDate', 'start_date']),
+      endDate: _date(json, ['endDate', 'leaseEndDate', 'end_date']),
+      monthlyRent: _money(json, [
+        'monthlyRent',
+        'monthly_rent',
+        'rentAmount',
+        'rent_amount',
+        'rent',
+      ]),
+      deposit: _money(json, ['deposit', 'depositAmount', 'deposit_amount']),
       paymentMethod: _string(json, [
         'paymentMethod',
         'paymentCycle',
+        'payment_method',
       ], fallback: '押一付一'),
-      paymentDay: _integer(json, ['paymentDay', 'rentPaymentDay'], fallback: 5),
-      status: _leaseStatus(_string(json, ['status', 'leaseStatus'])),
+      paymentDay: _integer(json, [
+        'paymentDay',
+        'rentPaymentDay',
+        'payment_day',
+      ], fallback: 5),
+      status: _leaseStatus(
+        _string(json, ['status', 'leaseStatus', 'lease_status']),
+      ),
       contractStatus: _contractStatus(
         _string(json, [
           'contractStatus',
+          'contract_status',
         ], fallback: _string(_map(json['contract']), ['status'])),
       ),
       billStatus: _billStatus(
-        _string(json, ['billStatus'], fallback: _string(bill, ['status'])),
+        _string(json, [
+          'billStatus',
+          'bill_status',
+        ], fallback: _string(bill, ['status'])),
       ),
       lockPermissionStatus: _lockStatus(
-        _string(json, ['lockPermissionStatus', 'lockStatus']),
+        _string(json, [
+          'lockPermissionStatus',
+          'lockStatus',
+          'lock_permission_status',
+          'lock_status',
+        ]),
       ),
       keeperName: _string(json, [
         'keeperName',
+        'keeper_name',
       ], fallback: _string(keeper, ['name'], fallback: '小住管家')),
       keeperPhone: _string(json, [
         'keeperPhone',
+        'keeper_phone',
       ], fallback: _string(keeper, ['phone'], fallback: '400-800-2026')),
       pendingBillTitle: _string(json, [
         'pendingBillTitle',
+        'pending_bill_title',
       ], fallback: _string(bill, ['title'], fallback: '本月租金待支付')),
       pendingBillAmount: _money(json, [
         'pendingBillAmount',
+        'pending_bill_amount',
       ], fallback: _money(bill, ['amount'])),
       pendingBillDueDate: _date(json, [
         'pendingBillDueDate',
-      ], fallback: _date(bill, ['dueDate'])),
+        'pending_bill_due_date',
+      ], fallback: _date(bill, ['dueDate', 'due_date'])),
     );
   }
 
@@ -143,7 +188,21 @@ class LeaseModel {
     final roomType = _string(house, ['roomType', 'layout'], fallback: '温馨一居');
     final area = _integer(house, ['area']);
     final orientation = _string(house, ['orientation'], fallback: '朝南');
-    return '$roomType · ${area > 0 ? '$area㎡' : '42㎡'} · $orientation';
+    return '$roomType · ${area > 0 ? '${area}m²' : '42m²'} · $orientation';
+  }
+
+  static String _buildFlatHouseName(Map<String, dynamic> source) {
+    final community = _string(source, ['community']);
+    final building = _string(source, ['building']);
+    final unit = _string(source, ['unit']);
+    final room = _string(source, ['room']);
+    final parts = [
+      community,
+      building,
+      unit,
+      room,
+    ].where((part) => part.isNotEmpty).toList(growable: false);
+    return parts.isEmpty ? '租住房屋' : parts.join(' ');
   }
 
   static LeaseStatus _leaseStatus(String value) {
