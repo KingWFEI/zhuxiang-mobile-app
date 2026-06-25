@@ -56,21 +56,25 @@ class AppRouter {
       redirect: (context, state) =>
           _redirect(authStateListenable?.value, state),
       routes: [
+        // 启动页
         GoRoute(
           name: RouteNames.splash,
           path: RoutePaths.splash,
           builder: (context, state) => const AppLoadingPage(),
         ),
+        // 登录页
         GoRoute(
           name: RouteNames.login,
           path: RoutePaths.login,
           builder: (context, state) => const LoginPage(),
         ),
+        // 注册页
         GoRoute(
           name: RouteNames.register,
           path: RoutePaths.register,
           builder: (context, state) => const RegisterPage(),
         ),
+        // 非管理员账号拦截提示页
         GoRoute(
           name: RouteNames.webAdminRequired,
           path: RoutePaths.webAdminRequired,
@@ -79,42 +83,30 @@ class AppRouter {
             description: '房东账号暂不进入移动端工作台，请使用 Web 管理后台处理房源和经营管理。',
           ),
         ),
+        // 通用入口重定向
         GoRoute(
           name: RouteNames.main,
           path: RoutePaths.main,
           redirect: (context, state) =>
               _entryLocation(authStateListenable?.value),
         ),
+        // 旧版首页重定向
         GoRoute(
           path: RoutePaths.legacyHome,
           redirect: (context, state) =>
               _entryLocation(authStateListenable?.value),
         ),
-        GoRoute(
-          name: RouteNames.staffLockManage,
-          path: RoutePaths.staffLockManage,
-          builder: (context, state) {
-            final extra = state.extra as Map<String, dynamic>?;
-            if (extra == null) {
-              return const AppPlaceholderPage(
-                title: '门锁管理',
-                description: '请从门锁初始化页面进入。',
-              );
-            }
-            return LockManagePage(
-              smartLockId: extra['smartLockId'] as String? ?? '',
-              lockName: extra['lockName'] as String? ?? '',
-              lockMac: extra['lockMac'] as String? ?? '',
-              lockData: extra['lockData'] as String? ?? '',
-            );
-          },
-        ),
+        // 租户端底部 Tab 壳
         _tenantShell(),
+        // 管理员端底部 Tab 壳
         _staffShell(),
+        // 租户端独立页面
         ..._tenantStandaloneRoutes(),
       ],
     );
   }
+
+  // ─── 租户端底部 Tab 结构 ─────────────────────────────────────────
 
   static StatefulShellRoute _tenantShell() {
     return StatefulShellRoute.indexedStack(
@@ -125,6 +117,7 @@ class AppRouter {
         );
       },
       branches: [
+        // Tab 1: 首页
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -134,6 +127,7 @@ class AppRouter {
             ),
           ],
         ),
+        // Tab 2: 找房
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -143,6 +137,7 @@ class AppRouter {
             ),
           ],
         ),
+        // Tab 3: 消息
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -152,6 +147,7 @@ class AppRouter {
             ),
           ],
         ),
+        // Tab 4: 我的
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -165,6 +161,8 @@ class AppRouter {
     );
   }
 
+  // ─── 管理员端底部 Tab 结构 ───────────────────────────────────────
+
   static StatefulShellRoute _staffShell() {
     return StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
@@ -174,6 +172,7 @@ class AppRouter {
         );
       },
       branches: [
+        // Tab 1: 工作台
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -183,15 +182,39 @@ class AppRouter {
             ),
           ],
         ),
+        // Tab 2: 门锁配置（扫描/初始化/管理入口）
         StatefulShellBranch(
           routes: [
             GoRoute(
               name: RouteNames.staffLockInit,
               path: RoutePaths.staffLockInit,
               builder: (context, state) => const LockInitial(),
+              routes: [
+                // 门锁管理详情页（从门锁配置页 push 进入）
+                GoRoute(
+                  name: RouteNames.staffLockManage,
+                  path: RoutePaths.staffLockManage,
+                  builder: (context, state) {
+                    final extra = state.extra as Map<String, dynamic>?;
+                    if (extra == null) {
+                      return const AppPlaceholderPage(
+                        title: '门锁管理',
+                        description: '请从门锁配置页面进入。',
+                      );
+                    }
+                    return LockManagePage(
+                      smartLockId: extra['smartLockId'] as String? ?? '',
+                      lockName: extra['lockName'] as String? ?? '',
+                      lockMac: extra['lockMac'] as String? ?? '',
+                      lockData: extra['lockData'] as String? ?? '',
+                    );
+                  },
+                ),
+              ],
             ),
           ],
         ),
+        // Tab 3: 系统调试
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -208,35 +231,43 @@ class AppRouter {
     );
   }
 
+  // ─── 租户端独立页面 ──────────────────────────────────────────────
+
   static List<RouteBase> _tenantStandaloneRoutes() {
     return [
+      // 合同列表
       GoRoute(
         name: RouteNames.lease,
         path: RoutePaths.lease,
         builder: (context, state) =>
             const MyLeasesPage(enforceAuthentication: false),
       ),
+      // 合同详情
       GoRoute(
         name: RouteNames.leaseDetail,
         path: RoutePaths.leaseDetail,
         builder: (context, state) =>
             LeaseDetailPage(leaseId: state.pathParameters['leaseId'] ?? ''),
       ),
+      // 开锁记录
       GoRoute(
         name: RouteNames.unlockRecords,
         path: RoutePaths.unlockRecords,
         builder: (context, state) => const UnlockRecordsPage(),
       ),
+      // 房源列表（重定向到找房）
       GoRoute(
         name: RouteNames.houseList,
         path: RoutePaths.houseList,
         redirect: (context, state) => RoutePaths.search,
       ),
+      // 房源搜索
       GoRoute(
         name: RouteNames.houseSearch,
         path: RoutePaths.houseSearch,
         builder: (context, state) => const HouseSearchPage(),
       ),
+      // 房源搜索结果
       GoRoute(
         name: RouteNames.houseSearchResult,
         path: RoutePaths.houseSearchResult,
@@ -244,11 +275,13 @@ class AppRouter {
           keyword: state.uri.queryParameters['keyword'] ?? '',
         ),
       ),
+      // 房源筛选
       GoRoute(
         name: RouteNames.houseFilter,
         path: RoutePaths.houseFilter,
         builder: (context, state) => const HouseFilterPage(),
       ),
+      // 房源详情
       GoRoute(
         name: RouteNames.houseDetail,
         path: RoutePaths.houseDetail,
@@ -257,36 +290,43 @@ class AppRouter {
           return HouseDetailPage(houseId: houseId);
         },
       ),
+      // 预约看房
       GoRoute(
         name: RouteNames.appointment,
         path: RoutePaths.appointment,
         builder: (context, state) => const AppPlaceholderPage(title: '预约看房'),
       ),
+      // 实名认证
       GoRoute(
         name: RouteNames.realNameAuth,
         path: RoutePaths.realNameAuth,
         builder: (context, state) => const AppPlaceholderPage(title: '实名认证'),
       ),
+      // 账单
       GoRoute(
         name: RouteNames.bill,
         path: RoutePaths.bill,
         builder: (context, state) => const AppPlaceholderPage(title: '账单'),
       ),
+      // 智能门锁
       GoRoute(
         name: RouteNames.lock,
         path: RoutePaths.lock,
         builder: (context, state) => const AppPlaceholderPage(title: '智能门锁'),
       ),
+      // 报修
       GoRoute(
         name: RouteNames.repair,
         path: RoutePaths.repair,
         builder: (context, state) => const AppPlaceholderPage(title: '报修'),
       ),
+      // 客服管家
       GoRoute(
         name: RouteNames.customerService,
         path: RoutePaths.customerService,
         builder: (context, state) => const AppPlaceholderPage(title: '客服管家'),
       ),
+      // 预约看房（租房流程）
       GoRoute(
         name: RouteNames.viewingAppointment,
         path: RoutePaths.viewingAppointment,
@@ -299,6 +339,7 @@ class AppRouter {
           );
         },
       ),
+      // 看房详情
       GoRoute(
         name: RouteNames.viewingDetail,
         path: RoutePaths.viewingDetail,
@@ -307,6 +348,7 @@ class AppRouter {
           return ViewingDetailPage(houseId: houseId);
         },
       ),
+      // 租房申请
       GoRoute(
         name: RouteNames.rentalApplication,
         path: RoutePaths.rentalApplication,
@@ -315,6 +357,7 @@ class AppRouter {
           return RentalApplicationPage(houseId: houseId);
         },
       ),
+      // 实名验证
       GoRoute(
         name: RouteNames.realNameVerify,
         path: RoutePaths.realNameVerify,
@@ -323,6 +366,7 @@ class AppRouter {
           return RealNameVerifyPage(houseId: houseId);
         },
       ),
+      // 租赁合同
       GoRoute(
         name: RouteNames.leaseContract,
         path: RoutePaths.leaseContract,
@@ -331,6 +375,7 @@ class AppRouter {
           return LeaseContractPage(houseId: houseId);
         },
       ),
+      // 支付页面
       GoRoute(
         name: RouteNames.rentalPayment,
         path: RoutePaths.rentalPayment,
@@ -339,6 +384,7 @@ class AppRouter {
           return PaymentPage(houseId: houseId);
         },
       ),
+      // 入住完成
       GoRoute(
         name: RouteNames.moveInComplete,
         path: RoutePaths.moveInComplete,
@@ -349,6 +395,8 @@ class AppRouter {
       ),
     ];
   }
+
+  // ─── 路由守卫 ────────────────────────────────────────────────────
 
   static String? _redirect(AuthState? authState, GoRouterState state) {
     final routeName = state.name;

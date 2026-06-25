@@ -35,6 +35,6 @@ class RoutePaths {
   static const moveInComplete = '/rental-flow/:houseId/move-in-complete';
   static const staff = '/staff';
   static const staffLockInit = '/staff/locks/init';
-  static const staffLockManage = '/staff/locks/manage';
+  static const staffLockManage = 'manage';
   static const staffDebug = '/staff/debug';
 }
