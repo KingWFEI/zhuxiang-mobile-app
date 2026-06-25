@@ -104,27 +104,9 @@ class RoleNavigationConfig {
       ),
       AppTabConfig(
         routeName: RouteNames.staffLockInit,
-        label: '初始化',
+        label: '门锁配置',
         icon: Icons.add_home_work_outlined,
         selectedIcon: Icons.add_home_work,
-      ),
-      AppTabConfig(
-        routeName: RouteNames.staffLockBindRoom,
-        label: '绑定房间',
-        icon: Icons.meeting_room_outlined,
-        selectedIcon: Icons.meeting_room,
-      ),
-      AppTabConfig(
-        routeName: RouteNames.staffLockTestUnlock,
-        label: '测试开锁',
-        icon: Icons.lock_open_outlined,
-        selectedIcon: Icons.lock_open,
-      ),
-      AppTabConfig(
-        routeName: RouteNames.staffUnlockRecords,
-        label: '开锁记录',
-        icon: Icons.fact_check_outlined,
-        selectedIcon: Icons.fact_check,
       ),
       AppTabConfig(
         routeName: RouteNames.staffDebug,
@@ -136,9 +118,7 @@ class RoleNavigationConfig {
     allowedRouteNames: {
       RouteNames.staffWorkbench,
       RouteNames.staffLockInit,
-      RouteNames.staffLockBindRoom,
-      RouteNames.staffLockTestUnlock,
-      RouteNames.staffUnlockRecords,
+      RouteNames.staffLockManage,
       RouteNames.staffDebug,
     },
   );

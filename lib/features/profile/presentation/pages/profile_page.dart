@@ -375,7 +375,7 @@ class _CurrentHomeCard extends ConsumerWidget {
           ),
         );
       },
-      error: (_, __) => const SizedBox.shrink(),
+      error: (error, stackTrace) => const SizedBox.shrink(),
       loading: () => const SizedBox.shrink(),
     );
   }

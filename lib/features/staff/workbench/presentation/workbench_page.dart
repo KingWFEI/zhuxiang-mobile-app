@@ -93,10 +93,7 @@ class _InfoCard extends StatelessWidget {
                 children: [
                   Text('员工工作台', style: AppTextStyles.titleMedium),
                   const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    '管理房源门锁、查看开锁记录',
-                    style: AppTextStyles.bodySmall,
-                  ),
+                  Text('管理房源门锁、配置智能门锁', style: AppTextStyles.bodySmall),
                 ],
               ),
             ],
@@ -139,33 +136,6 @@ class _QuickActions extends StatelessWidget {
               ),
             ),
             const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: _ActionTile(
-                icon: Icons.meeting_room_outlined,
-                label: '绑定房间',
-                onTap: () => context.goNamed(RouteNames.staffLockBindRoom),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Row(
-          children: [
-            Expanded(
-              child: _ActionTile(
-                icon: Icons.lock_open,
-                label: '测试开锁',
-                onTap: () => context.goNamed(RouteNames.staffLockTestUnlock),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: _ActionTile(
-                icon: Icons.history,
-                label: '开锁记录',
-                onTap: () => context.goNamed(RouteNames.staffUnlockRecords),
-              ),
-            ),
           ],
         ),
       ],

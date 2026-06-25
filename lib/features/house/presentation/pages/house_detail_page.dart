@@ -796,6 +796,7 @@ class _BottomActionBar extends ConsumerWidget {
     );
   }
 
+  // ignore: unused_element
   Future<void> _startConsultation(BuildContext context, WidgetRef ref) async {
     final notifier = ref.read(rentalFlowProvider.notifier);
     if (ref.read(rentalFlowProvider).houseId != house.id) {

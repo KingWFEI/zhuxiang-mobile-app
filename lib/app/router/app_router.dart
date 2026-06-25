@@ -25,6 +25,7 @@ import '../../features/rental_flow/presentation/pages/rental_application_page.da
 import '../../features/rental_flow/presentation/pages/viewing_appointment_page.dart';
 import '../../features/rental_flow/presentation/pages/viewing_detail_page.dart';
 import '../../features/staff/lock_initial/presentation/lock_initial.dart';
+import '../../features/staff/lock_initial/presentation/lock_manage_page.dart';
 import '../../features/staff/workbench/presentation/workbench_page.dart';
 import '../launch/app_loading_page.dart';
 import 'app_shell.dart';
@@ -88,6 +89,25 @@ class AppRouter {
           path: RoutePaths.legacyHome,
           redirect: (context, state) =>
               _entryLocation(authStateListenable?.value),
+        ),
+        GoRoute(
+          name: RouteNames.staffLockManage,
+          path: RoutePaths.staffLockManage,
+          builder: (context, state) {
+            final extra = state.extra as Map<String, dynamic>?;
+            if (extra == null) {
+              return const AppPlaceholderPage(
+                title: '门锁管理',
+                description: '请从门锁初始化页面进入。',
+              );
+            }
+            return LockManagePage(
+              smartLockId: extra['smartLockId'] as String? ?? '',
+              lockName: extra['lockName'] as String? ?? '',
+              lockMac: extra['lockMac'] as String? ?? '',
+              lockData: extra['lockData'] as String? ?? '',
+            );
+          },
         ),
         _tenantShell(),
         _staffShell(),
@@ -169,39 +189,6 @@ class AppRouter {
               name: RouteNames.staffLockInit,
               path: RoutePaths.staffLockInit,
               builder: (context, state) => const LockInitial(),
-            ),
-          ],
-        ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              name: RouteNames.staffLockBindRoom,
-              path: RoutePaths.staffLockBindRoom,
-              builder: (context, state) => const AppPlaceholderPage(
-                title: '门锁绑定房间',
-                description: '用于将已初始化门锁绑定到具体房间。',
-              ),
-            ),
-          ],
-        ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              name: RouteNames.staffLockTestUnlock,
-              path: RoutePaths.staffLockTestUnlock,
-              builder: (context, state) => const AppPlaceholderPage(
-                title: '门锁测试开锁',
-                description: '用于验证门锁绑定后的开锁链路。',
-              ),
-            ),
-          ],
-        ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              name: RouteNames.staffUnlockRecords,
-              path: RoutePaths.staffUnlockRecords,
-              builder: (context, state) => const UnlockRecordsPage(),
             ),
           ],
         ),

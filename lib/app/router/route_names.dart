@@ -33,8 +33,6 @@ class RouteNames {
   static const moveInComplete = 'moveInComplete';
   static const staffWorkbench = 'staffWorkbench';
   static const staffLockInit = 'staffLockInit';
-  static const staffLockBindRoom = 'staffLockBindRoom';
-  static const staffLockTestUnlock = 'staffLockTestUnlock';
-  static const staffUnlockRecords = 'staffUnlockRecords';
+  static const staffLockManage = 'staffLockManage';
   static const staffDebug = 'staffDebug';
 }
