@@ -22,6 +22,10 @@ class RouteNames {
   static const lock = 'lock';
   static const unlockRecords = 'unlockRecords';
   static const repair = 'repair';
+  static const repairs = 'repairs';
+  static const createRepair = 'createRepair';
+  static const repairRecords = 'repairRecords';
+  static const repairDetail = 'repairDetail';
   static const messageCenter = 'messageCenter';
   static const customerService = 'customerService';
   static const viewingAppointment = 'viewingAppointment';
@@ -30,6 +34,7 @@ class RouteNames {
   static const realNameVerify = 'realNameVerify';
   static const leaseContract = 'leaseContract';
   static const rentalPayment = 'rentalPayment';
+  static const onlineSign = 'onlineSign';
   static const moveInComplete = 'moveInComplete';
   static const staffWorkbench = 'staffWorkbench';
   static const staffLockInit = 'staffLockInit';

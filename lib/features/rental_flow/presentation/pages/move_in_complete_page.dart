@@ -6,16 +6,14 @@ import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
-import '../../domain/rental_flow_status.dart';
-import '../providers/rental_flow_providers.dart';
-import '../widgets/rental_flow_stepper.dart';
-import '../widgets/rental_status_card.dart';
+import '../../data/providers/rental_flow_providers.dart';
+import '../../domain/entities/rental_flow_step.dart';
+import '../widgets/rental_flow_page_shell.dart';
 
-/// 入住完成页面。
 class MoveInCompletePage extends ConsumerStatefulWidget {
-  const MoveInCompletePage({required this.houseId, super.key});
+  const MoveInCompletePage({required this.orderId, super.key});
 
-  final String houseId;
+  final String orderId;
 
   @override
   ConsumerState<MoveInCompletePage> createState() => _MoveInCompletePageState();
@@ -26,139 +24,92 @@ class _MoveInCompletePageState extends ConsumerState<MoveInCompletePage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final current = ref.read(rentalFlowProvider);
-      if (current.houseId != widget.houseId) {
-        ref.read(rentalFlowProvider.notifier).loadFlow(widget.houseId);
-      }
+      ref
+          .read(rentalFlowControllerProvider.notifier)
+          .loadRentOrder(widget.orderId);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final flow = ref.watch(rentalFlowProvider);
-    final permission = flow.lockPermission;
-    final contract = flow.contract;
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('入住完成')),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        children: [
-          const Icon(
-            Icons.check_circle_rounded,
-            color: AppColors.success,
-            size: 72,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            flow.status == RentalFlowStatus.moveInCompleted ? '入住完成' : '流程进行中',
-            textAlign: TextAlign.center,
-            style: AppTextStyles.titleLarge,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          RentalFlowStepper(status: flow.status),
-          const SizedBox(height: AppSpacing.md),
-          RentalStatusCard(state: flow),
-          const SizedBox(height: AppSpacing.md),
-          _InfoCard(
-            title: '租约状态',
-            rows: {
-              '房源ID': widget.houseId,
-              '合同ID': contract?.id ?? '暂无',
-              '租约状态': flow.status.label,
-              '门锁ID': permission?.lockId ?? '暂无',
-              '蓝牙开锁': permission?.bluetoothEnabled == true ? '已开启' : '未开启',
-              '远程开锁': permission?.remoteUnlockEnabled == true ? '已开启' : '未开启',
-            },
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _EntryButton(
-            icon: Icons.description_outlined,
-            label: '查看我的租约',
-            onTap: () => context.pushNamed(RouteNames.lease),
-          ),
-          _EntryButton(
-            icon: Icons.lock_outline,
-            label: '查看门锁详情',
-            onTap: () => context.pushNamed(RouteNames.lock),
-          ),
-          _EntryButton(
-            icon: Icons.support_agent_outlined,
-            label: '联系客服',
-            onTap: () => context.pushNamed(RouteNames.customerService),
-          ),
-          _EntryButton(
-            icon: Icons.build_outlined,
-            label: '提交报修',
-            onTap: () => context.pushNamed(RouteNames.repair),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoCard extends StatelessWidget {
-  const _InfoCard({required this.title, required this.rows});
-
-  final String title;
-  final Map<String, String> rows;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: AppTextStyles.titleMedium),
-          const SizedBox(height: AppSpacing.md),
-          for (final row in rows.entries)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 82,
-                    child: Text(row.key, style: AppTextStyles.bodySmall),
-                  ),
-                  Expanded(
-                    child: Text(row.value, style: AppTextStyles.bodyMedium),
-                  ),
-                ],
+    final state = ref.watch(rentalFlowControllerProvider);
+    final order = state.order;
+    return RentalFlowPageShell(
+      title: '租住成功',
+      step: RentalFlowStep.success,
+      isLoading: state.isLoading,
+      errorMessage: state.errorMessage,
+      onRetry: () => ref
+          .read(rentalFlowControllerProvider.notifier)
+          .loadRentOrder(widget.orderId),
+      children: [
+        FlowCard(
+          child: Column(
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: const BoxDecoration(
+                  color: AppColors.primaryLight,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_circle,
+                  color: AppColors.primary,
+                  size: 46,
+                ),
               ),
+              const SizedBox(height: AppSpacing.lg),
+              Text('租住成功', style: AppTextStyles.titleLarge),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                '欢迎入住${order?.houseName ?? '住享房源'}',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.bodyMedium,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              InfoRow(label: '租约编号', value: order?.orderNo ?? widget.orderId),
+              InfoRow(label: '房源名称', value: order?.houseName ?? '租住房源'),
+              InfoRow(
+                label: '起租日期',
+                value: order == null ? '-' : formatDate(order.startDate),
+              ),
+              const InfoRow(label: '门锁权限', value: '待授权'),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        ElevatedButton(
+          onPressed: () => context.goNamed(RouteNames.lease),
+          style: ElevatedButton.styleFrom(
+            fixedSize: const Size.fromHeight(48),
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EntryButton extends StatelessWidget {
-  const _EntryButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: ListTile(
-        leading: Icon(icon, color: AppColors.primary),
-        title: Text(label),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onTap,
-      ),
+          ),
+          child: const Text('查看我的租约'),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        OutlinedButton(
+          onPressed: () => context.goNamed(RouteNames.unlockRecords),
+          style: OutlinedButton.styleFrom(
+            fixedSize: const Size.fromHeight(48),
+            foregroundColor: AppColors.primary,
+            side: const BorderSide(color: AppColors.primary),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+          child: const Text('查看开门记录'),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        TextButton(
+          onPressed: () => context.goNamed(RouteNames.home),
+          child: const Text('返回首页'),
+        ),
+      ],
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_icon.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
@@ -326,6 +327,23 @@ class _LeaseHeader extends StatelessWidget {
       child: Stack(
         children: [
           Positioned(
+            top: -AppSpacing.lg,
+            left: -AppSpacing.xl,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              child: IconButton(
+                onPressed: () {
+                  if (context.canPop()) {
+                    context.pop();
+                    return;
+                  }
+                  context.goNamed(RouteNames.home);
+                },
+                icon: AppIcon.iconBack,
+              ),
+            ),
+          ),
+          Positioned(
             right: -54,
             bottom: -54,
             child: Opacity(
@@ -338,6 +356,7 @@ class _LeaseHeader extends StatelessWidget {
             children: [
               Row(
                 children: [
+                  const SizedBox(width: 48),
                   const Icon(
                     Icons.home_work,
                     color: AppColors.primary,
