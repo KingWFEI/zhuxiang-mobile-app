@@ -71,127 +71,136 @@ class _HouseSearchResultPageState extends ConsumerState<HouseSearchResultPage> {
     final notifier = ref.read(houseSearchProvider.notifier);
     final sortText = houseSortLabels[state.sort] ?? '综合排序';
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF6F9FF),
-      body: SafeArea(
-        bottom: false,
-        child: RefreshIndicator(
-          onRefresh: notifier.refresh,
-          child: CustomScrollView(
-            controller: _scrollController,
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.xl,
-                  AppSpacing.lg,
-                  AppSpacing.xl,
-                  0,
-                ),
-                sliver: SliverToBoxAdapter(
-                  child: SearchResultHeader(
-                    keyword: widget.keyword,
-                    onBack: _goBack,
-                    onSearchTap: _openSearchPage,
-                    onClear: _openSearchPage,
-                    onFilterTap: _openFilterPage,
-                  ),
-                ),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.xl,
-                  10,
-                  AppSpacing.xl,
-                  0,
-                ),
-                sliver: SliverToBoxAdapter(
-                  child: HouseFilterBar(
-                    onRegionTap: _openFilterPage,
-                    onRentTap: _openFilterPage,
-                    onRoomTap: _openFilterPage,
-                    onMoreTap: _openFilterPage,
-                    onSortTap: _showSortSheet,
-                  ),
-                ),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.xl,
-                  10,
-                  AppSpacing.xl,
-                  0,
-                ),
-                sliver: SliverToBoxAdapter(
-                  child: SearchResultQuickConditions(
-                    onTap: _toggleQuickCondition,
-                  ),
-                ),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.xl,
-                  AppSpacing.lg,
-                  AppSpacing.xl,
-                  AppSpacing.md,
-                ),
-                sliver: SliverToBoxAdapter(
-                  child: HouseListHeader(
-                    countText: state.houses.isEmpty ? '0' : '128',
-                    sortText: sortText,
-                    onSortTap: _showSortSheet,
-                  ),
-                ),
-              ),
-              if (state.isLoading && state.houses.isEmpty)
-                const SliverPadding(
-                  padding: EdgeInsets.fromLTRB(
-                    AppSpacing.xl,
-                    0,
-                    AppSpacing.xl,
-                    AppSpacing.xl,
-                  ),
-                  sliver: SkeletonHouseList(),
-                )
-              else if (state.houses.isEmpty)
-                const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _SearchEmptyView(),
-                )
-              else
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _goBack();
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF6F9FF),
+        body: SafeArea(
+          bottom: false,
+          child: RefreshIndicator(
+            onRefresh: notifier.refresh,
+            child: CustomScrollView(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(
                     AppSpacing.xl,
+                    AppSpacing.lg,
+                    AppSpacing.xl,
                     0,
+                  ),
+                  sliver: SliverToBoxAdapter(
+                    child: SearchResultHeader(
+                      keyword: widget.keyword,
+                      onBack: _goBack,
+                      onSearchTap: _openSearchPage,
+                      onClear: _openSearchPage,
+                      onFilterTap: _openFilterPage,
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.xl,
+                    10,
+                    AppSpacing.xl,
+                    0,
+                  ),
+                  sliver: SliverToBoxAdapter(
+                    child: HouseFilterBar(
+                      onRegionTap: _openFilterPage,
+                      onRentTap: _openFilterPage,
+                      onRoomTap: _openFilterPage,
+                      onMoreTap: _openFilterPage,
+                      onSortTap: _showSortSheet,
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.xl,
+                    10,
+                    AppSpacing.xl,
+                    0,
+                  ),
+                  sliver: SliverToBoxAdapter(
+                    child: SearchResultQuickConditions(
+                      onTap: _toggleQuickCondition,
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.xl,
+                    AppSpacing.lg,
                     AppSpacing.xl,
                     AppSpacing.md,
                   ),
-                  sliver: SliverList.separated(
-                    itemCount: state.houses.length,
-                    separatorBuilder: (_, _) =>
-                        const SizedBox(height: AppSpacing.md),
-                    itemBuilder: (context, index) {
-                      final house = state.houses[index];
-                      return HouseCard(
-                        key: ValueKey(house.id),
-                        house: house,
-                        isFavorite:
-                            _favoriteStates[house.id] ?? house.isFavorite,
-                        onFavoriteTap: () => _toggleFavorite(house),
-                        onTap: () => _openDetail(house),
-                      );
-                    },
+                  sliver: SliverToBoxAdapter(
+                    child: HouseListHeader(
+                      countText: state.houses.isEmpty ? '0' : '128',
+                      sortText: sortText,
+                      onSortTap: _showSortSheet,
+                    ),
                   ),
                 ),
-              if (state.isLoadingMore)
+                if (state.isLoading && state.houses.isEmpty)
+                  const SliverPadding(
+                    padding: EdgeInsets.fromLTRB(
+                      AppSpacing.xl,
+                      0,
+                      AppSpacing.xl,
+                      AppSpacing.xl,
+                    ),
+                    sliver: SkeletonHouseList(),
+                  )
+                else if (state.houses.isEmpty)
+                  const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _SearchEmptyView(),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.xl,
+                      0,
+                      AppSpacing.xl,
+                      AppSpacing.md,
+                    ),
+                    sliver: SliverList.separated(
+                      itemCount: state.houses.length,
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(height: AppSpacing.md),
+                      itemBuilder: (context, index) {
+                        final house = state.houses[index];
+                        return HouseCard(
+                          key: ValueKey(house.id),
+                          house: house,
+                          isFavorite:
+                              _favoriteStates[house.id] ?? house.isFavorite,
+                          onFavoriteTap: () => _toggleFavorite(house),
+                          onTap: () => _openDetail(house),
+                        );
+                      },
+                    ),
+                  ),
+                if (state.isLoadingMore)
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.all(AppSpacing.lg),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                  ),
                 const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.all(AppSpacing.lg),
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
+                  child: SizedBox(height: AppSpacing.xl),
                 ),
-              const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -264,11 +273,8 @@ class _HouseSearchResultPageState extends ConsumerState<HouseSearchResultPage> {
   }
 
   void _goBack() {
-    if (context.canPop()) {
-      context.pop();
-    } else {
-      context.goNamed(RouteNames.search);
-    }
+    ref.read(houseSearchProvider.notifier).reset();
+    context.goNamed(RouteNames.search);
   }
 }
 

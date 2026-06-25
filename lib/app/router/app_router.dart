@@ -17,8 +17,14 @@ import '../../features/lease/presentation/pages/my_leases_page.dart';
 import '../../features/lock/presentation/pages/unlock_records_page.dart';
 import '../../features/message/presentation/pages/message_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/repair/domain/entities/repair_order.dart';
+import '../../features/repair/presentation/pages/create_repair_page.dart';
+import '../../features/repair/presentation/pages/repair_detail_page.dart';
+import '../../features/repair/presentation/pages/repair_records_page.dart';
+import '../../features/repair/presentation/pages/repair_service_page.dart';
 import '../../features/rental_flow/presentation/pages/lease_contract_page.dart';
 import '../../features/rental_flow/presentation/pages/move_in_complete_page.dart';
+import '../../features/rental_flow/presentation/pages/online_sign_page.dart';
 import '../../features/rental_flow/presentation/pages/payment_page.dart';
 import '../../features/rental_flow/presentation/pages/real_name_verify_page.dart';
 import '../../features/rental_flow/presentation/pages/rental_application_page.dart';
@@ -316,9 +322,32 @@ class AppRouter {
       ),
       // 报修
       GoRoute(
+        name: RouteNames.repairs,
+        path: RoutePaths.repairs,
+        builder: (context, state) => const RepairServicePage(),
+      ),
+      GoRoute(
+        name: RouteNames.createRepair,
+        path: RoutePaths.createRepair,
+        builder: (context, state) => CreateRepairPage(
+          initialType: RepairType.fromValue(state.uri.queryParameters['type']),
+        ),
+      ),
+      GoRoute(
+        name: RouteNames.repairRecords,
+        path: RoutePaths.repairRecords,
+        builder: (context, state) => const RepairRecordsPage(),
+      ),
+      GoRoute(
+        name: RouteNames.repairDetail,
+        path: RoutePaths.repairDetail,
+        builder: (context, state) =>
+            RepairDetailPage(repairId: state.pathParameters['repairId'] ?? ''),
+      ),
+      GoRoute(
         name: RouteNames.repair,
         path: RoutePaths.repair,
-        builder: (context, state) => const AppPlaceholderPage(title: '报修'),
+        redirect: (context, state) => RoutePaths.repairs,
       ),
       // 客服管家
       GoRoute(
@@ -362,8 +391,8 @@ class AppRouter {
         name: RouteNames.realNameVerify,
         path: RoutePaths.realNameVerify,
         builder: (context, state) {
-          final houseId = state.pathParameters['houseId'] ?? '';
-          return RealNameVerifyPage(houseId: houseId);
+          final orderId = state.pathParameters['orderId'] ?? '';
+          return RealNameVerifyPage(orderId: orderId);
         },
       ),
       // 租赁合同
@@ -371,8 +400,8 @@ class AppRouter {
         name: RouteNames.leaseContract,
         path: RoutePaths.leaseContract,
         builder: (context, state) {
-          final houseId = state.pathParameters['houseId'] ?? '';
-          return LeaseContractPage(houseId: houseId);
+          final orderId = state.pathParameters['orderId'] ?? '';
+          return LeaseContractPage(orderId: orderId);
         },
       ),
       // 支付页面
@@ -380,8 +409,16 @@ class AppRouter {
         name: RouteNames.rentalPayment,
         path: RoutePaths.rentalPayment,
         builder: (context, state) {
-          final houseId = state.pathParameters['houseId'] ?? '';
-          return PaymentPage(houseId: houseId);
+          final orderId = state.pathParameters['orderId'] ?? '';
+          return PaymentPage(orderId: orderId);
+        },
+      ),
+      GoRoute(
+        name: RouteNames.onlineSign,
+        path: RoutePaths.onlineSign,
+        builder: (context, state) {
+          final orderId = state.pathParameters['orderId'] ?? '';
+          return OnlineSignPage(orderId: orderId);
         },
       ),
       // 入住完成
@@ -389,8 +426,8 @@ class AppRouter {
         name: RouteNames.moveInComplete,
         path: RoutePaths.moveInComplete,
         builder: (context, state) {
-          final houseId = state.pathParameters['houseId'] ?? '';
-          return MoveInCompletePage(houseId: houseId);
+          final orderId = state.pathParameters['orderId'] ?? '';
+          return MoveInCompletePage(orderId: orderId);
         },
       ),
     ];
@@ -414,8 +451,8 @@ class AppRouter {
     }
 
     if (authState.isGuest) {
-      if (_isAuthRoute(routeName)) {
-        return RoleNavigationConfig.tenant.entryLocation;
+      if (routeName == null || _isAuthRoute(routeName)) {
+        return null;
       }
       return RoleNavigationConfig.tenant.allowedRouteNames.contains(routeName)
           ? null

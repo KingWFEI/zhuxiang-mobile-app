@@ -96,10 +96,10 @@ class _HouseSearchPageState extends ConsumerState<HouseSearchPage> {
     if (_isNavigating) return;
     _isNavigating = true;
 
-    context.pushNamed(
+    context.goNamed(
       RouteNames.houseSearchResult,
       queryParameters: {'keyword': keyword},
-    ).then((_) => _isNavigating = false);
+    );
   }
 
   void _closePage() {

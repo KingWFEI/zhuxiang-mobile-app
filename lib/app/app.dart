@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'router/app_router.dart';
@@ -14,6 +15,9 @@ class ZhuxiangApp extends ConsumerWidget {
       title: '住享',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
+      locale: const Locale('zh', 'CN'),
+      supportedLocales: const [Locale('zh', 'CN'), Locale('en', 'US')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
       routerConfig: router,
     );
   }
