@@ -40,8 +40,6 @@ class RoutePaths {
   static const moveInComplete = '/rental-flow/:orderId/success';
   static const staff = '/staff';
   static const staffLockInit = '/staff/locks/init';
-  static const staffLockBindRoom = '/staff/locks/bind-room';
-  static const staffLockTestUnlock = '/staff/locks/test-unlock';
-  static const staffUnlockRecords = '/staff/unlock-records';
+  static const staffLockManage = 'manage';
   static const staffDebug = '/staff/debug';
 }

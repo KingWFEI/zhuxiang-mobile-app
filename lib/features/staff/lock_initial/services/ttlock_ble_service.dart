@@ -137,6 +137,42 @@ class TtlockBleService {
 
     return locationGranted && bluetoothScanGranted && bluetoothConnectGranted;
   }
+
+  // 根据锁数据初始化门锁
+  Future<InitLockResult> initLock(ScannedLockDevice device) async {
+    final completer = Completer<InitLockResult>();
+
+    try {
+      final scanMap = {
+        'lockMac': device.rawScanModel.lockMac,
+        'lockVersion': device.rawScanModel.lockVersion,
+        'isInited': device.rawScanModel.isInited,
+      };
+      TTLock.initLock(
+        scanMap,
+        (lockData) {
+          completer.complete(InitLockResult.success(lockData: lockData));
+        },
+        (errorCode, errorMsg) {
+          completer.complete(
+            InitLockResult.failure(
+              errorCode: errorCode.toString(),
+              errorMessage: errorMsg.toString(),
+            ),
+          );
+        },
+      );
+    } catch (error) {
+      completer.complete(
+        InitLockResult.failure(
+          errorCode: 'INIT_LOCK_EXCEPTION',
+          errorMessage: error.toString(),
+        ),
+      );
+    }
+
+    return completer.future;
+  }
 }
 
 class ScannedLockDevice {
@@ -147,6 +183,7 @@ class ScannedLockDevice {
     required this.battery,
     required this.isInited,
     required this.isAllowUnlock,
+    required this.rawScanModel,
   });
 
   final String name;
@@ -156,6 +193,8 @@ class ScannedLockDevice {
   final bool isInited;
   final bool isAllowUnlock;
 
+  /// 通通锁 SDK 扫描返回的原始对象，初始化门锁时必须用它
+  final TTLockScanModel rawScanModel;
   factory ScannedLockDevice.fromScanModel(TTLockScanModel model) {
     return ScannedLockDevice(
       name: model.lockName,
@@ -164,6 +203,7 @@ class ScannedLockDevice {
       battery: model.electricQuantity,
       isInited: model.isInited,
       isAllowUnlock: model.isAllowUnlock,
+      rawScanModel: model,
     );
   }
 }
@@ -207,6 +247,35 @@ class UnlockResult {
     required String errorMessage,
   }) {
     return UnlockResult(
+      success: false,
+      errorCode: errorCode,
+      errorMessage: errorMessage,
+    );
+  }
+}
+
+class InitLockResult {
+  const InitLockResult({
+    required this.success,
+    this.lockData,
+    this.errorCode,
+    this.errorMessage,
+  });
+
+  final bool success;
+  final String? lockData;
+  final String? errorCode;
+  final String? errorMessage;
+
+  factory InitLockResult.success({required String lockData}) {
+    return InitLockResult(success: true, lockData: lockData);
+  }
+
+  factory InitLockResult.failure({
+    required String errorCode,
+    required String errorMessage,
+  }) {
+    return InitLockResult(
       success: false,
       errorCode: errorCode,
       errorMessage: errorMessage,

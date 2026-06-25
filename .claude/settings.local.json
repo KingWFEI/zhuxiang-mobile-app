@@ -4,7 +4,10 @@
       "mcp__ide__getDiagnostics",
       "Bash(git update-index *)",
       "Bash(dart analyze *)",
-      "Bash(flutter pub *)"
+      "Bash(flutter pub *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git merge *)"
     ]
   }
 }
