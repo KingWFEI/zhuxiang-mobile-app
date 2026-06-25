@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/network/api_client_provider.dart';
-import 'staff_house.dart';
-import 'staff_house_service.dart';
+import '../../../../../core/network/api_client_provider.dart';
+import '../models/staff_house.dart';
+import '../services/staff_house_service.dart';
 
 final staffHouseServiceProvider = Provider<StaffHouseService>((ref) {
   return StaffHouseService(ref.watch(apiClientProvider));

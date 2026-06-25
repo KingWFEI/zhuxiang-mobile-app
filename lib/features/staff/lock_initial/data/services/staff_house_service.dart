@@ -1,6 +1,6 @@
-import '../../../../core/network/api_client.dart';
-import '../../../../core/network/api_result.dart';
-import 'staff_house.dart';
+import '../../../../../core/network/api_client.dart';
+import '../../../../../core/network/api_result.dart';
+import '../models/staff_house.dart';
 
 class StaffHouseService {
   const StaffHouseService(this._apiClient);

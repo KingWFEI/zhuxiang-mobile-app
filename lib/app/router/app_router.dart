@@ -31,6 +31,7 @@ import '../../features/rental_flow/presentation/pages/rental_application_page.da
 import '../../features/rental_flow/presentation/pages/viewing_appointment_page.dart';
 import '../../features/rental_flow/presentation/pages/viewing_detail_page.dart';
 import '../../features/staff/lock_initial/presentation/lock_initial.dart';
+import '../../features/staff/workbench/presentation/workbench_page.dart';
 import '../launch/app_loading_page.dart';
 import 'app_shell.dart';
 import 'role_navigation_config.dart';
@@ -164,10 +165,7 @@ class AppRouter {
             GoRoute(
               name: RouteNames.staffWorkbench,
               path: RoutePaths.staff,
-              builder: (context, state) => const AppPlaceholderPage(
-                title: '工作台',
-                description: '员工工作台入口，后续承载待办任务、门锁状态和现场操作概览。',
-              ),
+              builder: (context, state) => const WorkbenchPage(),
             ),
           ],
         ),

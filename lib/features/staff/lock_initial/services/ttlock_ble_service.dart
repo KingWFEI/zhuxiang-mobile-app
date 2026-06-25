@@ -6,8 +6,14 @@ import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class TtlockBleService {
+  static const Duration _deviceNotifyInterval = Duration(seconds: 1);
+  static const int _rssiChangeThreshold = 6;
+
+  final Map<String, ScannedLockDevice> _lastNotifiedDevices = {};
+  final Map<String, DateTime> _lastNotifiedAt = {};
+
   Future<void> init() async {
-    TTLock.printLog = true;
+    TTLock.printLog = false;
   }
 
   Future<UnlockResult> unlockByLockData(String lockData) async {
@@ -48,13 +54,57 @@ class TtlockBleService {
       debugPrint('蓝牙扫描权限未授权');
       return;
     }
+    _resetScanCache();
+
     TTLock.startScanLock((scanModel) {
-      onDeviceFound(ScannedLockDevice.fromScanModel(scanModel));
+      final device = ScannedLockDevice.fromScanModel(scanModel);
+      if (_shouldNotifyDevice(device)) {
+        onDeviceFound(device);
+      }
     });
   }
 
   Future<void> stopScanning() async {
     TTLock.stopScanLock();
+    _resetScanCache();
+  }
+
+  bool _shouldNotifyDevice(ScannedLockDevice device) {
+    if (device.mac.isEmpty) return false;
+
+    final now = DateTime.now();
+    final lastDevice = _lastNotifiedDevices[device.mac];
+    final lastNotifyAt = _lastNotifiedAt[device.mac];
+
+    if (lastDevice == null || lastNotifyAt == null) {
+      _recordNotifiedDevice(device, now);
+      return true;
+    }
+
+    final elapsed = now.difference(lastNotifyAt);
+    final hasMeaningfulChange =
+        lastDevice.name != device.name ||
+        lastDevice.battery != device.battery ||
+        lastDevice.isInited != device.isInited ||
+        lastDevice.isAllowUnlock != device.isAllowUnlock ||
+        (lastDevice.rssi - device.rssi).abs() >= _rssiChangeThreshold;
+
+    if (hasMeaningfulChange || elapsed >= _deviceNotifyInterval) {
+      _recordNotifiedDevice(device, now);
+      return true;
+    }
+
+    return false;
+  }
+
+  void _recordNotifiedDevice(ScannedLockDevice device, DateTime notifiedAt) {
+    _lastNotifiedDevices[device.mac] = device;
+    _lastNotifiedAt[device.mac] = notifiedAt;
+  }
+
+  void _resetScanCache() {
+    _lastNotifiedDevices.clear();
+    _lastNotifiedAt.clear();
   }
 
   /// 检查并申请蓝牙扫描所需权限
