@@ -6,17 +6,16 @@ import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
-import '../../domain/rental_flow_status.dart';
-import '../providers/rental_flow_providers.dart';
-import '../widgets/rental_action_bar.dart';
-import '../widgets/rental_flow_stepper.dart';
-import '../widgets/rental_status_card.dart';
+import '../../data/providers/rental_flow_providers.dart';
+import '../../domain/entities/rental_flow_step.dart';
+import '../widgets/rent_fee_detail_card.dart';
+import '../widgets/rental_flow_bottom_bar.dart';
+import '../widgets/rental_flow_page_shell.dart';
 
-/// 押金和首期租金支付页面。
 class PaymentPage extends ConsumerStatefulWidget {
-  const PaymentPage({required this.houseId, super.key});
+  const PaymentPage({required this.orderId, super.key});
 
-  final String houseId;
+  final String orderId;
 
   @override
   ConsumerState<PaymentPage> createState() => _PaymentPageState();
@@ -26,119 +25,129 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final current = ref.read(rentalFlowProvider);
-      if (current.houseId != widget.houseId) {
-        ref.read(rentalFlowProvider.notifier).loadFlow(widget.houseId);
-      }
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
   @override
   Widget build(BuildContext context) {
-    final flow = ref.watch(rentalFlowProvider);
-    final payment = flow.payment;
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('费用支付')),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.xl,
-          AppSpacing.lg,
-          AppSpacing.xl,
-          120,
-        ),
-        children: [
-          RentalFlowStepper(status: flow.status),
-          const SizedBox(height: AppSpacing.md),
-          RentalStatusCard(state: flow),
-          const SizedBox(height: AppSpacing.md),
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('支付明细', style: AppTextStyles.titleMedium),
-                const SizedBox(height: AppSpacing.md),
-                _AmountRow(label: '押金', amount: payment?.depositAmount ?? 0),
-                _AmountRow(
-                  label: '首期租金',
-                  amount: payment?.firstRentAmount ?? 0,
+    final state = ref.watch(rentalFlowControllerProvider);
+    final payment = state.paymentInfo;
+    final selected = payment?.selectedPaymentMethod;
+    return RentalFlowPageShell(
+      title: '支付',
+      step: RentalFlowStep.payment,
+      isLoading: state.isLoading,
+      errorMessage: state.errorMessage,
+      onRetry: _load,
+      bottomNavigationBar: RentalFlowBottomBar(
+        primaryLabel: '确认支付',
+        isLoading: state.isSubmitting,
+        onPrimary: _submit,
+      ),
+      children: [
+        FlowCard(
+          child: Column(
+            children: [
+              Text('首笔应付', style: AppTextStyles.bodyMedium),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                '￥${payment?.amount ?? 0}',
+                style: AppTextStyles.titleLarge.copyWith(
+                  color: AppColors.primary,
+                  fontSize: 30,
                 ),
-                _AmountRow(label: '服务费', amount: payment?.serviceFee ?? 0),
-                const Divider(),
-                _AmountRow(
-                  label: '合计',
-                  amount: payment?.totalAmount ?? 0,
-                  strong: true,
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
-      bottomNavigationBar: RentalActionBar(
-        primaryLabel: flow.status == RentalFlowStatus.contractSigned
-            ? '创建支付订单'
-            : '模拟支付并入住',
-        isLoading: flow.isLoading,
-        onPrimary: _handlePay,
-      ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        if (payment != null)
+          RentFeeDetailCard(
+            monthlyRent: payment.monthlyRent,
+            deposit: payment.deposit,
+            serviceFee: payment.serviceFee,
+          ),
+        const SizedBox(height: AppSpacing.lg),
+        FlowCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '支付方式',
+                style: AppTextStyles.titleMedium.copyWith(fontSize: 16),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              for (final method in payment?.paymentMethods ?? const <String>[])
+                _PaymentMethodTile(
+                  method: method,
+                  selected: selected == method,
+                  onTap: () => ref
+                      .read(rentalFlowControllerProvider.notifier)
+                      .selectPaymentMethod(method),
+                ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
-  Future<void> _handlePay() async {
-    final notifier = ref.read(rentalFlowProvider.notifier);
-    final current = ref.read(rentalFlowProvider);
-    if (current.status == RentalFlowStatus.contractSigned) {
-      await notifier.createPaymentOrder();
+  void _load() {
+    ref
+        .read(rentalFlowControllerProvider.notifier)
+        .loadPaymentInfo(widget.orderId);
+  }
+
+  Future<void> _submit() async {
+    final selected = ref
+        .read(rentalFlowControllerProvider)
+        .paymentInfo
+        ?.selectedPaymentMethod;
+    if (selected == null || selected.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('请选择支付方式')));
       return;
     }
-    final paid = await notifier.payOrder();
-    if (!paid) return;
-    final active = await notifier.activateLease();
-    if (!active) return;
-    final granted = await notifier.grantLockPermission();
-    if (!granted) return;
-    final completed = await notifier.completeMoveIn();
-    if (!mounted || !completed) return;
-    context.goNamed(
-      RouteNames.moveInComplete,
-      pathParameters: {'houseId': widget.houseId},
+    final ok = await ref
+        .read(rentalFlowControllerProvider.notifier)
+        .submitPayment(widget.orderId, selected);
+    if (!mounted || !ok) return;
+    context.pushReplacementNamed(
+      RouteNames.onlineSign,
+      pathParameters: {'orderId': widget.orderId},
     );
   }
 }
 
-class _AmountRow extends StatelessWidget {
-  const _AmountRow({
-    required this.label,
-    required this.amount,
-    this.strong = false,
+class _PaymentMethodTile extends StatelessWidget {
+  const _PaymentMethodTile({
+    required this.method,
+    required this.selected,
+    required this.onTap,
   });
 
-  final String label;
-  final int amount;
-  final bool strong;
+  final String method;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Row(
-        children: [
-          Text(label, style: AppTextStyles.bodyMedium),
-          const Spacer(),
-          Text(
-            '¥$amount',
-            style:
-                (strong ? AppTextStyles.titleMedium : AppTextStyles.bodyMedium)
-                    .copyWith(color: strong ? AppColors.primary : null),
-          ),
-        ],
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+        child: Row(
+          children: [
+            Icon(
+              selected ? Icons.radio_button_checked : Icons.radio_button_off,
+              color: selected ? AppColors.primary : AppColors.textMuted,
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Text(method, style: AppTextStyles.bodyLarge),
+          ],
+        ),
       ),
     );
   }

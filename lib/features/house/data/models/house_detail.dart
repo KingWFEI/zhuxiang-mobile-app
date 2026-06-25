@@ -29,6 +29,7 @@ class HouseDetail {
     this.rating = 0.0,
     this.rentedCount = 0,
     this.responseDescription = '',
+    this.isRented = false,
   });
 
   final String id;
@@ -60,6 +61,7 @@ class HouseDetail {
   final double rating;
   final int rentedCount;
   final String responseDescription;
+  final bool isRented;
 
   factory HouseDetail.fromJson(Map<String, dynamic> json) {
     return HouseDetail(
@@ -102,6 +104,26 @@ class HouseDetail {
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       rentedCount: json['rentedCount'] as int? ?? 0,
       responseDescription: json['responseDescription'] as String? ?? '',
+      isRented: _parseRented(json),
     );
   }
+}
+
+bool _parseRented(Map<String, dynamic> json) {
+  final direct = json['isRented'] ?? json['rented'];
+  if (direct is bool) return direct;
+
+  final status = (json['status'] ?? json['houseStatus'] ?? json['rentStatus'])
+      ?.toString()
+      .toLowerCase();
+  return const {
+    'rented',
+    'leased',
+    'occupied',
+    'unavailable',
+    'inactive',
+    '已出租',
+    '已租',
+    '出租中',
+  }.contains(status);
 }

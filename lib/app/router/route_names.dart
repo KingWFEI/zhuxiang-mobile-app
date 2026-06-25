@@ -34,6 +34,7 @@ class RouteNames {
   static const realNameVerify = 'realNameVerify';
   static const leaseContract = 'leaseContract';
   static const rentalPayment = 'rentalPayment';
+  static const onlineSign = 'onlineSign';
   static const moveInComplete = 'moveInComplete';
   static const staffWorkbench = 'staffWorkbench';
   static const staffLockInit = 'staffLockInit';

@@ -12,7 +12,8 @@ import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_text_styles.dart';
-import '../../../rental_flow/presentation/providers/rental_flow_providers.dart';
+import '../../../auth/presentation/auth_controller.dart';
+import '../../../rental_flow/presentation/widgets/confirm_rent_sheet.dart';
 
 class HouseDetailPage extends ConsumerWidget {
   const HouseDetailPage({required this.houseId, super.key});
@@ -295,7 +296,7 @@ class _DetailContent extends StatelessWidget {
                           const SizedBox(height: AppSpacing.xs),
                           Text.rich(
                             TextSpan(
-                              text: '¥ ${house.price}',
+                              text: '¥ ${_displayPrice(house.price)}',
                               style: AppTextStyles.titleLarge.copyWith(
                                 color: AppColors.primary,
                                 fontSize: 18,
@@ -421,6 +422,14 @@ class _DetailContent extends StatelessWidget {
       ),
     );
   }
+}
+
+String _displayPrice(int price) {
+  if (price < 10000) return '$price';
+  final value = price / 100;
+  return value == value.roundToDouble()
+      ? value.toInt().toString()
+      : value.toStringAsFixed(2);
 }
 
 class _InfoCard extends StatelessWidget {
@@ -738,7 +747,6 @@ class _BottomActionBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final flow = ref.watch(rentalFlowProvider);
     return SafeArea(
       top: false,
       child: Container(
@@ -770,7 +778,7 @@ class _BottomActionBar extends ConsumerWidget {
                   padding: EdgeInsets.zero,
                   visualDensity: VisualDensity.compact,
                 ),
-                onPressed: flow.isLoading ? null : () => _openViewing(context),
+                onPressed: () => _openViewing(context),
                 child: const Text('预约看房'),
               ),
             ),
@@ -784,9 +792,7 @@ class _BottomActionBar extends ConsumerWidget {
                   padding: EdgeInsets.zero,
                   visualDensity: VisualDensity.compact,
                 ),
-                onPressed: flow.isLoading
-                    ? null
-                    : () => _openApplication(context),
+                onPressed: () => _openApplication(context, ref),
                 child: const Text('立即申请'),
               ),
             ),
@@ -794,19 +800,6 @@ class _BottomActionBar extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  Future<void> _startConsultation(BuildContext context, WidgetRef ref) async {
-    final notifier = ref.read(rentalFlowProvider.notifier);
-    if (ref.read(rentalFlowProvider).houseId != house.id) {
-      await notifier.loadFlow(house.id);
-    }
-    final ok = await notifier.startConsultation();
-    if (!context.mounted || !ok) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('已创建咨询会话')));
-    context.pushNamed(RouteNames.customerService);
   }
 
   void _openViewing(BuildContext context) {
@@ -817,10 +810,21 @@ class _BottomActionBar extends ConsumerWidget {
     );
   }
 
-  void _openApplication(BuildContext context) {
-    context.pushNamed(
-      RouteNames.rentalApplication,
-      pathParameters: {'houseId': house.id},
+  void _openApplication(BuildContext context, WidgetRef ref) {
+    final authState = ref.read(authControllerProvider);
+    if (!authState.isLoggedIn) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('请先登录')));
+      context.pushNamed(RouteNames.login);
+      return;
+    }
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ConfirmRentSheet(house: house),
     );
   }
 }

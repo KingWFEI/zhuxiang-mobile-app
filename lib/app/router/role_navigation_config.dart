@@ -81,6 +81,10 @@ class RoleNavigationConfig {
       RouteNames.bill,
       RouteNames.lock,
       RouteNames.repair,
+      RouteNames.repairs,
+      RouteNames.createRepair,
+      RouteNames.repairRecords,
+      RouteNames.repairDetail,
       RouteNames.customerService,
       RouteNames.viewingAppointment,
       RouteNames.viewingDetail,
@@ -88,6 +92,7 @@ class RoleNavigationConfig {
       RouteNames.realNameVerify,
       RouteNames.leaseContract,
       RouteNames.rentalPayment,
+      RouteNames.onlineSign,
       RouteNames.moveInComplete,
     },
   );
