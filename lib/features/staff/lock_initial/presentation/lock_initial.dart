@@ -9,7 +9,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
-import '../../../../app/router/route_paths.dart';
+import '../../../../app/router/route_names.dart';
 import '../data/providers/lock_initialize_provider.dart';
 import '../data/providers/nearby_locks_provider.dart';
 import '../data/services/lock_api_service.dart';
@@ -154,15 +154,17 @@ class _LockInitialState extends ConsumerState<LockInitial> {
       AppLoggerDebug.lock('门锁初始化成功：${lock.name}，MAC：${lock.mac}');
       AppLoggerDebug.lock('lockData：$lockData');
 
-      final localResponse = await ref.read(lockInitializeProvider.notifier).saveLocalInit(
-        LockLocalInitRequest(
-          lockName: lock.name,
-          lockMac: lock.mac,
-          lockData: lockData ?? '',
-          rssi: lock.rssi,
-          battery: lock.battery,
-        ),
-      );
+      final localResponse = await ref
+          .read(lockInitializeProvider.notifier)
+          .saveLocalInit(
+            LockLocalInitRequest(
+              lockName: lock.name,
+              lockMac: lock.mac,
+              lockData: lockData ?? '',
+              rssi: lock.rssi,
+              battery: lock.battery,
+            ),
+          );
 
       if (!mounted) return;
 
@@ -170,9 +172,9 @@ class _LockInitialState extends ConsumerState<LockInitial> {
         final errMsg = ref.read(lockInitializeProvider).errorMessage ?? '未知错误';
         AppLoggerDebug.lock('保存初始化数据失败：$errMsg');
         setState(() => _initializingMac = null);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('保存门锁数据失败：$errMsg')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('保存门锁数据失败：$errMsg')));
         return;
       }
 
@@ -211,7 +213,9 @@ class _LockInitialState extends ConsumerState<LockInitial> {
 
   Future<void> _queryLockByMac(ScannedLockDevice lock) async {
     try {
-      final response = await ref.read(lockApiServiceProvider).getByMac(lock.mac);
+      final response = await ref
+          .read(lockApiServiceProvider)
+          .getByMac(lock.mac);
       if (!mounted) return;
       setState(() => _initedLockResults[lock.mac] = response);
     } catch (_) {
@@ -221,8 +225,8 @@ class _LockInitialState extends ConsumerState<LockInitial> {
   }
 
   void _navigateToManageLock(LockByMacResponse info) {
-    context.push(
-      RoutePaths.staffLockManage,
+    context.pushNamed(
+      RouteNames.staffLockManage,
       extra: {
         'smartLockId': info.smartLockId,
         'lockName': info.lockName,
@@ -235,8 +239,8 @@ class _LockInitialState extends ConsumerState<LockInitial> {
   void _navigateToManageAfterInit() {
     final info = _initializedLock;
     if (info == null) return;
-    context.push(
-      RoutePaths.staffLockManage,
+    context.pushNamed(
+      RouteNames.staffLockManage,
       extra: {
         'smartLockId': info.smartLockId,
         'lockName': info.lockName,
@@ -433,8 +437,7 @@ class _NearbyLockList extends StatelessWidget {
             ),
             child: Text('附近门锁', style: AppTextStyles.titleMedium),
           ),
-          for (final lock in locks)
-            _buildLockTile(lock, context),
+          for (final lock in locks) _buildLockTile(lock, context),
         ],
       ),
     );
@@ -470,9 +473,9 @@ class _NearbyLockList extends StatelessWidget {
           lock: lock,
           trailing: Text(
             '未录入',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.textMuted,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
           ),
         );
       }
@@ -627,7 +630,12 @@ class _LockSuccessTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.xs, AppSpacing.md, AppSpacing.md),
+      margin: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.xs,
+        AppSpacing.md,
+        AppSpacing.md,
+      ),
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.successLight,
@@ -639,13 +647,20 @@ class _LockSuccessTile extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.check_circle, color: AppColors.success, size: 20),
+              const Icon(
+                Icons.check_circle,
+                color: AppColors.success,
+                size: 20,
+              ),
               const SizedBox(width: AppSpacing.sm),
               Text('初始化成功', style: AppTextStyles.titleMedium),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text(lockName.isEmpty ? '未命名门锁' : lockName, style: AppTextStyles.bodyLarge),
+          Text(
+            lockName.isEmpty ? '未命名门锁' : lockName,
+            style: AppTextStyles.bodyLarge,
+          ),
           Text('MAC：$lockMac', style: AppTextStyles.bodySmall),
           Text(
             '信号：$rssi dBm  电量：${battery < 0 ? '--' : '$battery%'}',
