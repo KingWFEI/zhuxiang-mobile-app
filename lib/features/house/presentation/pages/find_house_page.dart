@@ -76,9 +76,9 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
             slivers: [
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.xl,
+                  AppSpacing.pageHorizontal,
                   AppSpacing.lg,
-                  AppSpacing.xl,
+                  AppSpacing.pageHorizontal,
                   0,
                 ),
                 sliver: SliverToBoxAdapter(
@@ -105,9 +105,9 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.xl,
+                    AppSpacing.pageHorizontal,
                     0,
-                    AppSpacing.xl,
+                    AppSpacing.pageHorizontal,
                     0,
                   ),
                   child: HouseFilterBar(
@@ -122,9 +122,9 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.xl,
+                    AppSpacing.pageHorizontal,
                     5,
-                    AppSpacing.xl,
+                    AppSpacing.pageHorizontal,
                     0,
                   ),
                   child: HouseQuickTags(
@@ -135,9 +135,9 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
               ),
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.xl,
+                  AppSpacing.pageHorizontal,
                   AppSpacing.lg,
-                  AppSpacing.xl,
+                  AppSpacing.pageHorizontal,
                   AppSpacing.md,
                 ),
                 sliver: SliverToBoxAdapter(
@@ -151,10 +151,10 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
               if (state.isLoading && state.houses.isEmpty)
                 const SliverPadding(
                   padding: EdgeInsets.fromLTRB(
-                    AppSpacing.xl,
+                    AppSpacing.pageHorizontal,
                     0,
-                    AppSpacing.xl,
-                    AppSpacing.xl,
+                    AppSpacing.pageHorizontal,
+                    AppSpacing.pageHorizontal,
                   ),
                   sliver: SkeletonHouseList(),
                 )
@@ -174,9 +174,9 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
               else
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.xl,
+                    AppSpacing.pageHorizontal,
                     0,
-                    AppSpacing.xl,
+                    AppSpacing.pageHorizontal,
                     AppSpacing.md,
                   ),
                   sliver: SliverList.separated(

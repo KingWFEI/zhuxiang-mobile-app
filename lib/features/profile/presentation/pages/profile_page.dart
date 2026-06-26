@@ -26,9 +26,9 @@ class ProfilePage extends ConsumerWidget {
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(
-            AppSpacing.xl,
+            AppSpacing.pageHorizontal,
             AppSpacing.lg,
-            AppSpacing.xl,
+            AppSpacing.pageHorizontal,
             96,
           ),
           children: [
@@ -176,51 +176,55 @@ class _UserCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.xl),
         boxShadow: AppShadows.card,
       ),
-      child: Row(
-        children: [
-          const CircleAvatar(
-            radius: 28,
-            backgroundColor: AppColors.primaryLight,
-            child: Icon(Icons.person, color: AppColors.primary, size: 30),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  nickname,
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(phone, style: AppTextStyles.bodySmall),
-                if (isVerified) const SizedBox(height: AppSpacing.xs),
-                if (isVerified)
-                  Chip(
-                    visualDensity: VisualDensity.compact,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    avatar: const Icon(
-                      Icons.verified_user,
-                      size: 14,
-                      color: AppColors.primary,
-                    ),
-                    label: Text(
-                      '安心住户',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    backgroundColor: AppColors.primaryLight,
-                    side: BorderSide.none,
-                  ),
-              ],
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        onTap: () => context.pushNamed(RouteNames.profileEdit),
+        child: Row(
+          children: [
+            const CircleAvatar(
+              radius: 28,
+              backgroundColor: AppColors.primaryLight,
+              child: Icon(Icons.person, color: AppColors.primary, size: 30),
             ),
-          ),
-          const Icon(Icons.chevron_right, color: AppColors.iconMuted, size: 20),
-        ],
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    nickname,
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(phone, style: AppTextStyles.bodySmall),
+                  if (isVerified) const SizedBox(height: AppSpacing.xs),
+                  if (isVerified)
+                    Chip(
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      avatar: const Icon(
+                        Icons.verified_user,
+                        size: 14,
+                        color: AppColors.primary,
+                      ),
+                      label: Text(
+                        '安心住户',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      backgroundColor: AppColors.primaryLight,
+                      side: BorderSide.none,
+                    ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: AppColors.iconMuted, size: 20),
+          ],
+        ),
       ),
     );
   }

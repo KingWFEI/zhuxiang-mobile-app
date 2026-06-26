@@ -18,6 +18,7 @@ class RoutePaths {
   static const appointment = '/appointment';
   static const realNameAuth = '/real-name-auth';
   static const profile = '/profile';
+  static const profileEdit = '/profile/edit';
   static const lease = '/leases';
   static const leaseDetail = ':leaseId';
   static const bill = '/bill';

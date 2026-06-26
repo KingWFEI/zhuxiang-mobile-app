@@ -12,11 +12,11 @@ class AppTextStyles {
   );
   static const houseCardH1 = TextStyle(
     color: Color.fromARGB(255, 0, 0, 0),
-    fontSize: 12,
+    fontSize: 14,
     fontFamily: 'NotoSansSC',
   );
   static const houseCardH2 = TextStyle(
-    fontSize: 8,
+    fontSize: 10,
     color: Color.fromARGB(255, 65, 66, 66),
   );
   static const bottomTextStyle = TextStyle(

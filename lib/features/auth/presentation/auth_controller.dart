@@ -178,6 +178,12 @@ class AuthController extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> updateUser(AuthUser user) async {
+    await _useCases.updateUser(user);
+    if (!mounted) return;
+    state = state.copyWith(user: user);
+  }
+
   Future<void> enterGuestMode() async {
     await _guestModeStorage.enable();
     if (!mounted) return;

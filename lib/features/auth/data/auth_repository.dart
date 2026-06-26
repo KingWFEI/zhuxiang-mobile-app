@@ -23,5 +23,7 @@ abstract class AuthRepository {
 
   Future<void> refreshSession();
 
+  Future<void> updateUser(AuthUser user);
+
   Future<void> logout();
 }

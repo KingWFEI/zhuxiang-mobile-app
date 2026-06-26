@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../../../core/network/api_exception.dart';
 import '../../../core/storage/token_storage.dart';
 import '../domain/entities/auth_user.dart';
 import 'auth_models.dart';
@@ -80,7 +81,16 @@ class AuthRepositoryImpl implements AuthRepository {
         jsonDecode(userJson) as Map<String, dynamic>,
       );
       if (tokens.isExpired) {
-        await _refresh(tokens.refreshToken);
+        try {
+          await _refresh(tokens.refreshToken);
+        } on ApiException catch (e) {
+          if (e.type == ApiExceptionType.unauthorized) {
+            await _clearSession();
+            _currentUser = null;
+            return null;
+          }
+          // 网络错误/超时等 → 保留本地会话，允许离线使用
+        }
       }
       return _currentUser;
     } on Object {
@@ -96,6 +106,12 @@ class AuthRepositoryImpl implements AuthRepository {
       throw StateError('No refresh token is available');
     }
     await _refresh(tokens.refreshToken);
+  }
+
+  @override
+  Future<void> updateUser(AuthUser user) async {
+    _currentUser = user;
+    await _tokenStorage.saveUserJson(jsonEncode(user.toJson()));
   }
 
   @override

@@ -25,6 +25,7 @@ class _AppLoadingPageState extends ConsumerState<AppLoadingPage> {
   Timer? _minimumLoadingTimer;
   bool _minimumLoadingFinished = false;
   bool _sessionRestoreFinished = false;
+  bool _navigated = false;
 
   @override
   void initState() {
@@ -44,20 +45,20 @@ class _AppLoadingPageState extends ConsumerState<AppLoadingPage> {
   }
 
   void _navigateWhenReady() {
-    if (!mounted || !_minimumLoadingFinished || !_sessionRestoreFinished) {
+    if (!mounted || !_minimumLoadingFinished || !_sessionRestoreFinished || _navigated) {
       return;
     }
+    _navigated = true;
+    _minimumLoadingTimer?.cancel();
+
     final authState = ref.read(authControllerProvider);
-    if (authState.isGuest) {
-      context.go(RoleNavigationConfig.tenant.entryLocation);
-      return;
-    }
-    final user = authState.user;
-    context.go(
-      user == null
-          ? RoutePaths.login
-          : RoleNavigationConfig.entryLocationForRole(user.role),
-    );
+    final target = authState.isGuest
+        ? RoleNavigationConfig.tenant.entryLocation
+        : authState.user == null
+            ? RoutePaths.login
+            : RoleNavigationConfig.entryLocationForRole(authState.user!.role);
+
+    GoRouter.of(context).go(target);
   }
 
   @override
