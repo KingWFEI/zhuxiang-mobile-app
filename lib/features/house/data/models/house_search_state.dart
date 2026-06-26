@@ -10,6 +10,7 @@ class HouseSearchState {
     this.roomType = '',
     this.sort = 'default',
     this.page = 1,
+    this.totalCount = 0,
     this.hasMore = true,
     this.isLoading = false,
     this.isLoadingMore = false,
@@ -29,6 +30,7 @@ class HouseSearchState {
   final String sort;
 
   final int page;
+  final int totalCount;
   final bool hasMore;
 
   final bool isLoading;
@@ -67,6 +69,7 @@ class HouseSearchState {
     String? roomType,
     String? sort,
     int? page,
+    int? totalCount,
     bool? hasMore,
     bool? isLoading,
     bool? isLoadingMore,
@@ -86,6 +89,7 @@ class HouseSearchState {
       roomType: roomType ?? this.roomType,
       sort: sort ?? this.sort,
       page: page ?? this.page,
+      totalCount: totalCount ?? this.totalCount,
       hasMore: hasMore ?? this.hasMore,
       isLoading: isLoading ?? this.isLoading,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,

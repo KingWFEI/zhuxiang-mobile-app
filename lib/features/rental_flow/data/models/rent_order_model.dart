@@ -42,10 +42,11 @@ class RentOrderModel extends RentOrder {
       leaseMonths:
           (json['leaseMonths'] as num? ?? json['lease_months'] as num? ?? 12)
               .toInt(),
-      paymentMethod:
-          json['paymentMethod'] as String? ??
-          json['payment_method'] as String? ??
-          '月付',
+      paymentMethod: _paymentMethodLabel(
+        json['paymentMethod'] as String? ??
+            json['payment_method'] as String? ??
+            'monthly',
+      ),
       tenantCount:
           (json['tenantCount'] as num? ?? json['tenant_count'] as num? ?? 1)
               .toInt(),
@@ -93,3 +94,13 @@ class RentOrderModel extends RentOrder {
 }
 
 int _centsToYuan(num value) => (value / 100).round();
+
+String _paymentMethodLabel(String value) {
+  return switch (value) {
+    'monthly' || '押一付一' || '月付' => '月付',
+    'quarterly' || '押一付三' || '季付' => '季付',
+    'semi_annual' || '押一付六' || '半年付' => '半年付',
+    'annual' || '押一付十二' || '年付' => '年付',
+    _ => value,
+  };
+}

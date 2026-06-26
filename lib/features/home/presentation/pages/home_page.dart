@@ -10,6 +10,7 @@ import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/network/api_result.dart';
 import '../../../house/data/models/house.dart';
+import '../../../house/data/providers/house_providers.dart';
 import '../../../house/presentation/widgets/house_card.dart';
 import '../../data/models/home_data.dart';
 import '../../data/providers/home_providers.dart';
@@ -67,6 +68,14 @@ class _HomePageState extends ConsumerState<HomePage> {
     }
     final selectedKey = _selectedTabKey!;
     final houseGroup = data.houseGroups[selectedKey];
+    final locallyRentedHouseIds = ref.watch(locallyRentedHouseIdsProvider);
+    final visibleItems = houseGroup?.items
+        .where(
+          (item) =>
+              item.house == null ||
+              !locallyRentedHouseIds.contains(item.house!.id),
+        )
+        .toList(growable: false);
 
     return Column(
       children: [
@@ -135,7 +144,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 if (houseGroup != null)
                   _HomeContent(
                     key: PageStorageKey(selectedKey),
-                    items: houseGroup.items,
+                    items: visibleItems ?? const <HomeFeedItem>[],
                     onHouseTap: _openDetail,
                   ),
               ],
