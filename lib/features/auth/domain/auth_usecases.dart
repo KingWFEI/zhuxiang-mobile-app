@@ -46,6 +46,10 @@ class AuthUseCases {
     return _repository.refreshSession();
   }
 
+  Future<void> updateUser(AuthUser user) {
+    return _repository.updateUser(user);
+  }
+
   Future<void> logout() {
     return _repository.logout();
   }

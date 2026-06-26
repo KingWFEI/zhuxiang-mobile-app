@@ -22,99 +22,77 @@ class _MessagePageState extends State<MessagePage> {
     final selected = _tabs[_selectedIndex];
     final messages = selected == '全部'
         ? messageMock
-        : messageMock.where((message) => message.category == selected).toList();
+        : messageMock.where((m) => m.category == selected).toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(
-                AppSpacing.xl,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.pageHorizontal,
                 AppSpacing.lg,
-                AppSpacing.xl,
+                AppSpacing.pageHorizontal,
                 AppSpacing.md,
               ),
-              child: _MessageHeader(),
-            ),
-            SizedBox(
-              height: 35,
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-                scrollDirection: Axis.horizontal,
-                itemCount: _tabs.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(width: AppSpacing.sm),
-                itemBuilder: (context, index) {
-                  final tab = _tabs[index];
-                  final selected = index == _selectedIndex;
-                  return ChoiceChip(
-                    selected: selected,
-                    label: Text(tab),
-                    showCheckmark: false,
-                    onSelected: (_) => setState(() => _selectedIndex = index),
-                    selectedColor: AppColors.primaryLight,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    visualDensity: VisualDensity.compact,
-                    labelPadding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('消息中心', style: AppTextStyles.titleMedium),
+                  const SizedBox(height: AppSpacing.md),
+                  SizedBox(
+                    height: 32,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _tabs.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
+                      itemBuilder: (_, index) {
+                        final active = index == _selectedIndex;
+                        return GestureDetector(
+                          onTap: () => setState(() => _selectedIndex = index),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                            decoration: BoxDecoration(
+                              color: active ? AppColors.primary : AppColors.surface,
+                              borderRadius: BorderRadius.circular(100),
+                              border: Border.all(
+                                color: active ? AppColors.primary : AppColors.border,
+                              ),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              _tabs[index],
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: active ? Colors.white : AppColors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                    labelStyle: AppTextStyles.bodySmall.copyWith(
-                      color: selected
-                          ? AppColors.primary
-                          : AppColors.textSecondary,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    ),
-                    side: BorderSide.none,
-                  );
-                },
+                  ),
+                ],
               ),
             ),
             Expanded(
               child: ListView.separated(
                 padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.xl,
-                  AppSpacing.md,
-                  AppSpacing.xl,
+                  AppSpacing.pageHorizontal,
+                  AppSpacing.sm,
+                  AppSpacing.pageHorizontal,
                   120,
                 ),
                 itemCount: messages.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: AppSpacing.md),
-                itemBuilder: (context, index) {
-                  return MessageItem(message: messages[index]);
-                },
+                separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.md),
+                itemBuilder: (_, index) => MessageItem(message: messages[index]),
               ),
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _MessageHeader extends StatelessWidget {
-  const _MessageHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Icon(Icons.home_work, color: AppColors.primary, size: 18),
-        const SizedBox(width: AppSpacing.sm),
-        Text(
-          '住享',
-          style: AppTextStyles.bodySmall.copyWith(
-            color: AppColors.primary,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const Spacer(),
-        Text('消息中心', style: AppTextStyles.titleMedium.copyWith(fontSize: 16)),
-        const Spacer(),
-        const Icon(Icons.cleaning_services_outlined, size: 18),
-      ],
     );
   }
 }

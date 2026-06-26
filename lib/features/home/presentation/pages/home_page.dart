@@ -81,9 +81,9 @@ class _HomePageState extends ConsumerState<HomePage> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(
-            AppSpacing.xl,
+            AppSpacing.pageHorizontal,
             AppSpacing.lg,
-            AppSpacing.xl,
+            AppSpacing.pageHorizontal,
             0,
           ),
           child: Column(
@@ -115,9 +115,9 @@ class _HomePageState extends ConsumerState<HomePage> {
               slivers: [
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.xl,
+                    AppSpacing.pageHorizontal,
                     AppSpacing.xs,
-                    AppSpacing.xl,
+                    AppSpacing.pageHorizontal,
                     0,
                   ),
                   sliver: SliverToBoxAdapter(
@@ -307,7 +307,9 @@ class _DynamicTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.pageHorizontal,
+      ),
       decoration: const BoxDecoration(color: AppColors.background),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -354,7 +356,7 @@ class _DynamicTab extends StatelessWidget {
             tab.title,
             style: AppTextStyles.bodyLarge.copyWith(
               color: isSelected ? AppColors.primary : AppColors.textSecondary,
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
             ),
           ),
@@ -445,9 +447,9 @@ class _HomeContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return SliverPadding(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.xl,
-        AppSpacing.md,
-        AppSpacing.xl,
+        AppSpacing.pageHorizontal,
+        0,
+        AppSpacing.pageHorizontal,
         AppSpacing.xl,
       ),
       sliver: SliverMasonryGrid.count(
@@ -648,9 +650,9 @@ class _HomeSkeletonState extends State<_HomeSkeleton>
             // Header skeleton
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                AppSpacing.xl,
+                AppSpacing.pageHorizontal,
                 AppSpacing.lg,
-                AppSpacing.xl,
+                AppSpacing.pageHorizontal,
                 0,
               ),
               child: SizedBox(
@@ -737,9 +739,9 @@ class _HomeSkeletonState extends State<_HomeSkeleton>
                   // Services skeleton
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.xl,
+                      AppSpacing.pageHorizontal,
                       AppSpacing.xs,
-                      AppSpacing.xl,
+                      AppSpacing.pageHorizontal,
                       AppSpacing.xl,
                     ),
                     sliver: SliverToBoxAdapter(
@@ -837,9 +839,9 @@ class _HomeSkeletonState extends State<_HomeSkeleton>
                   // Cards skeleton
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.pageHorizontal,
                       AppSpacing.xl,
-                      AppSpacing.xl,
-                      AppSpacing.xl,
+                      AppSpacing.pageHorizontal,
                       AppSpacing.xl,
                     ),
                     sliver: SliverMasonryGrid.count(

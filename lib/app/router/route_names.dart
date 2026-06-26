@@ -16,6 +16,7 @@ class RouteNames {
   static const appointment = 'appointment';
   static const realNameAuth = 'realNameAuth';
   static const profile = 'profile';
+  static const profileEdit = 'profileEdit';
   static const lease = 'lease';
   static const leaseDetail = 'leaseDetail';
   static const bill = 'bill';
@@ -38,8 +39,6 @@ class RouteNames {
   static const moveInComplete = 'moveInComplete';
   static const staffWorkbench = 'staffWorkbench';
   static const staffLockInit = 'staffLockInit';
-  static const staffLockBindRoom = 'staffLockBindRoom';
-  static const staffLockTestUnlock = 'staffLockTestUnlock';
-  static const staffUnlockRecords = 'staffUnlockRecords';
+  static const staffLockManage = 'staffLockManage';
   static const staffDebug = 'staffDebug';
 }

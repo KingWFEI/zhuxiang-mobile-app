@@ -13,7 +13,7 @@ class AppConfig {
 
   static String get baseUrl {
     return switch (currentEnv) {
-      AppEnv.dev => 'http://10.143.183.109:8000/api',
+      AppEnv.dev => 'http://10.143.183.201:8000/api',
       AppEnv.staging => 'https://staging.example.com/api',
       AppEnv.prod => 'https://api.example.com/api',
     };

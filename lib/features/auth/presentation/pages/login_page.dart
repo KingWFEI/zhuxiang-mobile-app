@@ -14,6 +14,7 @@ import '../widgets/auth_agreement_row.dart';
 import '../widgets/auth_page_header.dart';
 import '../widgets/auth_primary_button.dart';
 import '../widgets/auth_text_field.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../providers/auth_controller.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -87,23 +88,26 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final credential = _credentialController.text.trim();
 
     if (phone.isEmpty) {
-      _showMessage('请输入手机号');
+      _showMessage('请输入手机号', type: AppToastType.error);
       return;
     }
     if (phone.length != 11) {
-      _showMessage('请输入正确的手机号');
+      _showMessage('请输入正确的手机号', type: AppToastType.error);
       return;
     }
     if (credential.isEmpty) {
-      _showMessage(_loginMode == LoginMode.code ? '请输入验证码' : '请输入密码');
+      _showMessage(
+        _loginMode == LoginMode.code ? '请输入验证码' : '请输入密码',
+        type: AppToastType.error,
+      );
       return;
     }
     if (_loginMode == LoginMode.code && credential.length != 6) {
-      _showMessage('请输入6位验证码');
+      _showMessage('请输入6位验证码', type: AppToastType.error);
       return;
     }
     if (!_hasAgreed) {
-      _showMessage('请先阅读并同意用户协议和隐私政策');
+      _showMessage('请先阅读并同意用户协议和隐私政策', type: AppToastType.error);
       return;
     }
 
@@ -126,13 +130,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     final message =
         ref.read(authControllerProvider).errorMessage ?? '登录失败，请稍后重试';
-    _showMessage(message);
+    _showMessage(message, type: AppToastType.error);
   }
 
   Future<void> _handleGetCode() async {
     final phone = _phoneController.text.trim();
     if (phone.length != 11) {
-      _showMessage('请输入正确的手机号');
+      _showMessage('请输入正确的手机号', type: AppToastType.error);
       return;
     }
 
@@ -143,10 +147,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     if (expiresIn == null) {
       _showMessage(
         ref.read(authControllerProvider).errorMessage ?? '验证码发送失败，请稍后重试',
+        type: AppToastType.error,
       );
       return;
     }
-    _showMessage('验证码已发送，$expiresIn 秒内有效');
+    _showMessage('验证码已发送，$expiresIn 秒内有效', type: AppToastType.success);
   }
 
   Future<void> _handleGuestBrowse() async {
@@ -165,10 +170,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     });
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _showMessage(String message, {AppToastType type = AppToastType.normal}) {
+    AppToast.show(context, message, type: type);
   }
 
   String _entryLocation() {

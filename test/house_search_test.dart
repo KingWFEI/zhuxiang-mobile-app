@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:zhuxiang_app/core/storage/local_storage.dart';
 import 'package:zhuxiang_app/core/network/api_client.dart';
 import 'package:zhuxiang_app/core/storage/storage_service.dart';
 import 'package:zhuxiang_app/core/network/api_client_provider.dart';
@@ -13,7 +14,6 @@ import 'package:zhuxiang_app/features/house/data/providers/house_providers.dart'
 import 'package:zhuxiang_app/features/house/data/services/house_service.dart';
 import 'package:zhuxiang_app/features/house/data/models/hot_community.dart';
 import 'package:zhuxiang_app/features/house/data/models/house.dart';
-import 'package:zhuxiang_app/features/house/data/models/house_search_state.dart';
 import 'package:zhuxiang_app/features/house/presentation/pages/find_house_page.dart';
 import 'package:zhuxiang_app/features/house/presentation/pages/house_filter_page.dart';
 import 'package:zhuxiang_app/features/house/presentation/pages/house_search_page.dart';
@@ -28,17 +28,15 @@ void main() {
     await StorageService.initialize();
   });
 
-  ProviderContainer _containerWithService(HouseService service) {
+  ProviderContainer containerWithService(HouseService service) {
     return ProviderContainer(
-      overrides: [
-        houseServiceProvider.overrideWith((ref) => service),
-      ],
+      overrides: [houseServiceProvider.overrideWith((ref) => service)],
     );
   }
 
   test('notifier builds backend query from search state', () async {
     final service = _RecordingHouseService();
-    final container = _containerWithService(service);
+    final container = containerWithService(service);
     addTearDown(container.dispose);
 
     final notifier = container.read(houseSearchProvider.notifier);
@@ -68,7 +66,7 @@ void main() {
 
   test('keyword updates debounce into one request', () async {
     final service = _RecordingHouseService();
-    final container = _containerWithService(service);
+    final container = containerWithService(service);
     addTearDown(container.dispose);
 
     final notifier = container.read(houseSearchProvider.notifier);
@@ -85,7 +83,7 @@ void main() {
 
   test('pagination appends unique houses', () async {
     final service = _PaginationHouseService();
-    final container = _containerWithService(service);
+    final container = containerWithService(service);
     addTearDown(container.dispose);
 
     final notifier = container.read(houseSearchProvider.notifier);
@@ -133,13 +131,15 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final container = ProviderContainer(overrides: [
-      houseServiceProvider.overrideWith((ref) => _FakeHouseService()),
-      localStorageProvider.overrideWith((ref) {
-        SharedPreferences.setMockInitialValues({});
-        return LocalStorage(SharedPreferences.getInstance() as dynamic);
-      }),
-    ]);
+    final container = ProviderContainer(
+      overrides: [
+        houseServiceProvider.overrideWith((ref) => _FakeHouseService()),
+        localStorageProvider.overrideWith((ref) {
+          SharedPreferences.setMockInitialValues({});
+          return LocalStorage(SharedPreferences.getInstance() as dynamic);
+        }),
+      ],
+    );
     addTearDown(container.dispose);
 
     final notifier = container.read(houseSearchProvider.notifier);
@@ -150,8 +150,8 @@ void main() {
     await notifier.search();
 
     await tester.pumpWidget(
-      ProviderScope(
-        parent: container,
+      UncontrolledProviderScope(
+        container: container,
         child: const MaterialApp(home: FindHomePage()),
       ),
     );
@@ -178,21 +178,23 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final container = ProviderContainer(overrides: [
-      houseServiceProvider.overrideWith((ref) => _FakeHouseService()),
-      localStorageProvider.overrideWith((ref) {
-        SharedPreferences.setMockInitialValues({});
-        return LocalStorage(SharedPreferences.getInstance() as dynamic);
-      }),
-    ]);
+    final container = ProviderContainer(
+      overrides: [
+        houseServiceProvider.overrideWith((ref) => _FakeHouseService()),
+        localStorageProvider.overrideWith((ref) {
+          SharedPreferences.setMockInitialValues({});
+          return LocalStorage(SharedPreferences.getInstance() as dynamic);
+        }),
+      ],
+    );
     addTearDown(container.dispose);
 
     final notifier = container.read(houseSearchProvider.notifier);
     await notifier.search();
 
     await tester.pumpWidget(
-      ProviderScope(
-        parent: container,
+      UncontrolledProviderScope(
+        container: container,
         child: const MaterialApp(home: FindHomePage()),
       ),
     );
@@ -209,13 +211,15 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final container = ProviderContainer(overrides: [
-      houseServiceProvider.overrideWith((ref) => _FakeHouseService()),
-      localStorageProvider.overrideWith((ref) {
-        SharedPreferences.setMockInitialValues({});
-        return LocalStorage(SharedPreferences.getInstance() as dynamic);
-      }),
-    ]);
+    final container = ProviderContainer(
+      overrides: [
+        houseServiceProvider.overrideWith((ref) => _FakeHouseService()),
+        localStorageProvider.overrideWith((ref) {
+          SharedPreferences.setMockInitialValues({});
+          return LocalStorage(SharedPreferences.getInstance() as dynamic);
+        }),
+      ],
+    );
     addTearDown(container.dispose);
 
     final notifier = container.read(houseSearchProvider.notifier);
@@ -225,8 +229,8 @@ void main() {
     ]);
 
     await tester.pumpWidget(
-      ProviderScope(
-        parent: container,
+      UncontrolledProviderScope(
+        container: container,
         child: const MaterialApp(home: HouseSearchPage()),
       ),
     );
@@ -251,18 +255,20 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final container = ProviderContainer(overrides: [
-      houseServiceProvider.overrideWith((ref) => _FakeHouseService()),
-      localStorageProvider.overrideWith((ref) {
-        SharedPreferences.setMockInitialValues({});
-        return LocalStorage(SharedPreferences.getInstance() as dynamic);
-      }),
-    ]);
+    final container = ProviderContainer(
+      overrides: [
+        houseServiceProvider.overrideWith((ref) => _FakeHouseService()),
+        localStorageProvider.overrideWith((ref) {
+          SharedPreferences.setMockInitialValues({});
+          return LocalStorage(SharedPreferences.getInstance() as dynamic);
+        }),
+      ],
+    );
     addTearDown(container.dispose);
 
     await tester.pumpWidget(
-      ProviderScope(
-        parent: container,
+      UncontrolledProviderScope(
+        container: container,
         child: const MaterialApp(home: HouseSearchResultPage(keyword: '测试')),
       ),
     );
@@ -282,18 +288,20 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final container = ProviderContainer(overrides: [
-      houseServiceProvider.overrideWith((ref) => _FakeHouseService()),
-      localStorageProvider.overrideWith((ref) {
-        SharedPreferences.setMockInitialValues({});
-        return LocalStorage(SharedPreferences.getInstance() as dynamic);
-      }),
-    ]);
+    final container = ProviderContainer(
+      overrides: [
+        houseServiceProvider.overrideWith((ref) => _FakeHouseService()),
+        localStorageProvider.overrideWith((ref) {
+          SharedPreferences.setMockInitialValues({});
+          return LocalStorage(SharedPreferences.getInstance() as dynamic);
+        }),
+      ],
+    );
     addTearDown(container.dispose);
 
     await tester.pumpWidget(
-      ProviderScope(
-        parent: container,
+      UncontrolledProviderScope(
+        container: container,
         child: const MaterialApp(home: HouseFilterPage()),
       ),
     );
@@ -312,13 +320,15 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final container = ProviderContainer(overrides: [
-      houseServiceProvider.overrideWith((ref) => _FakeHouseService()),
-      localStorageProvider.overrideWith((ref) {
-        SharedPreferences.setMockInitialValues({});
-        return LocalStorage(SharedPreferences.getInstance() as dynamic);
-      }),
-    ]);
+    final container = ProviderContainer(
+      overrides: [
+        houseServiceProvider.overrideWith((ref) => _FakeHouseService()),
+        localStorageProvider.overrideWith((ref) {
+          SharedPreferences.setMockInitialValues({});
+          return LocalStorage(SharedPreferences.getInstance() as dynamic);
+        }),
+      ],
+    );
     addTearDown(container.dispose);
 
     final notifier = container.read(houseSearchProvider.notifier);
@@ -355,8 +365,8 @@ void main() {
     addTearDown(router.dispose);
 
     await tester.pumpWidget(
-      ProviderScope(
-        parent: container,
+      UncontrolledProviderScope(
+        container: container,
         child: MaterialApp.router(routerConfig: router),
       ),
     );
@@ -450,11 +460,7 @@ class _FakeHouseService extends HouseService {
   @override
   Future<PageResult<House>> fetchHouses(Map<String, dynamic> query) async {
     return PageResult(
-      items: [
-        _house('house-1'),
-        _house('house-2'),
-        _house('house-3'),
-      ],
+      items: [_house('house-1'), _house('house-2'), _house('house-3')],
       page: query['page'] as int? ?? 1,
       pageSize: 20,
       total: 1286,

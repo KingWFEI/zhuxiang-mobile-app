@@ -60,6 +60,7 @@ class HouseMockService {
   }
 }
 
+// ignore: unused_element
 const _regionNames = <String, String>{
   'yubei': '渝北区',
   'jiangbei': '江北区',
@@ -67,6 +68,7 @@ const _regionNames = <String, String>{
 };
 
 /// 模拟数据，后续替换为真实接口返回的房源列表。
+// ignore: unused_element
 const _mockHouses = <House>[
   House(
     id: 'mock-house-1',

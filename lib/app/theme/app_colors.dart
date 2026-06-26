@@ -58,6 +58,9 @@ class AppColors {
   /// 成功绿 - 用于操作成功反馈、已完成状态
   static const success = Color(0xFF2E7D32);
 
+  /// 成功绿浅色 - 用于成功状态背景
+  static const successLight = Color(0xFFE8F5E9);
+
   /// 警告黄 - 用于警示、待处理状态、等级提醒
   static const warning = Color(0xFFF59E0B);
 }
