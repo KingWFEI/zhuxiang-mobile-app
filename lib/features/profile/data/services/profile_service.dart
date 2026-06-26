@@ -62,6 +62,84 @@ class ProfileService {
     return (home: home, lock: lock);
   }
 
+  /// 修改密码
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    final result = await apiClient.put(
+      '/profile/password',
+      data: {'oldPassword': oldPassword, 'newPassword': newPassword},
+    );
+    result.when(
+      success: (response) {
+        final body = response.data;
+        if (body is Map<String, dynamic>) {
+          final code = body['code'] as int? ?? 0;
+          final message = body['message'] as String? ?? '';
+          if (code != 200) {
+            throw ApiException(
+              type: ApiExceptionType.server,
+              message: message,
+              statusCode: code,
+            );
+          }
+        }
+      },
+      failure: (message, error) {
+        throw error is ApiException
+            ? error
+            : ApiException(
+                type: ApiExceptionType.unknown,
+                message: message,
+                cause: error,
+              );
+      },
+    );
+  }
+
+  /// 修改手机号，返回更新后的用户信息
+  Future<Map<String, dynamic>> changePhone({
+    required String newPhone,
+    required String code,
+  }) async {
+    final result = await apiClient.put(
+      '/profile/phone',
+      data: {'newPhone': newPhone, 'code': code},
+    );
+    return result.when(
+      success: (response) {
+        final body = response.data;
+        if (body is Map<String, dynamic>) {
+          final responseCode = body['code'] as int? ?? 0;
+          final message = body['message'] as String? ?? '';
+          if (responseCode != 200) {
+            throw ApiException(
+              type: ApiExceptionType.server,
+              message: message,
+              statusCode: responseCode,
+            );
+          }
+          final data = body['data'];
+          if (data is Map<String, dynamic>) return data;
+        }
+        throw const ApiException(
+          type: ApiExceptionType.server,
+          message: '手机号修改失败',
+        );
+      },
+      failure: (message, error) {
+        throw error is ApiException
+            ? error
+            : ApiException(
+                type: ApiExceptionType.unknown,
+                message: message,
+                cause: error,
+              );
+      },
+    );
+  }
+
   /// 从 ApiResponse 包装中提取 data 字段并转为目标类型，data 为 null 时返回 null。
   T? _extractData<T>(
     Response<dynamic> response,

@@ -16,6 +16,7 @@ import '../../features/lease/presentation/pages/lease_detail_page.dart';
 import '../../features/lease/presentation/pages/my_leases_page.dart';
 import '../../features/lock/presentation/pages/unlock_records_page.dart';
 import '../../features/message/presentation/pages/message_page.dart';
+import '../../features/profile/presentation/pages/profile_edit_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/repair/domain/entities/repair_order.dart';
 import '../../features/repair/presentation/pages/create_repair_page.dart';
@@ -348,6 +349,12 @@ class AppRouter {
         name: RouteNames.repair,
         path: RoutePaths.repair,
         redirect: (context, state) => RoutePaths.repairs,
+      ),
+      // 个人信息编辑
+      GoRoute(
+        name: RouteNames.profileEdit,
+        path: RoutePaths.profileEdit,
+        builder: (context, state) => const ProfileEditPage(),
       ),
       // 客服管家
       GoRoute(
