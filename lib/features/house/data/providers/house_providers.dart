@@ -19,6 +19,10 @@ final houseServiceProvider = Provider<HouseService>((ref) {
   return HouseService(apiClient);
 });
 
+final locallyRentedHouseIdsProvider = StateProvider<Set<String>>((ref) {
+  return const <String>{};
+});
+
 /// 获取房源详情信息
 final houseDetailProvider =
     FutureProvider.family<ApiResult<HouseDetail>, String>((ref, houseId) async {
@@ -34,8 +38,8 @@ final hotKeywordsProvider = Provider<List<String>>((ref) {
 /// 搜索历史管理
 final searchHistoryProvider =
     NotifierProvider<SearchHistoryNotifier, List<String>>(
-  SearchHistoryNotifier.new,
-);
+      SearchHistoryNotifier.new,
+    );
 
 class SearchHistoryNotifier extends Notifier<List<String>> {
   static const _maxHistoryCount = 10;
@@ -46,16 +50,7 @@ class SearchHistoryNotifier extends Notifier<List<String>> {
         .read(localStorageProvider)
         .getString(StorageKeys.houseSearchHistory);
     if (raw == null || raw.isEmpty) {
-      return const [
-        '中央公园',
-        '朝阳公园',
-        '望京',
-        '三里屯',
-        '整租两居',
-        '近地铁',
-        '可月付',
-        '智能门锁',
-      ];
+      return const ['中央公园', '朝阳公园', '望京', '三里屯', '整租两居', '近地铁', '可月付', '智能门锁'];
     }
     try {
       return (jsonDecode(raw) as List<dynamic>)
@@ -75,8 +70,7 @@ class SearchHistoryNotifier extends Notifier<List<String>> {
 
     final history = state.toList();
     history
-      ..removeWhere(
-          (item) => item.toLowerCase() == normalized.toLowerCase())
+      ..removeWhere((item) => item.toLowerCase() == normalized.toLowerCase())
       ..insert(0, normalized);
     final limited = history.take(_maxHistoryCount).toList(growable: false);
     await ref

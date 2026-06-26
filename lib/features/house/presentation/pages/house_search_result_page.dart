@@ -143,7 +143,7 @@ class _HouseSearchResultPageState extends ConsumerState<HouseSearchResultPage> {
                   ),
                   sliver: SliverToBoxAdapter(
                     child: HouseListHeader(
-                      countText: state.houses.isEmpty ? '0' : '128',
+                      countText: '${state.totalCount}',
                       sortText: sortText,
                       onSortTap: _showSortSheet,
                     ),

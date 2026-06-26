@@ -82,14 +82,43 @@ class RentalFlowController extends StateNotifier<RentalFlowState> {
     required String name,
     required String idCardNumber,
     required String phone,
+    required String idCardFrontUrl,
+    required String idCardBackUrl,
   }) async {
     return _submit(() async {
       final order = await _service.submitRealName(
         orderId,
-        RealNameModel(name: name, idCardNumber: idCardNumber, phone: phone),
+        RealNameModel(
+          name: name,
+          idCardNumber: idCardNumber,
+          phone: phone,
+          idCardFrontUrl: idCardFrontUrl,
+          idCardBackUrl: idCardBackUrl,
+        ),
       );
       state = state.copyWith(order: order);
     });
+  }
+
+  Future<FileUploadResult?> uploadIdCardImage({
+    required String filePath,
+    required String bizType,
+  }) async {
+    state = state.copyWith(isSubmitting: true, clearError: true);
+    try {
+      final result = await _service.uploadIdCardImage(
+        filePath: filePath,
+        bizType: bizType,
+      );
+      state = state.copyWith(isSubmitting: false);
+      return result;
+    } on Object catch (error) {
+      state = state.copyWith(
+        isSubmitting: false,
+        errorMessage: _messageFromError(error),
+      );
+      return null;
+    }
   }
 
   Future<void> loadContractPreview(String orderId) async {

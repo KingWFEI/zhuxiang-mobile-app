@@ -142,7 +142,7 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
                 ),
                 sliver: SliverToBoxAdapter(
                   child: HouseListHeader(
-                    countText: '1286',
+                    countText: '${state.totalCount}',
                     sortText: sortText,
                     onSortTap: _showSortSheet,
                   ),

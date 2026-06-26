@@ -237,8 +237,8 @@ String formatLeaseDate(DateTime value) {
   return '${value.year}.${value.month.toString().padLeft(2, '0')}.${value.day.toString().padLeft(2, '0')}';
 }
 
-String formatLeaseMoney(int cents) {
-  final yuan = cents / 100;
+String formatLeaseMoney(int amount) {
+  final yuan = amount >= 100000 ? amount / 100 : amount.toDouble();
   return yuan == yuan.roundToDouble()
       ? yuan.toInt().toString()
       : yuan.toStringAsFixed(2);

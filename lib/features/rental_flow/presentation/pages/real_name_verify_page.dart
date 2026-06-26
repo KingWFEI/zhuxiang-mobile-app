@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -25,8 +26,15 @@ class _RealNameVerifyPageState extends ConsumerState<RealNameVerifyPage> {
   final _nameController = TextEditingController();
   final _idCardController = TextEditingController();
   final _phoneController = TextEditingController();
-  bool _frontUploaded = false;
-  bool _backUploaded = false;
+  final _picker = ImagePicker();
+
+  String? _frontUrl;
+  String? _backUrl;
+  bool _frontUploading = false;
+  bool _backUploading = false;
+
+  bool get _frontUploaded => _frontUrl?.isNotEmpty == true;
+  bool get _backUploaded => _backUrl?.isNotEmpty == true;
 
   @override
   void initState() {
@@ -96,7 +104,8 @@ class _RealNameVerifyPageState extends ConsumerState<RealNameVerifyPage> {
                 child: _UploadBox(
                   label: '身份证人像面',
                   uploaded: _frontUploaded,
-                  onTap: () => _mockUpload(isFront: true),
+                  isUploading: _frontUploading,
+                  onTap: () => _pickAndUpload(isFront: true),
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
@@ -104,7 +113,8 @@ class _RealNameVerifyPageState extends ConsumerState<RealNameVerifyPage> {
                 child: _UploadBox(
                   label: '身份证国徽面',
                   uploaded: _backUploaded,
-                  onTap: () => _mockUpload(isFront: false),
+                  isUploading: _backUploading,
+                  onTap: () => _pickAndUpload(isFront: false),
                 ),
               ),
             ],
@@ -120,8 +130,58 @@ class _RealNameVerifyPageState extends ConsumerState<RealNameVerifyPage> {
         .loadRentOrder(widget.orderId);
   }
 
-  Future<void> _mockUpload({required bool isFront}) async {
-    final confirmed = await showModalBottomSheet<bool>(
+  Future<void> _pickAndUpload({required bool isFront}) async {
+    final source = await _chooseImageSource();
+    if (source == null || !mounted) return;
+
+    final image = await _picker.pickImage(
+      source: source,
+      imageQuality: 85,
+      maxWidth: 1800,
+    );
+    if (image == null || !mounted) return;
+
+    setState(() {
+      if (isFront) {
+        _frontUploading = true;
+      } else {
+        _backUploading = true;
+      }
+    });
+
+    final result = await ref
+        .read(rentalFlowControllerProvider.notifier)
+        .uploadIdCardImage(
+          filePath: image.path,
+          bizType: isFront ? 'id_card_front' : 'id_card_back',
+        );
+    if (!mounted) return;
+
+    setState(() {
+      if (isFront) {
+        _frontUploading = false;
+        if (result != null) _frontUrl = result.url;
+      } else {
+        _backUploading = false;
+        if (result != null) _backUrl = result.url;
+      }
+    });
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            result == null
+                ? '身份证图片上传失败，请重试'
+                : '${isFront ? '身份证人像面' : '身份证国徽面'}上传成功',
+          ),
+        ),
+      );
+  }
+
+  Future<ImageSource?> _chooseImageSource() {
+    return showModalBottomSheet<ImageSource>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => SafeArea(
@@ -138,24 +198,18 @@ class _RealNameVerifyPageState extends ConsumerState<RealNameVerifyPage> {
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '上传${isFront ? '身份证人像面' : '身份证国徽面'}',
-                    style: AppTextStyles.titleMedium,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    '当前先使用 Mock 上传占位，后续接入相册/拍照后替换为真实图片上传。',
-                    style: AppTextStyles.bodyMedium,
-                  ),
+                  Text('上传身份证照片', style: AppTextStyles.titleMedium),
                   const SizedBox(height: AppSpacing.lg),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: const Text('模拟上传'),
-                    ),
+                  ListTile(
+                    leading: const Icon(Icons.photo_camera_outlined),
+                    title: const Text('拍照上传'),
+                    onTap: () => Navigator.pop(context, ImageSource.camera),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.photo_library_outlined),
+                    title: const Text('从相册选择'),
+                    onTap: () => Navigator.pop(context, ImageSource.gallery),
                   ),
                 ],
               ),
@@ -164,14 +218,6 @@ class _RealNameVerifyPageState extends ConsumerState<RealNameVerifyPage> {
         ),
       ),
     );
-    if (confirmed != true || !mounted) return;
-    setState(() {
-      if (isFront) {
-        _frontUploaded = true;
-      } else {
-        _backUploaded = true;
-      }
-    });
   }
 
   Future<void> _submit() async {
@@ -196,6 +242,8 @@ class _RealNameVerifyPageState extends ConsumerState<RealNameVerifyPage> {
           name: _nameController.text.trim(),
           idCardNumber: _idCardController.text.trim(),
           phone: _phoneController.text.trim(),
+          idCardFrontUrl: _frontUrl!,
+          idCardBackUrl: _backUrl!,
         );
     if (!mounted || !ok) return;
     context.pushReplacementNamed(
@@ -209,18 +257,20 @@ class _UploadBox extends StatelessWidget {
   const _UploadBox({
     required this.label,
     required this.uploaded,
+    required this.isUploading,
     required this.onTap,
   });
 
   final String label;
   final bool uploaded;
+  final bool isUploading;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       borderRadius: BorderRadius.circular(16),
-      onTap: onTap,
+      onTap: isUploading ? null : onTap,
       child: Container(
         height: 104,
         decoration: BoxDecoration(
@@ -233,17 +283,24 @@ class _UploadBox extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              uploaded
-                  ? Icons.check_circle_outline
-                  : Icons.add_a_photo_outlined,
-              color: uploaded ? AppColors.success : AppColors.primary,
-            ),
+            if (isUploading)
+              const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else
+              Icon(
+                uploaded
+                    ? Icons.check_circle_outline
+                    : Icons.add_a_photo_outlined,
+                color: uploaded ? AppColors.success : AppColors.primary,
+              ),
             const SizedBox(height: AppSpacing.sm),
             Text(label, style: AppTextStyles.bodySmall),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              uploaded ? '已上传' : '点击上传',
+              isUploading ? '上传中' : (uploaded ? '已上传' : '点击上传'),
               style: AppTextStyles.bodySmall.copyWith(
                 color: uploaded ? AppColors.success : AppColors.primary,
                 fontWeight: FontWeight.w600,
