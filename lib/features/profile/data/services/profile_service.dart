@@ -62,6 +62,41 @@ class ProfileService {
     return (home: home, lock: lock);
   }
 
+  /// 设置密码（首次，无需旧密码）
+  Future<void> setPassword({
+    required String newPassword,
+  }) async {
+    final result = await apiClient.put(
+      '/profile/password/set',
+      data: {'newPassword': newPassword},
+    );
+    result.when(
+      success: (response) {
+        final body = response.data;
+        if (body is Map<String, dynamic>) {
+          final code = body['code'] as int? ?? 0;
+          final message = body['message'] as String? ?? '';
+          if (code != 200) {
+            throw ApiException(
+              type: ApiExceptionType.server,
+              message: message,
+              statusCode: code,
+            );
+          }
+        }
+      },
+      failure: (message, error) {
+        throw error is ApiException
+            ? error
+            : ApiException(
+                type: ApiExceptionType.unknown,
+                message: message,
+                cause: error,
+              );
+      },
+    );
+  }
+
   /// 修改密码
   Future<void> changePassword({
     required String oldPassword,
