@@ -19,6 +19,7 @@ class RouteNames {
   static const profileEdit = 'profileEdit';
   static const lease = 'lease';
   static const leaseDetail = 'leaseDetail';
+  static const rentOrders = 'rentOrders';
   static const bill = 'bill';
   static const lock = 'lock';
   static const unlockRecords = 'unlockRecords';

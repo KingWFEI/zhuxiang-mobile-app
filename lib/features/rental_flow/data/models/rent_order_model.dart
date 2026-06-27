@@ -18,6 +18,8 @@ class RentOrderModel extends RentOrder {
     required super.serviceFee,
     required super.firstPaymentAmount,
     required super.status,
+    super.createdAt,
+    super.updatedAt,
   });
 
   factory RentOrderModel.fromJson(Map<String, dynamic> json) {
@@ -60,9 +62,14 @@ class RentOrderModel extends RentOrder {
       firstPaymentAmount: _centsToYuan(
         json['firstPaymentAmount'] as num? ??
             json['first_payment_amount'] as num? ??
+            json['amount'] as num? ??
+            json['totalAmount'] as num? ??
+            json['total_amount'] as num? ??
             0,
       ),
       status: _parseStatus(json['status'] as String?),
+      createdAt: _parseDateTime(json['createdAt'] ?? json['created_at']),
+      updatedAt: _parseDateTime(json['updatedAt'] ?? json['updated_at']),
     );
   }
 
@@ -83,6 +90,8 @@ class RentOrderModel extends RentOrder {
     'serviceFee': serviceFee,
     'firstPaymentAmount': firstPaymentAmount,
     'status': status.name,
+    'createdAt': createdAt?.toIso8601String(),
+    'updatedAt': updatedAt?.toIso8601String(),
   };
 
   static RentOrderStatus _parseStatus(String? value) {
@@ -94,6 +103,11 @@ class RentOrderModel extends RentOrder {
 }
 
 int _centsToYuan(num value) => (value / 100).round();
+
+DateTime? _parseDateTime(Object? value) {
+  if (value == null) return null;
+  return DateTime.tryParse('$value');
+}
 
 String _paymentMethodLabel(String value) {
   return switch (value) {

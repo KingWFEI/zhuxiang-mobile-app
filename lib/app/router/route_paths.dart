@@ -21,6 +21,7 @@ class RoutePaths {
   static const profileEdit = '/profile/edit';
   static const lease = '/leases';
   static const leaseDetail = ':leaseId';
+  static const rentOrders = '/rent-orders';
   static const bill = '/bill';
   static const lock = '/lock';
   static const unlockRecords = '/locks/records';

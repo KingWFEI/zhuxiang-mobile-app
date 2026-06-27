@@ -793,13 +793,19 @@ class _BottomActionBar extends ConsumerWidget {
                   visualDensity: VisualDensity.compact,
                 ),
                 onPressed: () => _openApplication(context, ref),
-                child: const Text('立即申请'),
+                child: Text(_applicationLabel),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  String get _applicationLabel {
+    if (house.isRented) return '已出租';
+    if (!house.isRentLocked) return '立即申请';
+    return house.activeOrderBelongsToMe ? '继续办理' : '办理中';
   }
 
   void _openViewing(BuildContext context) {
@@ -811,6 +817,19 @@ class _BottomActionBar extends ConsumerWidget {
   }
 
   void _openApplication(BuildContext context, WidgetRef ref) {
+    if (house.isRented) {
+      _showRentedDialog(context);
+      return;
+    }
+    if (house.isRentLocked) {
+      if (house.activeOrderBelongsToMe) {
+        _showMyActiveOrderDialog(context);
+      } else {
+        _showLockedDialog(context);
+      }
+      return;
+    }
+
     final authState = ref.read(authControllerProvider);
     if (!authState.isLoggedIn) {
       ScaffoldMessenger.of(context)
@@ -825,6 +844,68 @@ class _BottomActionBar extends ConsumerWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => ConfirmRentSheet(house: house),
+    );
+  }
+
+  Future<void> _showMyActiveOrderDialog(BuildContext context) async {
+    final action = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('你有未完成订单'),
+        content: const Text('你已为该房源创建租赁订单，可继续完成实名认证、合同确认、支付或签约流程。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'cancel'),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, 'continue'),
+            child: const Text('继续办理'),
+          ),
+        ],
+      ),
+    );
+    if (action == 'continue' && context.mounted) {
+      context.pushNamed(RouteNames.rentOrders);
+    }
+  }
+
+  Future<void> _showLockedDialog(BuildContext context) async {
+    final action = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('房源办理中'),
+        content: const Text('该房源已有租客提交租赁订单，暂时无法发起新的租赁申请。你可以先收藏房源，若订单取消后可继续办理。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'search'),
+            child: const Text('查看更多房源'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, 'ok'),
+            child: const Text('我知道了'),
+          ),
+        ],
+      ),
+    );
+    if (action == 'search' && context.mounted) {
+      context.goNamed(RouteNames.search);
+    }
+  }
+
+  Future<void> _showRentedDialog(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('房源已出租'),
+        content: const Text('该房源已经完成签约，暂时无法发起新的租赁申请。'),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('我知道了'),
+          ),
+        ],
+      ),
     );
   }
 }

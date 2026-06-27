@@ -70,6 +70,7 @@ class RoleNavigationConfig {
       RouteNames.profile,
       RouteNames.lease,
       RouteNames.leaseDetail,
+      RouteNames.rentOrders,
       RouteNames.unlockRecords,
       RouteNames.houseList,
       RouteNames.houseSearch,

@@ -222,7 +222,11 @@ class _UserCard extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.iconMuted, size: 20),
+            const Icon(
+              Icons.chevron_right,
+              color: AppColors.iconMuted,
+              size: 20,
+            ),
           ],
         ),
       ),
@@ -433,6 +437,7 @@ class _MenuGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [
       (Icons.description, '我的租约', AppColors.primary),
+      (Icons.receipt_long, '我的订单', AppColors.primary),
       (Icons.lock_clock, '开门记录', AppColors.secondary),
       (Icons.account_balance_wallet, '押金账单', AppColors.warning),
       (Icons.build, '报修服务', AppColors.warning),
@@ -466,8 +471,10 @@ class _MenuGrid extends StatelessWidget {
           if (index == 0) {
             onTap = () => context.pushNamed(RouteNames.lease);
           } else if (index == 1) {
+            onTap = () => context.pushNamed(RouteNames.rentOrders);
+          } else if (index == 2) {
             onTap = () => context.pushNamed(RouteNames.unlockRecords);
-          } else if (index == 3) {
+          } else if (index == 4) {
             onTap = () => context.pushNamed(RouteNames.repairs);
           }
 

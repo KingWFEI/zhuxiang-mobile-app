@@ -74,6 +74,28 @@ class RentalFlowService {
     return order;
   }
 
+  Future<List<RentOrder>> loadMyRentOrders() async {
+    final result = await _apiClient.get('/rent-orders/my');
+    final orders = await result.unwrapValue(_parseRentOrderList);
+    for (final order in orders) {
+      _orders[order.id] = order;
+    }
+    return orders;
+  }
+
+  Future<RentOrder> cancelRentOrder(String orderId) async {
+    final result = await _apiClient.post('/rent-orders/$orderId/cancel');
+    final order = await result.unwrapData(RentOrderModel.fromJson);
+    _orders[order.id] = order;
+    return order;
+  }
+
+  Future<void> hideRentOrder(String orderId) async {
+    final result = await _apiClient.post('/rent-orders/$orderId/hide');
+    await result.unwrapValue((_) => null);
+    _orders.remove(orderId);
+  }
+
   Future<RentOrder> submitRealName(
     String orderId,
     RealNameModel realName,
@@ -137,6 +159,26 @@ class RentalFlowService {
     _orders[order.id] = order;
     return order;
   }
+}
+
+List<RentOrder> _parseRentOrderList(dynamic data) {
+  final source = switch (data) {
+    List<dynamic> value => value,
+    Map<String, dynamic> value =>
+      value['items'] ??
+          value['records'] ??
+          value['rows'] ??
+          value['content'] ??
+          value['list'] ??
+          value['orders'] ??
+          const <dynamic>[],
+    _ => const <dynamic>[],
+  };
+  if (source is! List<dynamic>) return const <RentOrder>[];
+  return source
+      .whereType<Map<String, dynamic>>()
+      .map(RentOrderModel.fromJson)
+      .toList(growable: false);
 }
 
 class FileUploadResult {

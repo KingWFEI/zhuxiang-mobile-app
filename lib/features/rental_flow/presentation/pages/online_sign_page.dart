@@ -39,6 +39,7 @@ class _OnlineSignPageState extends ConsumerState<OnlineSignPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(rentalFlowControllerProvider);
     final order = state.order;
+    final contract = state.contractPreview;
     return RentalFlowPageShell(
       title: '在线签约',
       step: RentalFlowStep.onlineSign,
@@ -60,9 +61,12 @@ class _OnlineSignPageState extends ConsumerState<OnlineSignPage> {
                 style: AppTextStyles.titleMedium.copyWith(fontSize: 16),
               ),
               const SizedBox(height: AppSpacing.md),
-              InfoRow(label: '签约人', value: '王先生'),
-              InfoRow(label: '合同房源', value: order?.houseName ?? '租住房源'),
-              InfoRow(label: '合同编号', value: order?.orderNo ?? widget.orderId),
+              InfoRow(label: '签约人', value: contract?.tenantName ?? '租客'),
+              InfoRow(
+                label: '合同房源',
+                value: contract?.houseName ?? order?.houseName ?? '租住房源',
+              ),
+              InfoRow(label: '合同编号', value: _contractNo(contract?.contractNo)),
             ],
           ),
         ),
@@ -138,7 +142,7 @@ class _OnlineSignPageState extends ConsumerState<OnlineSignPage> {
   void _load() {
     ref
         .read(rentalFlowControllerProvider.notifier)
-        .loadRentOrder(widget.orderId);
+        .loadContractPreview(widget.orderId);
   }
 
   Future<void> _submit() async {
@@ -167,9 +171,11 @@ class _OnlineSignPageState extends ConsumerState<OnlineSignPage> {
     ref.invalidate(homeDataProvider);
     ref.invalidate(houseSearchProvider);
     ref.invalidate(leaseControllerProvider);
-    context.pushReplacementNamed(
-      RouteNames.moveInComplete,
-      pathParameters: {'orderId': widget.orderId},
-    );
+    context.goNamed(RouteNames.lease);
   }
+}
+
+String _contractNo(String? value) {
+  if (value == null || value.isEmpty) return '--';
+  return value;
 }
