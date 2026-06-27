@@ -7,6 +7,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../../../house/data/models/house_detail.dart';
 import '../../data/providers/rental_flow_providers.dart';
 import '../../data/services/rental_flow_service.dart';
@@ -257,23 +258,21 @@ class _ConfirmRentSheetState extends ConsumerState<ConfirmRentSheet> {
 
   Future<void> _submit() async {
     if (!_agreed) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('请先勾选并同意相关协议')));
+      AppToast.show(context, '请先勾选并同意相关协议', type: AppToastType.error);
       return;
     }
 
     final currentOrder = ref.read(rentalFlowControllerProvider).order;
     if (currentOrder != null && currentOrder.houseId == widget.house.id) {
       if (currentOrder.status == RentOrderStatus.completed) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('该房源已完成租住，不能重复发起租约')));
+        AppToast.show(context, '该房源已完成租住，不能重复发起租约', type: AppToastType.error);
         return;
       }
-      Navigator.pop(context);
-      _goNextStep(currentOrder);
-      return;
+      if (currentOrder.status != RentOrderStatus.cancelled) {
+        Navigator.pop(context);
+        _goNextStep(currentOrder);
+        return;
+      }
     }
 
     final order = await ref
@@ -307,6 +306,11 @@ class _ConfirmRentSheetState extends ConsumerState<ConfirmRentSheet> {
   }
 
   void _goNextStep(RentOrder order) {
+    if (order.status == RentOrderStatus.cancelled) {
+      AppToast.show(context, '订单已取消，请重新发起租住申请', type: AppToastType.error);
+      return;
+    }
+
     final routeName = switch (order.status) {
       RentOrderStatus.created ||
       RentOrderStatus.pendingRealName => RouteNames.realNameVerify,
@@ -314,7 +318,7 @@ class _ConfirmRentSheetState extends ConsumerState<ConfirmRentSheet> {
       RentOrderStatus.pendingPayment => RouteNames.rentalPayment,
       RentOrderStatus.pendingSign => RouteNames.onlineSign,
       RentOrderStatus.completed => RouteNames.moveInComplete,
-      RentOrderStatus.cancelled => RouteNames.realNameVerify,
+      RentOrderStatus.cancelled => RouteNames.rentOrders,
     };
     context.pushNamed(routeName, pathParameters: {'orderId': order.id});
   }

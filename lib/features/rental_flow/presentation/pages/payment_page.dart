@@ -6,6 +6,7 @@ import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../../data/providers/rental_flow_providers.dart';
 import '../../domain/entities/rental_flow_step.dart';
 import '../widgets/rent_fee_detail_card.dart';
@@ -104,9 +105,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
         .paymentInfo
         ?.selectedPaymentMethod;
     if (selected == null || selected.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('请选择支付方式')));
+      AppToast.show(context, '请选择支付方式', type: AppToastType.error);
       return;
     }
     final ok = await ref

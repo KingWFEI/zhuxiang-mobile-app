@@ -8,6 +8,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../../data/providers/rental_flow_providers.dart';
 import '../../domain/entities/rental_flow_step.dart';
 import '../widgets/rental_flow_bottom_bar.dart';
@@ -167,17 +168,11 @@ class _RealNameVerifyPageState extends ConsumerState<RealNameVerifyPage> {
       }
     });
 
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(
-            result == null
-                ? '身份证图片上传失败，请重试'
-                : '${isFront ? '身份证人像面' : '身份证国徽面'}上传成功',
-          ),
-        ),
-      );
+    AppToast.show(
+      context,
+      result == null ? '身份证图片上传失败，请重试' : '${isFront ? '身份证人像面' : '身份证国徽面'}上传成功',
+      type: result == null ? AppToastType.error : AppToastType.success,
+    );
   }
 
   Future<ImageSource?> _chooseImageSource() {
@@ -221,27 +216,29 @@ class _RealNameVerifyPageState extends ConsumerState<RealNameVerifyPage> {
   }
 
   Future<void> _submit() async {
-    if (_nameController.text.trim().isEmpty ||
-        _idCardController.text.trim().isEmpty ||
-        _phoneController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('请完整填写实名信息')));
+    final name = _nameController.text.trim();
+    final idCardNumber = _idCardController.text.trim();
+    final phone = _phoneController.text.trim();
+
+    if (name.isEmpty || idCardNumber.isEmpty || phone.isEmpty) {
+      _showToast('请完整填写实名信息', type: AppToastType.error);
+      return;
+    }
+    if (!_isValidMainlandIdCard(idCardNumber)) {
+      _showToast('身份证号格式错误，请检查后重试', type: AppToastType.error);
       return;
     }
     if (!_frontUploaded || !_backUploaded) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('请上传身份证人像面和国徽面')));
+      _showToast('请上传身份证人像面和国徽面', type: AppToastType.error);
       return;
     }
     final ok = await ref
         .read(rentalFlowControllerProvider.notifier)
         .submitRealName(
           orderId: widget.orderId,
-          name: _nameController.text.trim(),
-          idCardNumber: _idCardController.text.trim(),
-          phone: _phoneController.text.trim(),
+          name: name,
+          idCardNumber: idCardNumber,
+          phone: phone,
           idCardFrontUrl: _frontUrl!,
           idCardBackUrl: _backUrl!,
         );
@@ -250,6 +247,36 @@ class _RealNameVerifyPageState extends ConsumerState<RealNameVerifyPage> {
       RouteNames.leaseContract,
       pathParameters: {'orderId': widget.orderId},
     );
+  }
+
+  void _showToast(String message, {AppToastType type = AppToastType.normal}) {
+    AppToast.show(context, message, type: type);
+  }
+
+  bool _isValidMainlandIdCard(String value) {
+    final normalized = value.toUpperCase();
+    if (!RegExp(r'^\d{17}[\dX]$').hasMatch(normalized)) return false;
+
+    final birth = normalized.substring(6, 14);
+    final year = int.tryParse(birth.substring(0, 4));
+    final month = int.tryParse(birth.substring(4, 6));
+    final day = int.tryParse(birth.substring(6, 8));
+    if (year == null || month == null || day == null) return false;
+    final birthday = DateTime(year, month, day);
+    if (birthday.year != year ||
+        birthday.month != month ||
+        birthday.day != day) {
+      return false;
+    }
+    if (birthday.isAfter(DateTime.now())) return false;
+
+    const weights = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
+    const checks = ['1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2'];
+    var sum = 0;
+    for (var index = 0; index < weights.length; index++) {
+      sum += int.parse(normalized[index]) * weights[index];
+    }
+    return checks[sum % 11] == normalized[17];
   }
 }
 

@@ -6,6 +6,7 @@ import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../../../home/data/providers/home_providers.dart';
 import '../../../house/application/house_search_notifier.dart';
 import '../../../house/data/providers/house_providers.dart';
@@ -147,15 +148,11 @@ class _OnlineSignPageState extends ConsumerState<OnlineSignPage> {
 
   Future<void> _submit() async {
     if (!_signed) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('请先完成电子签名确认')));
+      AppToast.show(context, '请先完成电子签名确认', type: AppToastType.error);
       return;
     }
     if (!_agreed) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('请先确认签约协议')));
+      AppToast.show(context, '请先确认签约协议', type: AppToastType.error);
       return;
     }
     final ok = await ref
