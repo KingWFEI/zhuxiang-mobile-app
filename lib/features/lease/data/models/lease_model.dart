@@ -246,7 +246,6 @@ class LeaseModel {
 
   static LeaseLockPermissionStatus _lockStatus(String value) {
     return switch (value.toLowerCase()) {
-      'inactive' || 'pending' => LeaseLockPermissionStatus.inactive,
       'expired' => LeaseLockPermissionStatus.expired,
       'revoked' || 'disabled' => LeaseLockPermissionStatus.revoked,
       _ => LeaseLockPermissionStatus.active,

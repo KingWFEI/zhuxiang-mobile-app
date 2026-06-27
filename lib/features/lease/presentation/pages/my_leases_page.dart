@@ -318,35 +318,30 @@ class _SmartLockPermissionCard extends StatelessWidget {
     LeaseLockPermissionStatus.active => '智能门锁已经生效',
     LeaseLockPermissionStatus.expired => '智能门锁权限已过期',
     LeaseLockPermissionStatus.revoked => '智能门锁权限已回收',
-    LeaseLockPermissionStatus.inactive => '智能门锁待生效',
   };
 
   String get _subtitle => switch (status) {
     LeaseLockPermissionStatus.active => '可使用门锁开门权限，入住期间保持有效',
     LeaseLockPermissionStatus.expired => '当前门锁权限已过期，请联系管家处理',
     LeaseLockPermissionStatus.revoked => '当前门锁权限已回收，如需开门请联系管家',
-    LeaseLockPermissionStatus.inactive => '门锁权限正在开通，请稍后查看',
   };
 
   String get _statusLabel => switch (status) {
     LeaseLockPermissionStatus.active => '有效',
     LeaseLockPermissionStatus.expired => '已过期',
     LeaseLockPermissionStatus.revoked => '已回收',
-    LeaseLockPermissionStatus.inactive => '待生效',
   };
 
   Color get _statusColor => switch (status) {
     LeaseLockPermissionStatus.active => AppColors.success,
     LeaseLockPermissionStatus.expired => AppColors.warning,
     LeaseLockPermissionStatus.revoked => AppColors.error,
-    LeaseLockPermissionStatus.inactive => AppColors.primary,
   };
 
   IconData get _icon => switch (status) {
     LeaseLockPermissionStatus.active => Icons.lock_open_rounded,
     LeaseLockPermissionStatus.expired => Icons.lock_clock_rounded,
     LeaseLockPermissionStatus.revoked => Icons.lock_reset_rounded,
-    LeaseLockPermissionStatus.inactive => Icons.lock_outline_rounded,
   };
 
   @override
