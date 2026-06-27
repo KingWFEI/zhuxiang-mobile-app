@@ -96,10 +96,10 @@ class _ListContent extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(AppRadius.lg),
-                  child: SizedBox(
+                  child: _HouseCover(
+                    house: house,
                     width: imageWidth,
                     height: imageHeight,
-                    child: HouseImagePlaceholder(coverImage: house.coverImage),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
@@ -214,7 +214,7 @@ class _CompactContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        HouseImagePlaceholder(coverImage: house.coverImage, height: 120),
+        _HouseCover(house: house, height: 120),
         Padding(
           padding: const EdgeInsets.all(6),
           child: Column(
@@ -265,6 +265,48 @@ class _CompactContent extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _HouseCover extends StatelessWidget {
+  const _HouseCover({required this.house, required this.height, this.width});
+
+  final House house;
+  final double height;
+  final double? width;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          HouseImagePlaceholder(coverImage: house.coverImage, height: height),
+          if (house.isRentLocked)
+            Positioned(
+              top: 6,
+              left: 6,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xE63A3F4B),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
+                child: const Text(
+                  '办理中',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

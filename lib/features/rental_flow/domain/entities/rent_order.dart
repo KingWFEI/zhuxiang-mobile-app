@@ -38,6 +38,8 @@ class RentOrder {
     required this.serviceFee,
     required this.firstPaymentAmount,
     required this.status,
+    this.createdAt,
+    this.updatedAt,
   });
 
   final String id;
@@ -56,6 +58,8 @@ class RentOrder {
   final int serviceFee;
   final int firstPaymentAmount;
   final RentOrderStatus status;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   DateTime get endDate => DateTime(
     startDate.year,
@@ -81,6 +85,8 @@ class RentOrder {
       serviceFee: serviceFee,
       firstPaymentAmount: firstPaymentAmount,
       status: status ?? this.status,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
     );
   }
 }

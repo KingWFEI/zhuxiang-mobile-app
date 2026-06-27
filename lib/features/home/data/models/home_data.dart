@@ -197,6 +197,9 @@ class HomeHouseItem {
   final String decoration;
   final String availableDate;
   final bool isRented;
+  final String rentAvailability;
+  final String activeOrderId;
+  final bool activeOrderBelongsToMe;
 
   const HomeHouseItem({
     required this.id,
@@ -218,6 +221,9 @@ class HomeHouseItem {
     required this.decoration,
     required this.availableDate,
     this.isRented = false,
+    this.rentAvailability = '',
+    this.activeOrderId = '',
+    this.activeOrderBelongsToMe = false,
   });
 
   factory HomeHouseItem.fromJson(Map<String, dynamic> json) {
@@ -247,6 +253,11 @@ class HomeHouseItem {
       decoration: json['decoration'] as String? ?? '',
       availableDate: json['availableDate'] as String? ?? '',
       isRented: _parseRented(json),
+      rentAvailability:
+          '${json['rentAvailability'] ?? json['rent_availability'] ?? ''}',
+      activeOrderId:
+          '${json['activeOrderId'] ?? json['active_order_id'] ?? ''}',
+      activeOrderBelongsToMe: _parseActiveOrderBelongsToMe(json),
     );
   }
 
@@ -271,6 +282,9 @@ class HomeHouseItem {
       decoration: decoration,
       availableDate: availableDate,
       isRented: isRented,
+      rentAvailability: rentAvailability,
+      activeOrderId: activeOrderId,
+      activeOrderBelongsToMe: activeOrderBelongsToMe,
     );
   }
 
@@ -312,6 +326,17 @@ class HomeHouseItem {
 
     final leaseId = json['leaseId'] ?? json['currentLeaseId'];
     return leaseId != null && leaseId.toString().trim().isNotEmpty;
+  }
+
+  static bool _parseActiveOrderBelongsToMe(Map<String, dynamic> json) {
+    final value =
+        json['activeOrderBelongsToMe'] ??
+        json['active_order_belongs_to_me'] ??
+        json['lockedByMe'] ??
+        json['locked_by_me'] ??
+        json['hasMyActiveOrder'] ??
+        json['has_my_active_order'];
+    return value is bool && value;
   }
 }
 

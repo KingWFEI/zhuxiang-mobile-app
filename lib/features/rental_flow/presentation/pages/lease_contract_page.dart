@@ -6,6 +6,8 @@ import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../data/providers/rental_flow_providers.dart';
+import '../../domain/entities/contract_preview.dart';
+import '../../domain/entities/rent_order.dart';
 import '../../domain/entities/rental_flow_step.dart';
 import '../widgets/agreement_checkbox.dart';
 import '../widgets/rent_order_house_card.dart';
@@ -35,6 +37,7 @@ class _LeaseContractPageState extends ConsumerState<LeaseContractPage> {
     final state = ref.watch(rentalFlowControllerProvider);
     final order = state.order;
     final contract = state.contractPreview;
+    final contractText = _contractText(order, contract);
     return RentalFlowPageShell(
       title: '合同预览',
       step: RentalFlowStep.contract,
@@ -72,8 +75,7 @@ class _LeaseContractPageState extends ConsumerState<LeaseContractPage> {
               ),
               const SizedBox(height: AppSpacing.md),
               Text(
-                contract?.clauses.map((item) => '· $item').join('\n\n') ??
-                    '正在生成合同条款，请稍后重试。',
+                contractText,
                 style: AppTextStyles.bodyMedium.copyWith(height: 1.6),
               ),
             ],
@@ -87,6 +89,30 @@ class _LeaseContractPageState extends ConsumerState<LeaseContractPage> {
         ),
       ],
     );
+  }
+
+  String _contractText(RentOrder? order, ContractPreview? contract) {
+    final content = contract?.content.trim() ?? '';
+    if (content.isNotEmpty) return content;
+
+    final clauses = contract?.clauses ?? const <String>[];
+    final visibleClauses = clauses
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList(growable: false);
+    if (visibleClauses.isNotEmpty) {
+      return visibleClauses.map((item) => '· $item').join('\n\n');
+    }
+
+    if (order == null) return '正在生成合同条款，请稍后重试。';
+    return [
+      '· 甲乙双方确认房源信息：${order.houseName}，地址为${order.address}。',
+      '· 租赁期限：自${formatDate(order.startDate)}起至${formatDate(order.endDate)}止，共计${order.leaseMonths}个月。',
+      '· 租金及支付方式：月租金为人民币${order.monthlyRent}元，押金为人民币${order.deposit}元，付款方式为${order.paymentMethod}。',
+      '· 房屋用途：乙方承诺该房屋仅作为居住使用，不得擅自改变用途或转租。',
+      '· 维修责任：房屋及其设施设备的自然损耗由出租方负责维修，承租方人为损坏由承租方承担。',
+      '· 合同解除：任何一方提前解除合同，应提前通知对方并按合同约定处理费用。',
+    ].join('\n\n');
   }
 
   void _load() {
