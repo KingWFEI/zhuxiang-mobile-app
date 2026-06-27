@@ -15,6 +15,7 @@ import '../../features/house/presentation/pages/house_search_result_page.dart';
 import '../../features/lease/presentation/pages/lease_detail_page.dart';
 import '../../features/lease/presentation/pages/my_leases_page.dart';
 import '../../features/lock/presentation/pages/unlock_records_page.dart';
+import '../../features/lock/presentation/pages/tenant_lock_unlock_page.dart';
 import '../../features/message/presentation/pages/message_page.dart';
 import '../../features/profile/presentation/pages/profile_edit_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
@@ -290,6 +291,13 @@ class AppRouter {
         name: RouteNames.unlockRecords,
         path: RoutePaths.unlockRecords,
         builder: (context, state) => const UnlockRecordsPage(),
+      ),
+      GoRoute(
+        name: RouteNames.tenantLockUnlock,
+        path: RoutePaths.tenantLockUnlock,
+        builder: (context, state) => TenantLockUnlockPage(
+          leaseId: state.pathParameters['leaseId'] ?? '',
+        ),
       ),
 
       // ── 房源 ──

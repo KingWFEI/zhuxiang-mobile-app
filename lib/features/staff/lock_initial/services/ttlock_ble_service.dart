@@ -5,17 +5,35 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-class TtlockBleService {
+/// TTLock 蓝牙能力接口，便于业务控制器复用并进行单元测试。
+abstract interface class TtlockBleServiceContract {
+  Future<void> init();
+
+  Future<UnlockResult> unlockByLockData(String lockData);
+
+  Future<void> startScanning({
+    required void Function(ScannedLockDevice device) onDeviceFound,
+    bool requestPermissions = true,
+  });
+
+  Future<void> stopScanning();
+
+  Future<bool> requestBlePermissions();
+}
+
+class TtlockBleService implements TtlockBleServiceContract {
   static const Duration _deviceNotifyInterval = Duration(seconds: 1);
   static const int _rssiChangeThreshold = 6;
 
   final Map<String, ScannedLockDevice> _lastNotifiedDevices = {};
   final Map<String, DateTime> _lastNotifiedAt = {};
 
+  @override
   Future<void> init() async {
     TTLock.printLog = false;
   }
 
+  @override
   Future<UnlockResult> unlockByLockData(String lockData) async {
     final completer = Completer<UnlockResult>();
 
@@ -45,10 +63,12 @@ class TtlockBleService {
     return completer.future;
   }
 
+  @override
   Future<void> startScanning({
     required void Function(ScannedLockDevice device) onDeviceFound,
+    bool requestPermissions = true,
   }) async {
-    final granted = await requestBlePermissions();
+    final granted = !requestPermissions || await requestBlePermissions();
 
     if (!granted) {
       debugPrint('蓝牙扫描权限未授权');
@@ -64,6 +84,7 @@ class TtlockBleService {
     });
   }
 
+  @override
   Future<void> stopScanning() async {
     TTLock.stopScanLock();
     _resetScanCache();
@@ -116,6 +137,7 @@ class TtlockBleService {
   ///
   /// Android 12 以下主要需要：
   /// - location
+  @override
   Future<bool> requestBlePermissions() async {
     if (!Platform.isAndroid && !Platform.isIOS) {
       return false;

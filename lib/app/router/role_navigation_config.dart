@@ -109,6 +109,7 @@ class RoleNavigationConfig {
       // 账单 & 门锁详情
       RouteNames.bill,
       RouteNames.lock,
+      RouteNames.tenantLockUnlock,
       // 报修
       RouteNames.repair,
       RouteNames.repairs,

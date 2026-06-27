@@ -275,6 +275,9 @@ class _CurrentHomeCard extends ConsumerWidget {
         if (data == null) return const SizedBox.shrink();
         final home = data.home;
         final lock = data.lock;
+        final leaseId = home?.leaseId.isNotEmpty == true
+            ? home!.leaseId
+            : lock?.leaseId ?? '';
 
         return Container(
           padding: const EdgeInsets.all(AppSpacing.lg),
@@ -322,7 +325,12 @@ class _CurrentHomeCard extends ConsumerWidget {
                   SizedBox(
                     width: 94,
                     child: OutlinedButton(
-                      onPressed: () {},
+                      onPressed: leaseId.isEmpty
+                          ? null
+                          : () => context.pushNamed(
+                              RouteNames.tenantLockUnlock,
+                              pathParameters: {'leaseId': leaseId},
+                            ),
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size(0, 34),
                         padding: const EdgeInsets.symmetric(
