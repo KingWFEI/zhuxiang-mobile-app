@@ -10,6 +10,7 @@ import '../../../home/data/providers/home_providers.dart';
 import '../../../house/application/house_search_notifier.dart';
 import '../../../house/data/providers/house_providers.dart';
 import '../../../lease/data/providers/lease_providers.dart';
+import '../../../profile/data/providers/profile_providers.dart';
 import '../../data/providers/rental_flow_providers.dart';
 import '../../domain/entities/rental_flow_step.dart';
 import '../widgets/agreement_checkbox.dart';
@@ -171,6 +172,7 @@ class _OnlineSignPageState extends ConsumerState<OnlineSignPage> {
     ref.invalidate(homeDataProvider);
     ref.invalidate(houseSearchProvider);
     ref.invalidate(leaseControllerProvider);
+    ref.invalidate(currentHomeProvider);
     context.goNamed(RouteNames.lease);
   }
 }

@@ -23,6 +23,7 @@ class RouteNames {
   static const rentOrders = 'rentOrders';
   static const bill = 'bill';
   static const lock = 'lock';
+  static const tenantLockUnlock = 'tenantLockUnlock';
   static const unlockRecords = 'unlockRecords';
   static const repair = 'repair';
   static const repairs = 'repairs';
