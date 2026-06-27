@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../../data/providers/rental_flow_providers.dart';
 import '../../domain/entities/contract_preview.dart';
 import '../../domain/entities/rent_order.dart';
@@ -123,9 +124,7 @@ class _LeaseContractPageState extends ConsumerState<LeaseContractPage> {
 
   Future<void> _submit() async {
     if (!_agreed) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('请先确认合同内容')));
+      AppToast.show(context, '请先确认合同内容', type: AppToastType.error);
       return;
     }
     final ok = await ref

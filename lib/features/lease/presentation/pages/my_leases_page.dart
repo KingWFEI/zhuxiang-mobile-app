@@ -279,6 +279,8 @@ class _CurrentLeaseDashboard extends StatelessWidget {
           children: [
             CurrentLeaseCard(lease: lease, onTap: onDetailTap),
             const SizedBox(height: AppSpacing.lg),
+            _SmartLockPermissionCard(status: lease.lockPermissionStatus),
+            const SizedBox(height: AppSpacing.lg),
             LeaseActionGrid(
               isContractSigned:
                   lease.contractStatus == LeaseContractStatus.signed,
@@ -302,6 +304,111 @@ class _CurrentLeaseDashboard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _SmartLockPermissionCard extends StatelessWidget {
+  const _SmartLockPermissionCard({required this.status});
+
+  final LeaseLockPermissionStatus status;
+
+  String get _title => switch (status) {
+    LeaseLockPermissionStatus.active => '智能门锁已经生效',
+    LeaseLockPermissionStatus.expired => '智能门锁权限已过期',
+    LeaseLockPermissionStatus.revoked => '智能门锁权限已回收',
+  };
+
+  String get _subtitle => switch (status) {
+    LeaseLockPermissionStatus.active => '可使用门锁开门权限，入住期间保持有效',
+    LeaseLockPermissionStatus.expired => '当前门锁权限已过期，请联系管家处理',
+    LeaseLockPermissionStatus.revoked => '当前门锁权限已回收，如需开门请联系管家',
+  };
+
+  String get _statusLabel => switch (status) {
+    LeaseLockPermissionStatus.active => '有效',
+    LeaseLockPermissionStatus.expired => '已过期',
+    LeaseLockPermissionStatus.revoked => '已回收',
+  };
+
+  Color get _statusColor => switch (status) {
+    LeaseLockPermissionStatus.active => AppColors.success,
+    LeaseLockPermissionStatus.expired => AppColors.warning,
+    LeaseLockPermissionStatus.revoked => AppColors.error,
+  };
+
+  IconData get _icon => switch (status) {
+    LeaseLockPermissionStatus.active => Icons.lock_open_rounded,
+    LeaseLockPermissionStatus.expired => Icons.lock_clock_rounded,
+    LeaseLockPermissionStatus.revoked => Icons.lock_reset_rounded,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 16,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: _statusColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+            ),
+            child: Icon(_icon, color: _statusColor),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _title,
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  _subtitle,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xs,
+            ),
+            decoration: BoxDecoration(
+              color: _statusColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: Text(
+              _statusLabel,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: _statusColor,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

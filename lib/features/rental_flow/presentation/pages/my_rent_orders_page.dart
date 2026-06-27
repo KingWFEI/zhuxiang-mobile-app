@@ -11,6 +11,7 @@ import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_empty_view.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../../data/providers/rental_flow_providers.dart';
 import '../../domain/entities/rent_order.dart';
 
@@ -115,14 +116,10 @@ class _MyRentOrdersPageState extends ConsumerState<MyRentOrdersPage> {
       await ref.read(rentalFlowServiceProvider).cancelRentOrder(order.id);
       ref.invalidate(myRentOrdersProvider);
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('订单已取消')));
+      AppToast.show(context, '订单已取消', type: AppToastType.success);
     } on Object {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('取消订单失败，请稍后重试')));
+      AppToast.show(context, '取消订单失败，请稍后重试', type: AppToastType.error);
     } finally {
       if (mounted) setState(() => _cancellingOrderId = null);
     }
@@ -153,14 +150,10 @@ class _MyRentOrdersPageState extends ConsumerState<MyRentOrdersPage> {
       await ref.read(rentalFlowServiceProvider).hideRentOrder(order.id);
       ref.invalidate(myRentOrdersProvider);
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('订单记录已删除')));
+      AppToast.show(context, '订单记录已删除', type: AppToastType.success);
     } on Object {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('删除记录失败，请稍后重试')));
+      AppToast.show(context, '删除记录失败，请稍后重试', type: AppToastType.error);
     } finally {
       if (mounted) setState(() => _hidingOrderId = null);
     }

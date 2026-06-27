@@ -30,7 +30,6 @@ enum LeaseBillStatus {
 
 enum LeaseLockPermissionStatus {
   active('已授权'),
-  inactive('待授权'),
   expired('已过期'),
   revoked('已回收');
 
