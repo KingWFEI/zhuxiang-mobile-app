@@ -26,6 +26,7 @@ import '../../features/repair/presentation/pages/repair_records_page.dart';
 import '../../features/repair/presentation/pages/repair_service_page.dart';
 import '../../features/rental_flow/presentation/pages/lease_contract_page.dart';
 import '../../features/rental_flow/presentation/pages/move_in_complete_page.dart';
+import '../../features/rental_flow/presentation/pages/my_rent_orders_page.dart';
 import '../../features/rental_flow/presentation/pages/online_sign_page.dart';
 import '../../features/rental_flow/presentation/pages/payment_page.dart';
 import '../../features/rental_flow/presentation/pages/real_name_verify_page.dart';
@@ -280,6 +281,11 @@ class AppRouter {
       ),
 
       // ── 门锁记录 ──
+      GoRoute(
+        name: RouteNames.rentOrders,
+        path: RoutePaths.rentOrders,
+        builder: (context, state) => const MyRentOrdersPage(),
+      ),
       GoRoute(
         name: RouteNames.unlockRecords,
         path: RoutePaths.unlockRecords,

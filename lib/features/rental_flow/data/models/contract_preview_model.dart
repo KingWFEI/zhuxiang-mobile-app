@@ -13,6 +13,7 @@ class ContractPreviewModel extends ContractPreview {
     required super.deposit,
     required super.paymentMethod,
     required super.clauses,
+    super.content,
   });
 
   factory ContractPreviewModel.fromJson(Map<String, dynamic> json) {
@@ -52,6 +53,12 @@ class ContractPreviewModel extends ContractPreview {
       clauses: (json['clauses'] as List<dynamic>? ?? const [])
           .map((item) => '$item')
           .toList(),
+      content:
+          json['content'] as String? ??
+          json['contractContent'] as String? ??
+          json['contract_content'] as String? ??
+          json['text'] as String? ??
+          '',
     );
   }
 }

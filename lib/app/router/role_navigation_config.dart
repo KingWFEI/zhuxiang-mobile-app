@@ -16,12 +16,16 @@ class AppTabConfig {
 
   /// 点击后跳转的路由名称
   final String routeName;
+
   /// Tab 显示文字
   final String label;
+
   /// 未选中时图标
   final IconData icon;
+
   /// 选中时图标
   final IconData selectedIcon;
+
   /// 是否显示红点角标
   final bool showBadge;
 }
@@ -37,10 +41,13 @@ class RoleNavigationConfig {
 
   /// 角色登录后的默认跳转路径
   final String entryLocation;
+
   /// 角色登录后的默认路由名称
   final String entryRouteName;
+
   /// 底部导航栏 Tab 列表
   final List<AppTabConfig> tabs;
+
   /// 该角色允许访问的路由名称集合
   final Set<String> allowedRouteNames;
 
@@ -87,6 +94,7 @@ class RoleNavigationConfig {
       // 租约
       RouteNames.lease,
       RouteNames.leaseDetail,
+      RouteNames.rentOrders,
       // 门锁
       RouteNames.unlockRecords,
       // 房源

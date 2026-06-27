@@ -11,6 +11,7 @@ class ContractPreview {
     required this.deposit,
     required this.paymentMethod,
     required this.clauses,
+    this.content = '',
   });
 
   final String orderId;
@@ -24,4 +25,5 @@ class ContractPreview {
   final int deposit;
   final String paymentMethod;
   final List<String> clauses;
+  final String content;
 }
