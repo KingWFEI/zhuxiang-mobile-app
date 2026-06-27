@@ -111,20 +111,41 @@ class House {
 }
 
 bool _parseRented(Map<String, dynamic> json) {
-  final direct = json['isRented'] ?? json['rented'];
+  final direct = json['isRented'] ?? json['rented'] ?? json['leased'];
   if (direct is bool) return direct;
 
-  final status = (json['status'] ?? json['houseStatus'] ?? json['rentStatus'])
-      ?.toString()
-      .toLowerCase();
-  return const {
-    'rented',
-    'leased',
-    'occupied',
-    'unavailable',
-    'inactive',
-    '已出租',
-    '已租',
-    '出租中',
-  }.contains(status);
+  final available = json['isAvailable'] ?? json['available'];
+  if (available is bool) return !available;
+
+  final leaseStatus = json['leaseStatus']?.toString().toLowerCase();
+  if (leaseStatus == 'active') return true;
+
+  final text = [
+    json['status'],
+    json['houseStatus'],
+    json['rentStatus'],
+    json['availabilityStatus'],
+    json['availableStatus'],
+  ].whereType<Object>().map((value) => value.toString().toLowerCase());
+
+  if (text.any(
+    const {
+      'rented',
+      'leased',
+      'occupied',
+      'unavailable',
+      'inactive',
+      'locked',
+      '已出租',
+      '已租',
+      '出租中',
+      '已入住',
+      '不可租',
+    }.contains,
+  )) {
+    return true;
+  }
+
+  final leaseId = json['leaseId'] ?? json['currentLeaseId'];
+  return leaseId != null && leaseId.toString().trim().isNotEmpty;
 }

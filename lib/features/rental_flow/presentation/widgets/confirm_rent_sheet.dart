@@ -13,6 +13,8 @@ import '../../data/services/rental_flow_service.dart';
 import '../../domain/entities/rent_order.dart';
 import 'agreement_checkbox.dart';
 
+const List<String> _paymentMethodOptions = ['月付', '季付', '半年付', '年付'];
+
 class ConfirmRentSheet extends ConsumerStatefulWidget {
   const ConfirmRentSheet({required this.house, super.key});
 
@@ -26,7 +28,7 @@ class _ConfirmRentSheetState extends ConsumerState<ConfirmRentSheet> {
   bool _agreed = false;
   DateTime _startDate = DateTime(2026, 7, 1);
   int _leaseMonths = 12;
-  String _paymentMethod = '押一付一';
+  String _paymentMethod = '月付';
   int _tenantCount = 1;
 
   int get _monthlyRent => _displayMoney(widget.house.price);
@@ -39,7 +41,7 @@ class _ConfirmRentSheetState extends ConsumerState<ConfirmRentSheet> {
   void initState() {
     super.initState();
     if (widget.house.paymentMethod.isNotEmpty) {
-      _paymentMethod = widget.house.paymentMethod;
+      _paymentMethod = _paymentMethodLabel(widget.house.paymentMethod);
     }
   }
 
@@ -110,7 +112,7 @@ class _ConfirmRentSheetState extends ConsumerState<ConfirmRentSheet> {
                         value: _paymentMethod,
                         onTap: () => _pickStringOption(
                           title: '选择付款方式',
-                          values: const ['押一付一', '月付', '季付', '半年付'],
+                          values: _paymentMethodOptions,
                           current: _paymentMethod,
                           onSelected: (value) {
                             setState(() => _paymentMethod = value);
@@ -137,6 +139,8 @@ class _ConfirmRentSheetState extends ConsumerState<ConfirmRentSheet> {
                     monthlyRent: _monthlyRent,
                     deposit: _deposit,
                     serviceFee: _serviceFee,
+                    leaseMonths: _leaseMonths,
+                    paymentMethod: _paymentMethod,
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   AgreementCheckbox(
@@ -287,7 +291,7 @@ class _ConfirmRentSheetState extends ConsumerState<ConfirmRentSheet> {
             coverUrl: widget.house.coverImage,
             startDate: _startDate,
             leaseMonths: _leaseMonths,
-            paymentMethod: _paymentMethod,
+            paymentMethod: _paymentMethodCode(_paymentMethod),
             tenantCount: _tenantCount,
             monthlyRent: _monthlyRent,
             deposit: _deposit,
@@ -479,13 +483,19 @@ class _FeeSummary extends StatelessWidget {
     required this.monthlyRent,
     required this.deposit,
     required this.serviceFee,
+    required this.leaseMonths,
+    required this.paymentMethod,
   });
 
   final int monthlyRent;
   final int deposit;
   final int serviceFee;
+  final int leaseMonths;
+  final String paymentMethod;
 
-  int get total => monthlyRent + deposit + serviceFee;
+  int get rentMonths => _paymentMonths(paymentMethod).clamp(1, leaseMonths);
+  int get firstRent => monthlyRent * rentMonths;
+  int get total => firstRent + deposit + serviceFee;
 
   @override
   Widget build(BuildContext context) {
@@ -499,6 +509,8 @@ class _FeeSummary extends StatelessWidget {
       child: Column(
         children: [
           _FeeRow(label: '月租金', amount: monthlyRent),
+          const SizedBox(height: AppSpacing.sm),
+          _FeeRow(label: '首期租金', amount: firstRent),
           const SizedBox(height: AppSpacing.sm),
           _FeeRow(label: '押金', amount: deposit),
           const SizedBox(height: AppSpacing.sm),
@@ -634,4 +646,32 @@ String _formatDate(DateTime date) {
 int _displayMoney(int value) {
   if (value < 10000) return value;
   return (value / 100).round();
+}
+
+int _paymentMonths(String paymentMethod) {
+  return switch (paymentMethod) {
+    'quarterly' || '季付' => 3,
+    'semi_annual' || '半年付' => 6,
+    'annual' || '年付' => 12,
+    _ => 1,
+  };
+}
+
+String _paymentMethodCode(String paymentMethod) {
+  return switch (paymentMethod) {
+    '季付' || 'quarterly' => 'quarterly',
+    '半年付' || 'semi_annual' => 'semi_annual',
+    '年付' || 'annual' => 'annual',
+    _ => 'monthly',
+  };
+}
+
+String _paymentMethodLabel(String paymentMethod) {
+  return switch (paymentMethod) {
+    'monthly' || '押一付一' || '月付' => '月付',
+    'quarterly' || '押一付三' || '季付' => '季付',
+    'semi_annual' || '押一付六' || '半年付' => '半年付',
+    'annual' || '押一付十二' || '年付' => '年付',
+    _ => paymentMethod.isEmpty ? '月付' : paymentMethod,
+  };
 }

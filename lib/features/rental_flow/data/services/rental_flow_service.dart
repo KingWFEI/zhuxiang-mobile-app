@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_result.dart';
 import '../../domain/entities/contract_preview.dart';
@@ -85,6 +87,18 @@ class RentalFlowService {
     return order;
   }
 
+  Future<FileUploadResult> uploadIdCardImage({
+    required String filePath,
+    required String bizType,
+  }) async {
+    final formData = FormData.fromMap({
+      'bizType': bizType,
+      'file': await MultipartFile.fromFile(filePath),
+    });
+    final result = await _apiClient.post('/files/upload', data: formData);
+    return result.unwrapData(FileUploadResult.fromJson);
+  }
+
   Future<ContractPreview> loadContractPreview(String orderId) async {
     final result = await _apiClient.get(
       '/rent-orders/$orderId/contract-preview',
@@ -111,11 +125,10 @@ class RentalFlowService {
   Future<RentOrder> submitPayment(String orderId, String paymentMethod) async {
     final result = await _apiClient.post(
       '/rent-orders/$orderId/pay',
-      data: {'paymentMethod': paymentMethod},
+      data: {'paymentMethod': paymentMethod, 'paymentChannel': 'mock'},
     );
-    final order = await result.unwrapData(RentOrderModel.fromJson);
-    _orders[order.id] = order;
-    return order;
+    await result.unwrapValue((_) => null);
+    return loadRentOrder(orderId);
   }
 
   Future<RentOrder> submitOnlineSign(String orderId) async {
@@ -123,6 +136,20 @@ class RentalFlowService {
     final order = await result.unwrapData(RentOrderModel.fromJson);
     _orders[order.id] = order;
     return order;
+  }
+}
+
+class FileUploadResult {
+  const FileUploadResult({required this.url, required this.fileId});
+
+  final String url;
+  final String fileId;
+
+  factory FileUploadResult.fromJson(Map<String, dynamic> json) {
+    return FileUploadResult(
+      url: json['url'] as String? ?? '',
+      fileId: json['fileId'] as String? ?? json['file_id'] as String? ?? '',
+    );
   }
 }
 

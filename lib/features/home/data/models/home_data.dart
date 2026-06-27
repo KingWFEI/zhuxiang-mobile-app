@@ -141,12 +141,15 @@ class HomeHouseGroup {
   });
 
   factory HomeHouseGroup.fromJson(Map<String, dynamic> json) {
+    final items =
+        (json['items'] as List<dynamic>?)
+            ?.map((e) => HomeFeedItem.fromJson(e as Map<String, dynamic>))
+            .where((item) => item.house?.isRented != true)
+            .toList() ??
+        [];
+
     return HomeHouseGroup(
-      items:
-          (json['items'] as List<dynamic>?)
-              ?.map((e) => HomeFeedItem.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
+      items: items,
       page: json['page'] as int? ?? 1,
       pageSize: json['pageSize'] as int? ?? 10,
       hasMore: json['hasMore'] as bool? ?? false,
@@ -193,6 +196,7 @@ class HomeHouseItem {
   final String metro;
   final String decoration;
   final String availableDate;
+  final bool isRented;
 
   const HomeHouseItem({
     required this.id,
@@ -213,6 +217,7 @@ class HomeHouseItem {
     required this.metro,
     required this.decoration,
     required this.availableDate,
+    this.isRented = false,
   });
 
   factory HomeHouseItem.fromJson(Map<String, dynamic> json) {
@@ -241,6 +246,7 @@ class HomeHouseItem {
       metro: json['metro'] as String? ?? '',
       decoration: json['decoration'] as String? ?? '',
       availableDate: json['availableDate'] as String? ?? '',
+      isRented: _parseRented(json),
     );
   }
 
@@ -264,7 +270,48 @@ class HomeHouseItem {
       metro: metro,
       decoration: decoration,
       availableDate: availableDate,
+      isRented: isRented,
     );
+  }
+
+  static bool _parseRented(Map<String, dynamic> json) {
+    final direct = json['isRented'] ?? json['rented'] ?? json['leased'];
+    if (direct is bool) return direct;
+
+    final available = json['isAvailable'] ?? json['available'];
+    if (available is bool) return !available;
+
+    final leaseStatus = json['leaseStatus']?.toString().toLowerCase();
+    if (leaseStatus == 'active') return true;
+
+    final text = [
+      json['status'],
+      json['houseStatus'],
+      json['rentStatus'],
+      json['availabilityStatus'],
+      json['availableStatus'],
+    ].whereType<Object>().map((value) => value.toString().toLowerCase());
+
+    if (text.any(
+      const {
+        'rented',
+        'leased',
+        'occupied',
+        'unavailable',
+        'inactive',
+        'locked',
+        '已出租',
+        '已租',
+        '出租中',
+        '已入住',
+        '不可租',
+      }.contains,
+    )) {
+      return true;
+    }
+
+    final leaseId = json['leaseId'] ?? json['currentLeaseId'];
+    return leaseId != null && leaseId.toString().trim().isNotEmpty;
   }
 }
 

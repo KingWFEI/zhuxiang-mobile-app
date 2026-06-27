@@ -73,11 +73,13 @@ class LeaseModel {
         'rent',
       ]),
       deposit: _money(json, ['deposit', 'depositAmount', 'deposit_amount']),
-      paymentMethod: _string(json, [
-        'paymentMethod',
-        'paymentCycle',
-        'payment_method',
-      ], fallback: '押一付一'),
+      paymentMethod: _paymentMethodLabel(
+        _string(json, [
+          'paymentMethod',
+          'paymentCycle',
+          'payment_method',
+        ], fallback: 'monthly'),
+      ),
       paymentDay: _integer(json, [
         'paymentDay',
         'rentPaymentDay',
@@ -203,6 +205,16 @@ class LeaseModel {
       room,
     ].where((part) => part.isNotEmpty).toList(growable: false);
     return parts.isEmpty ? '租住房屋' : parts.join(' ');
+  }
+
+  static String _paymentMethodLabel(String value) {
+    return switch (value) {
+      'monthly' || '押一付一' || '月付' => '月付',
+      'quarterly' || '押一付三' || '季付' => '季付',
+      'semi_annual' || '押一付六' || '半年付' => '半年付',
+      'annual' || '押一付十二' || '年付' => '年付',
+      _ => value,
+    };
   }
 
   static LeaseStatus _leaseStatus(String value) {

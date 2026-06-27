@@ -133,29 +133,35 @@ class _MyLeasesPageState extends ConsumerState<MyLeasesPage> {
       if (state.currentLeases.isEmpty) {
         return const LeaseEmptyView(message: '暂无当前租约');
       }
-      final lease = state.currentLeases.first;
-      return _CurrentLeaseDashboard(
-        lease: lease,
-        isOperating: state.isOperating,
-        onDetailTap: () => _openDetail(lease),
-        onContractTap: () => _showTodo(
-          lease.contractStatus == LeaseContractStatus.signed
-              ? '合同查看功能开发中'
-              : '在线签约功能开发中',
-        ),
-        onBillTap: _openBills,
-        onRenewTap: () => _requestAction(
-          lease: lease,
-          isVerified: isVerified,
-          isCheckout: false,
-        ),
-        onCheckoutTap: () => _requestAction(
-          lease: lease,
-          isVerified: isVerified,
-          isCheckout: true,
-        ),
-        onKeeperTap: _openCustomerService,
-        onPayTap: _openBills,
+      return Column(
+        children: [
+          for (final lease in state.currentLeases) ...[
+            _CurrentLeaseDashboard(
+              lease: lease,
+              isOperating: state.isOperating,
+              onDetailTap: () => _openDetail(lease),
+              onContractTap: () => _showTodo(
+                lease.contractStatus == LeaseContractStatus.signed
+                    ? '合同查看功能开发中'
+                    : '在线签约功能开发中',
+              ),
+              onBillTap: _openBills,
+              onRenewTap: () => _requestAction(
+                lease: lease,
+                isVerified: isVerified,
+                isCheckout: false,
+              ),
+              onCheckoutTap: () => _requestAction(
+                lease: lease,
+                isVerified: isVerified,
+                isCheckout: true,
+              ),
+              onKeeperTap: _openCustomerService,
+              onPayTap: _openBills,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+          ],
+        ],
       );
     }
 

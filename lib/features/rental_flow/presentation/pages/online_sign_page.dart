@@ -6,6 +6,9 @@ import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../home/data/providers/home_providers.dart';
+import '../../../house/application/house_search_notifier.dart';
+import '../../../house/data/providers/house_providers.dart';
 import '../../../lease/data/providers/lease_providers.dart';
 import '../../data/providers/rental_flow_providers.dart';
 import '../../domain/entities/rental_flow_step.dart';
@@ -155,6 +158,14 @@ class _OnlineSignPageState extends ConsumerState<OnlineSignPage> {
         .read(rentalFlowControllerProvider.notifier)
         .submitOnlineSign(widget.orderId);
     if (!mounted || !ok) return;
+    final houseId = ref.read(rentalFlowControllerProvider).order?.houseId;
+    if (houseId != null && houseId.isNotEmpty) {
+      ref
+          .read(locallyRentedHouseIdsProvider.notifier)
+          .update((ids) => {...ids, houseId});
+    }
+    ref.invalidate(homeDataProvider);
+    ref.invalidate(houseSearchProvider);
     ref.invalidate(leaseControllerProvider);
     context.pushReplacementNamed(
       RouteNames.moveInComplete,

@@ -11,8 +11,8 @@ import '../data/providers/house_providers.dart';
 /// 房源搜索
 final houseSearchProvider =
     NotifierProvider<HouseSearchNotifier, HouseSearchState>(
-  HouseSearchNotifier.new,
-);
+      HouseSearchNotifier.new,
+    );
 
 /// 房源搜索状态管理
 class HouseSearchNotifier extends Notifier<HouseSearchState> {
@@ -88,6 +88,7 @@ class HouseSearchNotifier extends Notifier<HouseSearchState> {
 
       state = state.copyWith(
         page: result.page,
+        totalCount: result.total,
         hasMore: result.hasMore,
         houses: result.items,
         isLoading: false,
@@ -133,6 +134,7 @@ class HouseSearchNotifier extends Notifier<HouseSearchState> {
           .toList(growable: false);
       state = state.copyWith(
         page: result.page,
+        totalCount: result.total,
         hasMore: result.hasMore,
         houses: [...state.houses, ...newItems],
         isLoadingMore: false,
@@ -188,9 +190,22 @@ class HouseSearchNotifier extends Notifier<HouseSearchState> {
     state = state.copyWith(hotKeywords: keywords);
   }
 
-  Future<PageResult<House>> _searchHouses(HouseSearchState queryState) {
+  Future<PageResult<House>> _searchHouses(HouseSearchState queryState) async {
     final service = ref.read(houseServiceProvider);
-    return service.fetchHouses(_buildQuery(queryState));
+    final result = await service.fetchHouses(_buildQuery(queryState));
+    final locallyRentedHouseIds = ref.read(locallyRentedHouseIdsProvider);
+    if (locallyRentedHouseIds.isEmpty) return result;
+
+    final items = result.items
+        .where((house) => !locallyRentedHouseIds.contains(house.id))
+        .toList(growable: false);
+    return PageResult<House>(
+      items: items,
+      page: result.page,
+      pageSize: result.pageSize,
+      total: result.total - (result.items.length - items.length),
+      hasMore: result.hasMore,
+    );
   }
 
   Map<String, dynamic> _buildQuery(HouseSearchState value) {
