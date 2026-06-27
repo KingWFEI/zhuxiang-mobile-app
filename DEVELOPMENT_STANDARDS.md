@@ -2,14 +2,14 @@
 
 ## 一、项目概览
 
-| 项目 | 说明 |
-|------|------|
-| 框架 | Flutter 3.x + Dart |
-| 状态管理 | flutter_riverpod |
-| 路由 | go_router（命名路由 + Shell） |
-| 网络层 | Dio（自封装 ApiClient） |
+| 项目     | 说明                                        |
+| -------- | ------------------------------------------- |
+| 框架     | Flutter 3.x + Dart                          |
+| 状态管理 | flutter_riverpod                            |
+| 路由     | go_router（命名路由 + Shell）               |
+| 网络层   | Dio（自封装 ApiClient）                     |
 | 本地存储 | flutter_secure_storage + shared_preferences |
-| 架构模式 | Clean Architecture（按 Feature 分层） |
+| 架构模式 | Clean Architecture（按 Feature 分层）       |
 
 ---
 
@@ -94,35 +94,35 @@ lib/
 
 ### 3.1 必须查看（了解全局配置）
 
-| 顺序 | 文件 | 用途 |
-|------|------|------|
-| 1 | `lib/app/theme/app_colors.dart` | 获取可用颜色常量 |
-| 2 | `lib/app/theme/app_spacing.dart` | 获取可用间距常量 |
-| 3 | `lib/app/theme/app_radius.dart` | 获取可用圆角常量 |
-| 4 | `lib/app/theme/app_shadows.dart` | 获取可用阴影常量 |
-| 5 | `lib/app/theme/app_text_styles.dart` | 获取可用文字样式 |
-| 6 | `lib/core/widgets/` | 查看已有通用组件，避免重复造轮子 |
-| 7 | `lib/core/network/api_endpoints.dart` | 查看已有接口路径 |
-| 8 | `lib/core/constants/storage_keys.dart` | 如需本地存储，查看已有 Key |
+| 顺序 | 文件                                   | 用途                             |
+| ---- | -------------------------------------- | -------------------------------- |
+| 1    | `lib/app/theme/app_colors.dart`        | 获取可用颜色常量                 |
+| 2    | `lib/app/theme/app_spacing.dart`       | 获取可用间距常量                 |
+| 3    | `lib/app/theme/app_radius.dart`        | 获取可用圆角常量                 |
+| 4    | `lib/app/theme/app_shadows.dart`       | 获取可用阴影常量                 |
+| 5    | `lib/app/theme/app_text_styles.dart`   | 获取可用文字样式                 |
+| 6    | `lib/core/widgets/`                    | 查看已有通用组件，避免重复造轮子 |
+| 7    | `lib/core/network/api_endpoints.dart`  | 查看已有接口路径                 |
+| 8    | `lib/core/constants/storage_keys.dart` | 如需本地存储，查看已有 Key       |
 
 ### 3.2 必须修改（注册路由）
 
-| 顺序 | 文件 | 操作 |
-|------|------|------|
-| 1 | `lib/app/router/route_names.dart` | 添加路由名称常量 |
-| 2 | `lib/app/router/route_paths.dart` | 添加路由路径常量 |
-| 3 | `lib/app/router/app_router.dart` | 在 `_tenantStandaloneRoutes()` 中注册 `GoRoute`，同时添加 import |
-| 4 | `lib/app/router/role_navigation_config.dart` | 如新页面是租户端页面，需加入 `tenant.allowedRouteNames` |
+| 顺序 | 文件                                         | 操作                                                             |
+| ---- | -------------------------------------------- | ---------------------------------------------------------------- |
+| 1    | `lib/app/router/route_names.dart`            | 添加路由名称常量                                                 |
+| 2    | `lib/app/router/route_paths.dart`            | 添加路由路径常量                                                 |
+| 3    | `lib/app/router/app_router.dart`             | 在 `_tenantStandaloneRoutes()` 中注册 `GoRoute`，同时添加 import |
+| 4    | `lib/app/router/role_navigation_config.dart` | 如新页面是租户端页面，需加入 `tenant.allowedRouteNames`          |
 
 ### 3.3 按需修改
 
-| 文件 | 场景 |
-|------|------|
-| `lib/core/network/api_endpoints.dart` | 新的接口路径前缀 |
-| `lib/app/theme/app_theme.dart` | 全局组件样式调整 |
-| `lib/app/router/app_shell.dart` | 新增底部 Tab |
+| 文件                                         | 场景               |
+| -------------------------------------------- | ------------------ |
+| `lib/core/network/api_endpoints.dart`        | 新的接口路径前缀   |
+| `lib/app/theme/app_theme.dart`               | 全局组件样式调整   |
+| `lib/app/router/app_shell.dart`              | 新增底部 Tab       |
 | `lib/app/router/role_navigation_config.dart` | 新增角色或调整权限 |
-| `lib/core/constants/storage_keys.dart` | 新增本地存储 Key |
+| `lib/core/constants/storage_keys.dart`       | 新增本地存储 Key   |
 
 ---
 
@@ -166,27 +166,27 @@ repair/
 
 ### 4.2 文件命名
 
-| 类型 | 命名规则 | 示例 |
-|------|---------|------|
-| 页面 | `{name}_page.dart` | `profile_edit_page.dart` |
-| 服务 | `{name}_service.dart` | `profile_service.dart` |
-| 模型 | `{name}_models.dart` | `profile_models.dart` |
-| Provider | `{name}_providers.dart` | `profile_providers.dart` |
-| 控制器 | `{name}_controller.dart` | `repair_controller.dart` |
-| 实体 | `{name}.dart` | `repair_order.dart` |
-| 组件 | `{name}_widget_name.dart` | `home_search_bar.dart` |
+| 类型     | 命名规则                  | 示例                     |
+| -------- | ------------------------- | ------------------------ |
+| 页面     | `{name}_page.dart`        | `profile_edit_page.dart` |
+| 服务     | `{name}_service.dart`     | `profile_service.dart`   |
+| 模型     | `{name}_models.dart`      | `profile_models.dart`    |
+| Provider | `{name}_providers.dart`   | `profile_providers.dart` |
+| 控制器   | `{name}_controller.dart`  | `repair_controller.dart` |
+| 实体     | `{name}.dart`             | `repair_order.dart`      |
+| 组件     | `{name}_widget_name.dart` | `home_search_bar.dart`   |
 
 ### 4.3 类命名
 
-| 类型 | 规则 | 示例 |
-|------|------|------|
-| 页面 | `{Name}Page` | `ProfileEditPage` |
-| 页面内私有组件 | `_{Name}` | `_UserInfoCard` |
-| 服务 | `{Name}Service` | `ProfileService` |
-| 模型 | `{Name}Model` 或业务名 | `CurrentHome`, `RepairOrderModel` |
-| 控制器 | `{Name}Controller` | `RepairController` |
-| 状态 | `{Name}State` | `RepairState` |
-| Provider 变量 | `{name}Provider` (camelCase) | `profileServiceProvider` |
+| 类型           | 规则                         | 示例                              |
+| -------------- | ---------------------------- | --------------------------------- |
+| 页面           | `{Name}Page`                 | `ProfileEditPage`                 |
+| 页面内私有组件 | `_{Name}`                    | `_UserInfoCard`                   |
+| 服务           | `{Name}Service`              | `ProfileService`                  |
+| 模型           | `{Name}Model` 或业务名       | `CurrentHome`, `RepairOrderModel` |
+| 控制器         | `{Name}Controller`           | `RepairController`                |
+| 状态           | `{Name}State`                | `RepairState`                     |
+| Provider 变量  | `{name}Provider` (camelCase) | `profileServiceProvider`          |
 
 ---
 
@@ -359,13 +359,13 @@ final xxxDataProvider = FutureProvider<XxxData>((ref) {
 
 网络异常由 `ApiClient._mapDioException()` 统一映射为 `ApiException` 枚举类型：
 
-| 类型 | 含义 |
-|------|------|
-| `timeout` | 连接/接收/发送超时 |
-| `network` | 无网络连接 |
-| `unauthorized` | 401 未授权 |
-| `server` | 5xx 服务端错误 |
-| `unknown` | 其他未知错误 |
+| 类型           | 含义               |
+| -------------- | ------------------ |
+| `timeout`      | 连接/接收/发送超时 |
+| `network`      | 无网络连接         |
+| `unauthorized` | 401 未授权         |
+| `server`       | 5xx 服务端错误     |
+| `unknown`      | 其他未知错误       |
 
 ### 7.3 Token 自动注入
 
@@ -396,16 +396,16 @@ class StorageKeys {
 
 ## 九、命名通用规则
 
-| 项目 | 规则 |
-|------|------|
-| 文件名 | `snake_case.dart` |
-| 类名 | `PascalCase` |
-| 变量/方法 | `camelCase` |
-| 常量 | `camelCase` 或 `SCREAMING_SNAKE_CASE` |
-| 私有成员 | 前缀 `_` |
-| 页面内私有组件 | `_{ComponentName}` |
-| Provider 变量 | `{name}Provider` |
-| 页面文件 | `{name}_page.dart` |
+| 项目           | 规则                                  |
+| -------------- | ------------------------------------- |
+| 文件名         | `snake_case.dart`                     |
+| 类名           | `PascalCase`                          |
+| 变量/方法      | `camelCase`                           |
+| 常量           | `camelCase` 或 `SCREAMING_SNAKE_CASE` |
+| 私有成员       | 前缀 `_`                              |
+| 页面内私有组件 | `_{ComponentName}`                    |
+| Provider 变量  | `{name}Provider`                      |
+| 页面文件       | `{name}_page.dart`                    |
 
 ---
 

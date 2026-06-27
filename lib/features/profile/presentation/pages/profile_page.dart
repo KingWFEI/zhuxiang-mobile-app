@@ -434,7 +434,7 @@ class _MenuGrid extends StatelessWidget {
             onTap = () => context.pushNamed(RouteNames.unlockRecords);
           } else if (index == 4) {
             onTap = () => context.pushNamed(RouteNames.repairs);
-          } else if (index == 6) {
+          } else if (index == 7) {
             onTap = () => context.pushNamed(RouteNames.settings);
           }
 
