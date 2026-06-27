@@ -8,6 +8,7 @@ class AuthUser {
     required this.avatarUrl,
     required this.isVerified,
     this.role = UserRole.tenant,
+    this.hasPassword = false,
   });
 
   final String id;
@@ -16,6 +17,7 @@ class AuthUser {
   final String avatarUrl;
   final bool isVerified;
   final UserRole role;
+  final bool hasPassword;
 
   factory AuthUser.fromJson(Map<String, dynamic> json) {
     return AuthUser(
@@ -25,6 +27,7 @@ class AuthUser {
       avatarUrl: json['avatarUrl'] as String? ?? '',
       isVerified: json['isVerified'] as bool? ?? false,
       role: UserRole.fromCode(json['role'] as String?),
+      hasPassword: json['hasPassword'] as bool? ?? false,
     );
   }
 
@@ -36,6 +39,7 @@ class AuthUser {
       'avatarUrl': avatarUrl,
       'isVerified': isVerified,
       'role': role.code,
+      'hasPassword': hasPassword,
     };
   }
 

@@ -6,8 +6,8 @@ class RoutePaths {
   static const register = '/register';
   static const webAdminRequired = '/web-admin-required';
   static const main = '/main';
-  static const tenant = '/tenant';
   static const legacyHome = '/home';
+  static const tenant = '/tenant';
   static const home = tenant;
   static const search = '/houses';
   static const houseList = '/house-list';
@@ -19,6 +19,7 @@ class RoutePaths {
   static const realNameAuth = '/real-name-auth';
   static const profile = '/profile';
   static const profileEdit = '/profile/edit';
+  static const settings = '/profile/settings';
   static const lease = '/leases';
   static const leaseDetail = ':leaseId';
   static const bill = '/bill';
@@ -27,8 +28,8 @@ class RoutePaths {
   static const repair = '/repair';
   static const repairs = '/repairs';
   static const createRepair = '/repairs/create';
-  static const repairRecords = '/repairs/records';
   static const repairDetail = '/repairs/:repairId';
+  static const repairRecords = '/repairs/records';
   static const messageCenter = '/messages';
   static const customerService = '/customer-service';
   static const viewingAppointment = '/rental-flow/:houseId/viewing-appointment';

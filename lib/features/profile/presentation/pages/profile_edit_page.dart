@@ -60,13 +60,15 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
           _UserInfoCard(user: user),
           const SizedBox(height: AppSpacing.lg),
           _SectionCard(
-            title: '修改密码',
+            title: user.hasPassword ? '修改密码' : '设置密码',
             children: [
-              _PasswordField(
-                controller: _oldPasswordController,
-                hintText: '请输入旧密码',
-              ),
-              const SizedBox(height: AppSpacing.md),
+              if (user.hasPassword) ...[
+                _PasswordField(
+                  controller: _oldPasswordController,
+                  hintText: '请输入旧密码',
+                ),
+                const SizedBox(height: AppSpacing.md),
+              ],
               _PasswordField(
                 controller: _newPasswordController,
                 hintText: '请输入新密码（6-32位）',
@@ -83,7 +85,11 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: _isChangingPassword ? null : _handleChangePassword,
+                  onPressed: _isChangingPassword
+                      ? null
+                      : user.hasPassword
+                          ? _handleChangePassword
+                          : _handleSetPassword,
                   child: _isChangingPassword
                       ? const SizedBox(
                           width: 18,
@@ -93,7 +99,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                             color: Colors.white,
                           ),
                         )
-                      : const Text('修改密码'),
+                      : Text(user.hasPassword ? '修改密码' : '设置密码'),
                 ),
               ),
             ],
@@ -133,6 +139,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                   ),
                   const SizedBox(width: AppSpacing.md),
                   SizedBox(
+                    width: 112,
                     height: 48,
                     child: OutlinedButton(
                       onPressed: _isSendingCode ? null : _handleSendCode,
@@ -207,7 +214,61 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
       context.pop();
     } on Object catch (e) {
       if (!mounted) return;
-      final message = e is Exception ? e.toString().replaceFirst('Exception: ', '') : '密码修改失败';
+      final message = e is Exception
+          ? e.toString().replaceFirst('Exception: ', '')
+          : '密码修改失败';
+      AppToast.show(context, message, type: AppToastType.error);
+    } finally {
+      if (mounted) setState(() => _isChangingPassword = false);
+    }
+  }
+
+  Future<void> _handleSetPassword() async {
+    final newPassword = _newPasswordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    if (newPassword.isEmpty) {
+      AppToast.show(context, '请输入新密码', type: AppToastType.error);
+      return;
+    }
+    if (newPassword.length < 6 || newPassword.length > 32) {
+      AppToast.show(context, '新密码长度需为6-32位', type: AppToastType.error);
+      return;
+    }
+    if (newPassword != confirmPassword) {
+      AppToast.show(context, '两次输入的新密码不一致', type: AppToastType.error);
+      return;
+    }
+
+    setState(() => _isChangingPassword = true);
+    try {
+      await ref
+          .read(profileServiceProvider)
+          .setPassword(newPassword: newPassword);
+      final user = ref.read(authControllerProvider).user;
+      if (user != null) {
+        await ref.read(authControllerProvider.notifier).updateUser(
+          AuthUser(
+            id: user.id,
+            phone: user.phone,
+            nickname: user.nickname,
+            avatarUrl: user.avatarUrl,
+            isVerified: user.isVerified,
+            role: user.role,
+            hasPassword: true,
+          ),
+        );
+      }
+      if (!mounted) return;
+      AppToast.show(context, '密码设置成功', type: AppToastType.success);
+      _newPasswordController.clear();
+      _confirmPasswordController.clear();
+      context.pop();
+    } on Object catch (e) {
+      if (!mounted) return;
+      final message = e is Exception
+          ? e.toString().replaceFirst('Exception: ', '')
+          : '密码设置失败';
       AppToast.show(context, message, type: AppToastType.error);
     } finally {
       if (mounted) setState(() => _isChangingPassword = false);
@@ -265,7 +326,9 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
       context.pop();
     } on Object catch (e) {
       if (!mounted) return;
-      final message = e is Exception ? e.toString().replaceFirst('Exception: ', '') : '手机号修改失败';
+      final message = e is Exception
+          ? e.toString().replaceFirst('Exception: ', '')
+          : '手机号修改失败';
       AppToast.show(context, message, type: AppToastType.error);
     } finally {
       if (mounted) setState(() => _isChangingPhone = false);
@@ -306,10 +369,7 @@ class _UserInfoCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
-                Text(
-                  user.maskedPhone,
-                  style: AppTextStyles.bodySmall,
-                ),
+                Text(user.maskedPhone, style: AppTextStyles.bodySmall),
               ],
             ),
           ),
@@ -339,7 +399,9 @@ class _SectionCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w700),
+            style: AppTextStyles.bodyLarge.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: AppSpacing.lg),
           ...children,

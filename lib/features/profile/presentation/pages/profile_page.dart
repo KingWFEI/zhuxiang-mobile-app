@@ -75,44 +75,12 @@ class ProfilePage extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: AppSpacing.lg),
-            if (user != null)
-              OutlinedButton(
-                onPressed: () => _confirmLogout(context, ref),
-                child: const Text('退出登录'),
-              ),
           ],
         ),
       ),
     );
   }
 
-  Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('退出登录'),
-          content: const Text('确定要退出当前账号吗？'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('取消'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('退出'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirmed != true || !context.mounted) return;
-    await ref.read(authControllerProvider.notifier).logout();
-    if (!context.mounted) return;
-    context.goNamed(RouteNames.login);
-  }
 }
 
 class _ProfileHeader extends StatelessWidget {
@@ -176,55 +144,50 @@ class _UserCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.xl),
         boxShadow: AppShadows.card,
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        onTap: () => context.pushNamed(RouteNames.profileEdit),
-        child: Row(
-          children: [
-            const CircleAvatar(
-              radius: 28,
-              backgroundColor: AppColors.primaryLight,
-              child: Icon(Icons.person, color: AppColors.primary, size: 30),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    nickname,
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+      child: Row(
+        children: [
+          const CircleAvatar(
+            radius: 28,
+            backgroundColor: AppColors.primaryLight,
+            child: Icon(Icons.person, color: AppColors.primary, size: 30),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  nickname,
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(phone, style: AppTextStyles.bodySmall),
-                  if (isVerified) const SizedBox(height: AppSpacing.xs),
-                  if (isVerified)
-                    Chip(
-                      visualDensity: VisualDensity.compact,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      avatar: const Icon(
-                        Icons.verified_user,
-                        size: 14,
-                        color: AppColors.primary,
-                      ),
-                      label: Text(
-                        '安心住户',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      backgroundColor: AppColors.primaryLight,
-                      side: BorderSide.none,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(phone, style: AppTextStyles.bodySmall),
+                if (isVerified) const SizedBox(height: AppSpacing.xs),
+                if (isVerified)
+                  Chip(
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    avatar: const Icon(
+                      Icons.verified_user,
+                      size: 14,
+                      color: AppColors.primary,
                     ),
-                ],
-              ),
+                    label: Text(
+                      '安心住户',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    backgroundColor: AppColors.primaryLight,
+                    side: BorderSide.none,
+                  ),
+              ],
             ),
-            const Icon(Icons.chevron_right, color: AppColors.iconMuted, size: 20),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -469,6 +432,8 @@ class _MenuGrid extends StatelessWidget {
             onTap = () => context.pushNamed(RouteNames.unlockRecords);
           } else if (index == 3) {
             onTap = () => context.pushNamed(RouteNames.repairs);
+          } else if (index == 6) {
+            onTap = () => context.pushNamed(RouteNames.settings);
           }
 
           return InkWell(

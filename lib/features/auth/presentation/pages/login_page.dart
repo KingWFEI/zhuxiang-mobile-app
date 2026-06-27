@@ -288,7 +288,7 @@ class _LoginFormPanel extends StatelessWidget {
                     ),
                   ),
                   TextButton(
-                    onPressed: () => context.goNamed(RouteNames.register),
+                    onPressed: () => context.pushNamed(RouteNames.register),
                     style: TextButton.styleFrom(
                       minimumSize: const Size(0, 36),
                       padding: const EdgeInsets.symmetric(

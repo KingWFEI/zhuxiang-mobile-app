@@ -7,7 +7,8 @@
       "Bash(flutter pub *)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git merge *)"
+      "Bash(git merge *)",
+      "WebSearch"
     ]
   }
 }
