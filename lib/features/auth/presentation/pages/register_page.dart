@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/role_navigation_config.dart';
-import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
@@ -296,7 +295,7 @@ class _RegisterFormPanel extends StatelessWidget {
               AuthPrimaryButton(label: '注册', onPressed: onRegister),
               const SizedBox(height: AppSpacing.sm),
               TextButton(
-                onPressed: () => context.goNamed(RouteNames.login),
+                onPressed: () => context.pop(),
                 style: TextButton.styleFrom(
                   minimumSize: const Size(0, 38),
                   padding: EdgeInsets.zero,
