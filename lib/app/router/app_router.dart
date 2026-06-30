@@ -12,11 +12,15 @@ import '../../features/house/presentation/pages/house_detail_page.dart';
 import '../../features/house/presentation/pages/house_filter_page.dart';
 import '../../features/house/presentation/pages/house_search_page.dart';
 import '../../features/house/presentation/pages/house_search_result_page.dart';
+import '../../features/lease/presentation/pages/lease_contract_view_page.dart';
 import '../../features/lease/presentation/pages/lease_detail_page.dart';
+import '../../features/lease/presentation/pages/lease_termination_apply_page.dart';
 import '../../features/lease/presentation/pages/my_leases_page.dart';
 import '../../features/lock/presentation/pages/unlock_records_page.dart';
 import '../../features/lock/presentation/pages/tenant_lock_unlock_page.dart';
 import '../../features/message/presentation/pages/message_page.dart';
+import '../../features/payment/presentation/pages/payment_detail_page.dart';
+import '../../features/payment/presentation/pages/payment_records_page.dart';
 import '../../features/profile/presentation/pages/profile_edit_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/settings_page.dart';
@@ -280,12 +284,38 @@ class AppRouter {
         builder: (context, state) =>
             LeaseDetailPage(leaseId: state.pathParameters['leaseId'] ?? ''),
       ),
+      GoRoute(
+        name: RouteNames.leaseContractView,
+        path: RoutePaths.leaseContractView,
+        builder: (context, state) => LeaseContractViewPage(
+          leaseId: state.pathParameters['leaseId'] ?? '',
+        ),
+      ),
+      GoRoute(
+        name: RouteNames.leaseTerminationApply,
+        path: RoutePaths.leaseTerminationApply,
+        builder: (context, state) => LeaseTerminationApplyPage(
+          leaseId: state.pathParameters['leaseId'] ?? '',
+        ),
+      ),
 
       // ── 门锁记录 ──
       GoRoute(
         name: RouteNames.rentOrders,
         path: RoutePaths.rentOrders,
         builder: (context, state) => const MyRentOrdersPage(),
+      ),
+      GoRoute(
+        name: RouteNames.paymentRecords,
+        path: RoutePaths.paymentRecords,
+        builder: (context, state) => const PaymentRecordsPage(),
+      ),
+      GoRoute(
+        name: RouteNames.paymentDetail,
+        path: RoutePaths.paymentDetail,
+        builder: (context, state) => PaymentDetailPage(
+          paymentId: state.pathParameters['paymentId'] ?? '',
+        ),
       ),
       GoRoute(
         name: RouteNames.unlockRecords,

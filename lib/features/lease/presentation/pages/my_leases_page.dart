@@ -14,6 +14,7 @@ import '../../../auth/presentation/providers/auth_controller.dart';
 import '../../application/lease_controller.dart';
 import '../../data/providers/lease_providers.dart';
 import '../../domain/entities/lease.dart';
+import '../../domain/entities/lease_termination.dart';
 import '../widgets/current_lease_card.dart';
 import '../widgets/keeper_service_card.dart';
 import '../widgets/lease_action_grid.dart';
@@ -140,11 +141,7 @@ class _MyLeasesPageState extends ConsumerState<MyLeasesPage> {
               lease: lease,
               isOperating: state.isOperating,
               onDetailTap: () => _openDetail(lease),
-              onContractTap: () => _showTodo(
-                lease.contractStatus == LeaseContractStatus.signed
-                    ? '合同查看功能开发中'
-                    : '在线签约功能开发中',
-              ),
+              onContractTap: () => _openContract(lease),
               onBillTap: _openBills,
               onRenewTap: () => _requestAction(
                 lease: lease,
@@ -197,14 +194,19 @@ class _MyLeasesPageState extends ConsumerState<MyLeasesPage> {
     context.pushNamed(RouteNames.bill);
   }
 
-  void _openCustomerService() {
-    context.pushNamed(RouteNames.customerService);
+  void _openContract(Lease lease) {
+    if (lease.contractStatus != LeaseContractStatus.signed) {
+      context.pushNamed(RouteNames.rentOrders);
+      return;
+    }
+    context.pushNamed(
+      RouteNames.leaseContractView,
+      pathParameters: {'leaseId': lease.id},
+    );
   }
 
-  void _showTodo(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _openCustomerService() {
+    context.pushNamed(RouteNames.customerService);
   }
 
   Future<void> _requestAction({
@@ -215,6 +217,10 @@ class _MyLeasesPageState extends ConsumerState<MyLeasesPage> {
     if (!isVerified) {
       // TODO: 实名认证页完成后应携带回跳地址，返回当前租约操作。
       context.pushNamed(RouteNames.realNameAuth);
+      return;
+    }
+    if (isCheckout) {
+      await _openTerminationApply(lease);
       return;
     }
     final action = isCheckout ? '退租' : '续租';
@@ -237,11 +243,49 @@ class _MyLeasesPageState extends ConsumerState<MyLeasesPage> {
     );
     if (confirmed != true || !mounted) return;
     final controller = ref.read(leaseControllerProvider.notifier);
-    if (isCheckout) {
-      await controller.checkout(lease.id);
-    } else {
-      await controller.renew(lease.id);
+    await controller.renew(lease.id);
+  }
+
+  Future<void> _openTerminationApply(Lease lease) async {
+    final contractId = lease.contractId.trim();
+    if (contractId.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('当前租约缺少合同信息，暂时无法提交退租申请')));
+      return;
     }
+    final current = await ref
+        .read(leaseServiceProvider)
+        .getCurrentTerminationApplication(contractId);
+    if (!mounted) return;
+    if (current != null) {
+      await _showExistingTerminationDialog(current);
+      return;
+    }
+    context.pushNamed(
+      RouteNames.leaseTerminationApply,
+      pathParameters: {'leaseId': lease.id},
+    );
+  }
+
+  Future<void> _showExistingTerminationDialog(
+    LeaseTerminationApplication application,
+  ) {
+    return showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('已提交退租申请'),
+        content: Text(
+          '当前租约已有退租申请（${application.applicationNo}），状态为${application.statusText}，请等待管家处理。',
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('知道了'),
+          ),
+        ],
+      ),
+    );
   }
 }
 

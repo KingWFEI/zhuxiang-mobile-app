@@ -66,14 +66,13 @@ class _ListContent extends StatelessWidget {
   final VoidCallback? onFavoriteTap;
 
   @override
-  @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isNarrow = constraints.maxWidth < 340;
 
         // 卡片整体高度
-        final cardHeight = isNarrow ? 100.0 : 92.0;
+        final cardHeight = isNarrow ? 112.0 : 104.0;
 
         // 卡片内部 padding
         const padding = 4.0;

@@ -20,7 +20,11 @@ class RouteNames {
   static const settings = 'settings';
   static const lease = 'lease';
   static const leaseDetail = 'leaseDetail';
+  static const leaseContractView = 'leaseContractView';
+  static const leaseTerminationApply = 'leaseTerminationApply';
   static const rentOrders = 'rentOrders';
+  static const paymentRecords = 'paymentRecords';
+  static const paymentDetail = 'paymentDetail';
   static const bill = 'bill';
   static const lock = 'lock';
   static const tenantLockUnlock = 'tenantLockUnlock';

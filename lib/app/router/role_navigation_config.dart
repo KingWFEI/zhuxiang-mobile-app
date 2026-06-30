@@ -94,7 +94,11 @@ class RoleNavigationConfig {
       // 租约
       RouteNames.lease,
       RouteNames.leaseDetail,
+      RouteNames.leaseContractView,
+      RouteNames.leaseTerminationApply,
       RouteNames.rentOrders,
+      RouteNames.paymentRecords,
+      RouteNames.paymentDetail,
       // 门锁
       RouteNames.unlockRecords,
       // 房源

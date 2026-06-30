@@ -16,129 +16,135 @@ class CurrentLeaseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(AppRadius.card),
-      child: InkWell(
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.card),
-            boxShadow: AppShadows.card,
-          ),
-          child: Column(
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(AppRadius.xl),
-                    child: SizedBox(
-                      width: 106,
-                      height: 92,
-                      child: lease.houseImageUrl.isEmpty
-                          ? Image.asset('assets/home_bk.png', fit: BoxFit.cover)
-                          : Image.network(
-                              lease.houseImageUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => Image.asset(
+        boxShadow: AppShadows.card,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
+                      child: SizedBox(
+                        width: 106,
+                        height: 92,
+                        child: lease.houseImageUrl.isEmpty
+                            ? Image.asset(
                                 'assets/home_bk.png',
                                 fit: BoxFit.cover,
+                              )
+                            : Image.network(
+                                lease.houseImageUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, _, _) => Image.asset(
+                                  'assets/home_bk.png',
+                                  fit: BoxFit.cover,
+                                ),
                               ),
-                            ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                lease.houseName,
-                                style: AppTextStyles.titleMedium,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            LeaseStatusBadge(label: lease.status.label),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        Text(
-                          lease.houseSummary,
-                          style: AppTextStyles.bodyMedium,
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.location_on_outlined,
-                              size: 16,
-                              color: AppColors.iconMuted,
-                            ),
-                            const SizedBox(width: AppSpacing.xs),
-                            Expanded(
-                              child: Text(
-                                lease.houseAddress,
-                                style: AppTextStyles.bodySmall,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              const Divider(height: 1),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.date_range_outlined,
-                    size: 18,
-                    color: AppColors.primary,
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Text('租期：', style: AppTextStyles.bodySmall),
-                  Expanded(
-                    child: Text(
-                      '${formatLeaseDate(lease.startDate)} - ${formatLeaseDate(lease.endDate)}',
-                      textAlign: TextAlign.right,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                children: [
-                  Expanded(
-                    child: _LeaseMetric(
-                      label: '月租金',
-                      value: '￥${formatLeaseMoney(lease.monthlyRent)} / 月',
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  lease.houseName,
+                                  style: AppTextStyles.titleMedium,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              LeaseStatusBadge(label: lease.status.label),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          Text(
+                            lease.houseSummary,
+                            style: AppTextStyles.bodyMedium,
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.location_on_outlined,
+                                size: 16,
+                                color: AppColors.iconMuted,
+                              ),
+                              const SizedBox(width: AppSpacing.xs),
+                              Expanded(
+                                child: Text(
+                                  lease.houseAddress,
+                                  style: AppTextStyles.bodySmall,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  Expanded(
-                    child: _LeaseMetric(
-                      label: '支付日',
-                      value: '每月${lease.paymentDay}日',
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                const Divider(height: 1),
+                const SizedBox(height: AppSpacing.md),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.date_range_outlined,
+                      size: 18,
+                      color: AppColors.primary,
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    const SizedBox(width: AppSpacing.sm),
+                    Text('租期：', style: AppTextStyles.bodySmall),
+                    Expanded(
+                      child: Text(
+                        '${formatLeaseDate(lease.startDate)} - ${formatLeaseDate(lease.endDate)}',
+                        textAlign: TextAlign.right,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _LeaseMetric(
+                        label: '月租金',
+                        value: '￥${formatLeaseMoney(lease.monthlyRent)} / 月',
+                      ),
+                    ),
+                    Expanded(
+                      child: _LeaseMetric(
+                        label: '支付日',
+                        value: '每月${lease.paymentDay}日',
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

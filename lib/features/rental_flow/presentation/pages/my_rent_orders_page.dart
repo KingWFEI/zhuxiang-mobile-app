@@ -6,6 +6,7 @@ import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_icon.dart';
 import '../../../../app/theme/app_radius.dart';
+import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_empty_view.dart';
@@ -14,6 +15,8 @@ import '../../../../core/widgets/app_loading_view.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../data/providers/rental_flow_providers.dart';
 import '../../domain/entities/rent_order.dart';
+
+const _useGradientOrdersHeader = true;
 
 class MyRentOrdersPage extends ConsumerStatefulWidget {
   const MyRentOrdersPage({super.key});
@@ -42,15 +45,25 @@ class _MyRentOrdersPageState extends ConsumerState<MyRentOrdersPage> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
                   SliverToBoxAdapter(
-                    child: _OrdersHeader(
-                      onBack: () {
-                        if (context.canPop()) {
-                          context.pop();
-                          return;
-                        }
-                        context.goNamed(RouteNames.profile);
-                      },
-                    ),
+                    child: _useGradientOrdersHeader
+                        ? _OrdersHeaderV2(
+                            onBack: () {
+                              if (context.canPop()) {
+                                context.pop();
+                                return;
+                              }
+                              context.goNamed(RouteNames.profile);
+                            },
+                          )
+                        : _OrdersHeader(
+                            onBack: () {
+                              if (context.canPop()) {
+                                context.pop();
+                                return;
+                              }
+                              context.goNamed(RouteNames.profile);
+                            },
+                          ),
                   ),
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(
@@ -223,13 +236,7 @@ class _RentOrderCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F000000),
-            blurRadius: 16,
-            offset: Offset(0, 8),
-          ),
-        ],
+        boxShadow: AppShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -374,6 +381,106 @@ class _StatusChip extends StatelessWidget {
           color: isActive ? AppColors.primary : AppColors.textSecondary,
           fontWeight: FontWeight.w700,
         ),
+      ),
+    );
+  }
+}
+
+class _OrdersHeaderV2 extends StatelessWidget {
+  const _OrdersHeaderV2({required this.onBack});
+
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 176,
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xl,
+        AppSpacing.lg,
+        AppSpacing.xl,
+        AppSpacing.lg,
+      ),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFF4FAFF), Color(0xFFE7F3FF)],
+        ),
+        borderRadius: BorderRadius.vertical(
+          bottom: Radius.circular(AppRadius.xxl),
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: -AppSpacing.lg,
+            left: -AppSpacing.xl,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              child: IconButton(onPressed: onBack, icon: AppIcon.iconBack),
+            ),
+          ),
+          Positioned(
+            right: -54,
+            bottom: -54,
+            child: Opacity(
+              opacity: 0.42,
+              child: Image.asset('assets/home_bk.png', width: 300),
+            ),
+          ),
+          Positioned.fill(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const SizedBox(width: 48),
+                    const Icon(
+                      Icons.home_work,
+                      color: AppColors.primary,
+                      size: 24,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      '住享',
+                      style: AppTextStyles.titleMedium.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const Spacer(),
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        const Icon(Icons.notifications_none_rounded, size: 26),
+                        Positioned(
+                          right: 1,
+                          top: 1,
+                          child: Container(
+                            width: 7,
+                            height: 7,
+                            decoration: const BoxDecoration(
+                              color: AppColors.error,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Text(
+                  '我的订单',
+                  style: AppTextStyles.titleLarge.copyWith(fontSize: 30),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text('查看租房流程进度，继续未完成的订单', style: AppTextStyles.bodyMedium),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

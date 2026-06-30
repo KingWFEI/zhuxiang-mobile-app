@@ -5,12 +5,15 @@ import 'package:zhuxiang_app/features/lease/data/models/lease_model.dart';
 import 'package:zhuxiang_app/features/lease/data/providers/lease_providers.dart';
 import 'package:zhuxiang_app/features/lease/data/services/lease_service.dart';
 import 'package:zhuxiang_app/features/lease/domain/entities/lease.dart';
+import 'package:zhuxiang_app/features/lease/domain/entities/lease_contract_document.dart';
+import 'package:zhuxiang_app/features/lease/domain/entities/lease_termination.dart';
 import 'package:zhuxiang_app/features/lease/presentation/pages/my_leases_page.dart';
 
 void main() {
   test('LeaseModel adapts nested backend fields', () {
     final lease = LeaseModel({
       'leaseId': 'lease-api-1',
+      'contractId': 'contract-api-1',
       'house': {
         'id': 'house-1',
         'title': '中央公园1栋1201',
@@ -36,11 +39,24 @@ void main() {
     }).toEntity();
 
     expect(lease.id, 'lease-api-1');
+    expect(lease.contractId, 'contract-api-1');
     expect(lease.houseName, '中央公园1栋1201');
     expect(lease.monthlyRent, 268000);
     expect(lease.status, LeaseStatus.active);
     expect(lease.lockPermissionStatus, LeaseLockPermissionStatus.active);
     expect(lease.maskedTenantPhone, '138****8000');
+  });
+
+  test('LeaseModel maps terminated lease as checked out history', () {
+    final lease = LeaseModel({
+      'leaseId': 'lease-api-terminated',
+      'contractId': 'contract-api-terminated',
+      'houseName': '中央公园1栋1201',
+      'leaseStatus': 'terminated',
+    }).toEntity();
+
+    expect(lease.status, LeaseStatus.checkedOut);
+    expect(lease.isCurrent, isFalse);
   });
 
   test('mock lease datasource moves checked out lease to history', () async {
@@ -144,15 +160,69 @@ class _FakeLeaseService implements LeaseServiceContract {
   }
 
   @override
+  Future<LeaseContractDocument> getLeaseContract(String leaseId) async {
+    final lease = _leases.firstWhere((lease) => lease.id == leaseId);
+    return LeaseContractDocument(
+      id: 'contract-$leaseId',
+      contractNo: 'HT202603010001',
+      houseName: lease.houseName,
+      tenantName: lease.tenantName,
+      startDate: lease.startDate,
+      endDate: lease.endDate,
+      monthlyRent: lease.monthlyRent,
+      deposit: lease.deposit,
+      paymentMethod: lease.paymentMethod,
+      statusText: lease.contractStatus.label,
+      content: '测试合同正文',
+      fileUrl: '',
+      clauses: const [],
+      signedAt: lease.startDate,
+    );
+  }
+
+  @override
   Future<void> renew(String leaseId) async {}
 
   @override
   Future<void> checkout(String leaseId) async {}
+
+  @override
+  Future<LeaseTerminationAttachment> uploadTerminationAttachment({
+    required String filePath,
+    required String fileName,
+  }) async {
+    return LeaseTerminationAttachment(
+      url: 'mock://lease-termination/$fileName',
+      type: 'image',
+      name: fileName,
+    );
+  }
+
+  @override
+  Future<LeaseTerminationApplication> submitTerminationApplication(
+    String leaseId,
+    LeaseTerminationRequest request,
+  ) async {
+    return const LeaseTerminationApplication(
+      id: 'termination-1',
+      applicationNo: 'TZ202606290001',
+      status: 'pending_review',
+      statusText: '待审核',
+    );
+  }
+
+  @override
+  Future<LeaseTerminationApplication?> getCurrentTerminationApplication(
+    String contractId,
+  ) async {
+    return null;
+  }
 }
 
 final _defaultLeases = <Lease>[
   Lease(
     id: 'lease-2026-001',
+    contractId: 'contract-2026-001',
     houseId: 'house-1',
     houseName: '3栋2单元1201',
     houseAddress: '重庆市渝北区中央公园',
@@ -179,6 +249,7 @@ final _defaultLeases = <Lease>[
   ),
   Lease(
     id: 'lease-2025-001',
+    contractId: 'contract-2025-001',
     houseId: 'house-2',
     houseName: '悦来公寓6栋802',
     houseAddress: '重庆市渝北区悦来大道',
