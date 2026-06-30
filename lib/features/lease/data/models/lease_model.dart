@@ -17,6 +17,15 @@ class LeaseModel {
 
     return Lease(
       id: _string(json, ['id', 'leaseId', 'lease_id']),
+      contractId: _string(
+        json,
+        ['contractId', 'contract_id'],
+        fallback: _string(_map(json['contract']), [
+          'id',
+          'contractId',
+          'contract_id',
+        ]),
+      ),
       houseId: _string(json, [
         'houseId',
         'house_id',
@@ -221,7 +230,11 @@ class LeaseModel {
     return switch (value.toLowerCase()) {
       'pending' || 'pending_effective' => LeaseStatus.pending,
       'expired' => LeaseStatus.expired,
-      'checkedout' || 'checked_out' || 'checkout' => LeaseStatus.checkedOut,
+      'checkedout' ||
+      'checked_out' ||
+      'checkout' ||
+      'terminated' ||
+      'terminate' => LeaseStatus.checkedOut,
       'cancelled' || 'canceled' => LeaseStatus.cancelled,
       _ => LeaseStatus.active,
     };

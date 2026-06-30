@@ -40,6 +40,7 @@ enum LeaseLockPermissionStatus {
 class Lease {
   const Lease({
     required this.id,
+    required this.contractId,
     required this.houseId,
     required this.houseName,
     required this.houseAddress,
@@ -66,6 +67,7 @@ class Lease {
   });
 
   final String id;
+  final String contractId;
   final String houseId;
   final String houseName;
   final String houseAddress;
@@ -107,6 +109,7 @@ class Lease {
   Lease copyWith({LeaseStatus? status}) {
     return Lease(
       id: id,
+      contractId: contractId,
       houseId: houseId,
       houseName: houseName,
       houseAddress: houseAddress,

@@ -13,6 +13,7 @@ import '../../../../core/widgets/app_loading_view.dart';
 import '../../../auth/presentation/providers/auth_controller.dart';
 import '../../data/providers/lease_providers.dart';
 import '../../domain/entities/lease.dart';
+import '../../domain/entities/lease_termination.dart';
 import '../widgets/current_lease_card.dart';
 import '../widgets/lease_status_badge.dart';
 
@@ -39,8 +40,8 @@ class LeaseDetailPage extends ConsumerWidget {
             ),
             data: (lease) => _LeaseDetailContent(
               lease: lease,
-              onAction: (isCheckout) =>
-                  _requestAction(context, ref, lease, isCheckout: isCheckout),
+              onRenew: () => _requestRenew(context, ref, lease),
+              onTerminate: () => _openTerminationApply(context, ref, lease),
             ),
           ),
         ),
@@ -48,24 +49,22 @@ class LeaseDetailPage extends ConsumerWidget {
     );
   }
 
-  Future<void> _requestAction(
+  Future<void> _requestRenew(
     BuildContext context,
     WidgetRef ref,
-    Lease lease, {
-    required bool isCheckout,
-  }) async {
+    Lease lease,
+  ) async {
     final user = ref.read(authControllerProvider).user;
     if (user?.isVerified != true) {
       // TODO: 实名认证完成后返回本详情页并恢复操作。
       context.pushNamed(RouteNames.realNameAuth);
       return;
     }
-    final action = isCheckout ? '退租' : '续租';
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('确认$action申请'),
-        content: Text('确认对「${lease.houseName}」发起$action申请吗？'),
+        title: const Text('确认续租申请'),
+        content: Text('确认对「${lease.houseName}」发起续租申请吗？'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -80,29 +79,84 @@ class LeaseDetailPage extends ConsumerWidget {
     );
     if (confirmed != true || !context.mounted) return;
     final controller = ref.read(leaseControllerProvider.notifier);
-    final success = isCheckout
-        ? await controller.checkout(lease.id)
-        : await controller.renew(lease.id);
+    final success = await controller.renew(lease.id);
     if (!context.mounted) return;
     final state = ref.read(leaseControllerProvider);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           success
-              ? state.actionMessage ?? '$action申请已提交'
-              : state.errorMessage ?? '$action申请失败',
+              ? state.actionMessage ?? '续租申请已提交'
+              : state.errorMessage ?? '续租申请失败',
         ),
       ),
     );
     if (success) ref.invalidate(leaseDetailProvider(leaseId));
   }
+
+  Future<void> _openTerminationApply(
+    BuildContext context,
+    WidgetRef ref,
+    Lease lease,
+  ) async {
+    final user = ref.read(authControllerProvider).user;
+    if (user?.isVerified != true) {
+      context.pushNamed(RouteNames.realNameAuth);
+      return;
+    }
+    final contractId = lease.contractId.trim();
+    if (contractId.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('当前租约缺少合同信息，暂时无法提交退租申请')));
+      return;
+    }
+    final current = await ref
+        .read(leaseServiceProvider)
+        .getCurrentTerminationApplication(contractId);
+    if (!context.mounted) return;
+    if (current != null) {
+      await _showExistingTerminationDialog(context, current);
+      return;
+    }
+    context.pushNamed(
+      RouteNames.leaseTerminationApply,
+      pathParameters: {'leaseId': lease.id},
+    );
+  }
+
+  Future<void> _showExistingTerminationDialog(
+    BuildContext context,
+    LeaseTerminationApplication application,
+  ) {
+    return showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('已提交退租申请'),
+        content: Text(
+          '当前租约已有退租申请（${application.applicationNo}），状态为${application.statusText}，请等待管家处理。',
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('知道了'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _LeaseDetailContent extends StatelessWidget {
-  const _LeaseDetailContent({required this.lease, required this.onAction});
+  const _LeaseDetailContent({
+    required this.lease,
+    required this.onRenew,
+    required this.onTerminate,
+  });
 
   final Lease lease;
-  final ValueChanged<bool> onAction;
+  final VoidCallback onRenew;
+  final VoidCallback onTerminate;
 
   @override
   Widget build(BuildContext context) {
@@ -195,7 +249,7 @@ class _LeaseDetailContent extends StatelessWidget {
                 _ServiceButton(
                   icon: Icons.description_outlined,
                   label: '查看合同',
-                  onTap: () => _showTodo(context, '合同查看功能开发中'),
+                  onTap: () => _openContract(context, lease),
                 ),
                 _ServiceButton(
                   icon: Icons.lock_clock_outlined,
@@ -207,14 +261,14 @@ class _LeaseDetailContent extends StatelessWidget {
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () => onAction(false),
+                        onPressed: onRenew,
                         child: const Text('续租'),
                       ),
                     ),
                     const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () => onAction(true),
+                        onPressed: onTerminate,
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.error,
                         ),
@@ -231,10 +285,15 @@ class _LeaseDetailContent extends StatelessWidget {
     );
   }
 
-  void _showTodo(BuildContext context, String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _openContract(BuildContext context, Lease lease) {
+    if (lease.contractStatus != LeaseContractStatus.signed) {
+      context.pushNamed(RouteNames.rentOrders);
+      return;
+    }
+    context.pushNamed(
+      RouteNames.leaseContractView,
+      pathParameters: {'leaseId': lease.id},
+    );
   }
 }
 

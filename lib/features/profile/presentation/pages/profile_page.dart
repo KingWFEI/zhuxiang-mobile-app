@@ -404,6 +404,7 @@ class _MenuGrid extends StatelessWidget {
     final items = [
       (Icons.description, '我的租约', AppColors.primary),
       (Icons.receipt_long, '我的订单', AppColors.primary),
+      (Icons.payments, '支付记录', AppColors.secondary),
       (Icons.lock_clock, '开门记录', AppColors.secondary),
       (Icons.account_balance_wallet, '押金账单', AppColors.warning),
       (Icons.build, '报修服务', AppColors.warning),
@@ -439,10 +440,12 @@ class _MenuGrid extends StatelessWidget {
           } else if (index == 1) {
             onTap = () => context.pushNamed(RouteNames.rentOrders);
           } else if (index == 2) {
+            onTap = () => context.pushNamed(RouteNames.paymentRecords);
+          } else if (index == 3) {
             onTap = () => context.pushNamed(RouteNames.unlockRecords);
-          } else if (index == 4) {
+          } else if (index == 5) {
             onTap = () => context.pushNamed(RouteNames.repairs);
-          } else if (index == 7) {
+          } else if (index == 8) {
             onTap = () => context.pushNamed(RouteNames.settings);
           }
 
