@@ -8,7 +8,11 @@
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
       "Bash(git merge *)",
-      "WebSearch"
+      "Bash(git config *)",
+      "Bash(git pull *)",
+      "Bash(git stash *)",
+      "WebSearch",
+      "Bash(git restore *)"
     ]
   }
 }

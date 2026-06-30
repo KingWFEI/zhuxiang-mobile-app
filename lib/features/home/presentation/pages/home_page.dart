@@ -9,6 +9,7 @@ import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/network/api_result.dart';
+import '../../../../core/widgets/app_logo.dart';
 import '../../../house/data/models/house.dart';
 import '../../../house/data/providers/house_providers.dart';
 import '../../../house/presentation/widgets/house_card.dart';
@@ -197,20 +198,7 @@ class _HomeHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.home_work,
-                      color: AppColors.primary,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      data.cityName.isNotEmpty ? '住享 · ${data.cityName}' : '住享',
-                      style: AppTextStyles.logoTitle,
-                    ),
-                  ],
-                ),
+                AppLogo(cityName: data.cityName),
                 const Spacer(),
                 Text(
                   data.greeting,
@@ -674,15 +662,18 @@ class _HomeSkeletonState extends State<_HomeSkeleton>
                       children: [
                         Row(
                           children: [
-                            Icon(
-                              Icons.home_work,
-                              color: _shimmer(AppColors.border),
-                              size: 34,
+                            Container(
+                              width: 18,
+                              height: 18,
+                              decoration: BoxDecoration(
+                                color: _shimmer(AppColors.border),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
                             ),
-                            const SizedBox(width: AppSpacing.sm),
+                            const SizedBox(width: 4),
                             Container(
                               width: 80,
-                              height: 20,
+                              height: 16,
                               decoration: BoxDecoration(
                                 color: _shimmer(AppColors.border),
                                 borderRadius: BorderRadius.circular(4),
