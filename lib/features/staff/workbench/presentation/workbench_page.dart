@@ -58,8 +58,6 @@ class WorkbenchPage extends ConsumerWidget {
 
     if (confirmed != true || !context.mounted) return;
     await ref.read(authControllerProvider.notifier).logout();
-    if (!context.mounted) return;
-    context.goNamed(RouteNames.login);
   }
 }
 

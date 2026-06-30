@@ -4,6 +4,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/widgets/app_logo.dart';
 
 class HouseLocationHeader extends StatelessWidget {
   const HouseLocationHeader({
@@ -29,17 +30,7 @@ class HouseLocationHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.home_work,
-                      color: AppColors.primary,
-                      size: 18,
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    Text('住享', style: AppTextStyles.logoTitle),
-                  ],
-                ),
+                const AppLogo(),
                 SizedBox(height: 20),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.baseline,
