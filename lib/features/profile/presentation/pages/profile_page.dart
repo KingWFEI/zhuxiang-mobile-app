@@ -9,6 +9,7 @@ import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../auth/presentation/providers/auth_controller.dart';
+import '../../../../core/widgets/app_logo.dart';
 import '../../data/models/profile_models.dart';
 import '../../data/providers/profile_providers.dart';
 import '../widgets/profile_menu_tile.dart';
@@ -106,9 +107,7 @@ class _ProfileHeader extends StatelessWidget {
             children: [
               const Row(
                 children: [
-                  Icon(Icons.home_work, color: AppColors.primary, size: 18),
-                  SizedBox(width: AppSpacing.sm),
-                  Text('住享', style: AppTextStyles.logoTitle),
+                  AppLogo(),
                   Spacer(),
                   Icon(Icons.notifications_none, size: 20),
                 ],

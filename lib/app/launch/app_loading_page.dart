@@ -1,28 +1,28 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/auth_controller.dart';
 import '../router/role_navigation_config.dart';
 import '../router/route_paths.dart';
-import '../theme/app_colors.dart';
-import '../theme/app_radius.dart';
-import '../theme/app_spacing.dart';
-import '../theme/app_text_styles.dart';
 
 class AppLoadingPage extends ConsumerStatefulWidget {
   const AppLoadingPage({super.key});
 
   static const loadingDuration = Duration(milliseconds: 1400);
+  static bool debugStayOnPage = false;
 
   @override
   ConsumerState<AppLoadingPage> createState() => _AppLoadingPageState();
 }
 
-class _AppLoadingPageState extends ConsumerState<AppLoadingPage> {
+class _AppLoadingPageState extends ConsumerState<AppLoadingPage>
+    with SingleTickerProviderStateMixin {
   Timer? _minimumLoadingTimer;
+  late final AnimationController _progressController;
   bool _minimumLoadingFinished = false;
   bool _sessionRestoreFinished = false;
   bool _navigated = false;
@@ -30,6 +30,11 @@ class _AppLoadingPageState extends ConsumerState<AppLoadingPage> {
   @override
   void initState() {
     super.initState();
+    _progressController = AnimationController(
+      vsync: this,
+      duration: AppLoadingPage.loadingDuration,
+    )..animateTo(0.55, curve: Curves.easeOutCubic);
+
     _minimumLoadingTimer = Timer(AppLoadingPage.loadingDuration, () {
       _minimumLoadingFinished = true;
       _navigateWhenReady();
@@ -45,7 +50,11 @@ class _AppLoadingPageState extends ConsumerState<AppLoadingPage> {
   }
 
   void _navigateWhenReady() {
-    if (!mounted || !_minimumLoadingFinished || !_sessionRestoreFinished || _navigated) {
+    if (AppLoadingPage.debugStayOnPage) return;
+    if (!mounted ||
+        !_minimumLoadingFinished ||
+        !_sessionRestoreFinished ||
+        _navigated) {
       return;
     }
     _navigated = true;
@@ -55,8 +64,8 @@ class _AppLoadingPageState extends ConsumerState<AppLoadingPage> {
     final target = authState.isGuest
         ? RoleNavigationConfig.tenant.entryLocation
         : authState.user == null
-            ? RoutePaths.login
-            : RoleNavigationConfig.entryLocationForRole(authState.user!.role);
+        ? RoutePaths.login
+        : RoleNavigationConfig.entryLocationForRole(authState.user!.role);
 
     GoRouter.of(context).go(target);
   }
@@ -64,55 +73,70 @@ class _AppLoadingPageState extends ConsumerState<AppLoadingPage> {
   @override
   void dispose() {
     _minimumLoadingTimer?.cancel();
+    _progressController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: LayoutBuilder(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark.copyWith(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: const Color(0xFFF8FAFF),
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8FAFF),
+        body: LayoutBuilder(
           builder: (context, constraints) {
-            final imageHeight = (constraints.maxHeight * 0.34)
-                .clamp(220.0, 300.0)
-                .toDouble();
+            final width = constraints.maxWidth;
+            final height = constraints.maxHeight;
+            final contentWidth = width.clamp(320.0, 520.0);
 
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.xl,
-                AppSpacing.xxl,
-                AppSpacing.xl,
-                AppSpacing.xl,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Spacer(),
-                  _LoadingPlaceholderImage(height: imageHeight),
-                  const SizedBox(height: AppSpacing.xxl),
-                  Text(
-                    '住享',
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.titleLarge.copyWith(fontSize: 30),
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                Semantics(
+                  label: '住享社区建筑背景',
+                  image: true,
+                  child: Image.asset(
+                    'assets/app_load_back.png',
+                    fit: BoxFit.cover,
+                    alignment: Alignment.topCenter,
+                    filterQuality: FilterQuality.high,
                   ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    '把租住安排得更简单',
+                ),
+                Positioned(
+                  top: height * 0.165,
+                  left: 0,
+                  right: 0,
+                  child: _BrandLockup(contentWidth: contentWidth),
+                ),
+                Positioned(
+                  top: height * 0.290,
+                  left: 20,
+                  right: 20,
+                  child: Text(
+                    '让每一次归家，都心中有数',
                     textAlign: TextAlign.center,
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      color: AppColors.textSecondary,
+                    maxLines: 1,
+                    textScaler: TextScaler.noScaling,
+                    style: TextStyle(
+                      color: const Color(0xFF6E84A5),
+                      fontSize: (contentWidth * 0.044).clamp(14.0, 20.0),
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: (contentWidth * 0.012).clamp(3.5, 5.5),
+                      height: 1.2,
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.xxl),
-                  const _LoadingStatus(),
-                  const Spacer(),
-                  Text(
-                    '正在进入应用',
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.bodyMedium,
-                  ),
-                ],
-              ),
+                ),
+                Positioned(
+                  left: width * 0.16,
+                  right: width * 0.16,
+                  bottom: MediaQuery.paddingOf(context).bottom + height * 0.082,
+                  child: _LoadingProgress(animation: _progressController),
+                ),
+              ],
             );
           },
         ),
@@ -121,166 +145,80 @@ class _AppLoadingPageState extends ConsumerState<AppLoadingPage> {
   }
 }
 
-class _LoadingPlaceholderImage extends StatelessWidget {
-  const _LoadingPlaceholderImage({required this.height});
+class _BrandLockup extends StatelessWidget {
+  const _BrandLockup({required this.contentWidth});
 
-  final double height;
+  final double contentWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final logoSize = (contentWidth * 0.18).clamp(62.0, 88.0);
+    final titleSize = (contentWidth * 0.105).clamp(36.0, 50.0);
+
+    return Semantics(
+      label: '住享',
+      image: true,
+      child: ExcludeSemantics(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              'assets/zhuxiang_logo.png',
+              width: logoSize,
+              height: logoSize,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
+            ),
+            SizedBox(width: contentWidth * 0.045),
+            ShaderMask(
+              blendMode: BlendMode.srcIn,
+              shaderCallback: (bounds) => const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF168BFF), Color(0xFF315FEA)],
+              ).createShader(bounds),
+              child: Text(
+                '住享',
+                textScaler: TextScaler.noScaling,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: titleSize,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 3,
+                  height: 1,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LoadingProgress extends StatelessWidget {
+  const _LoadingProgress({required this.animation});
+
+  final Animation<double> animation;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: '加载页占位图',
-      image: true,
-      child: Container(
-        height: height,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFEAF4FF), Color(0xFFF1FBF9)],
-          ),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              left: 28,
-              right: 28,
-              bottom: 24,
-              child: Container(
-                height: 78,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.86),
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                  border: Border.all(color: Colors.white),
-                ),
-              ),
+      label: '正在加载',
+      child: AnimatedBuilder(
+        animation: animation,
+        builder: (context, child) {
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: animation.value,
+              minHeight: 3,
+              backgroundColor: const Color(0xFFDCE6F7),
+              valueColor: const AlwaysStoppedAnimation(Color(0xFF4A8BFF)),
             ),
-            Positioned(
-              top: 32,
-              left: 32,
-              child: _ImageTile(
-                icon: Icons.apartment,
-                color: AppColors.primary,
-                size: height * 0.32,
-              ),
-            ),
-            Positioned(
-              top: 52,
-              right: 36,
-              child: _ImageTile(
-                icon: Icons.key_outlined,
-                color: AppColors.secondary,
-                size: height * 0.24,
-              ),
-            ),
-            Positioned(
-              left: 44,
-              right: 44,
-              bottom: 46,
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 22,
-                    backgroundColor: AppColors.primary,
-                    child: Icon(Icons.home, color: Colors.white),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          height: 10,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: AppColors.border,
-                            borderRadius: BorderRadius.circular(AppRadius.sm),
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        FractionallySizedBox(
-                          widthFactor: 0.64,
-                          alignment: Alignment.centerLeft,
-                          child: Container(
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFD3E8FA),
-                              borderRadius: BorderRadius.circular(AppRadius.sm),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
-    );
-  }
-}
-
-class _ImageTile extends StatelessWidget {
-  const _ImageTile({
-    required this.icon,
-    required this.color,
-    required this.size,
-  });
-
-  final IconData icon;
-  final Color color;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: Colors.white),
-      ),
-      child: Icon(icon, color: color, size: size * 0.46),
-    );
-  }
-}
-
-class _LoadingStatus extends StatelessWidget {
-  const _LoadingStatus();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          child: const LinearProgressIndicator(
-            value: 0.72,
-            minHeight: 6,
-            backgroundColor: Color(0xFFE5E7EB),
-            color: AppColors.primary,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2.2),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Text('正在加载房源与租约信息', style: AppTextStyles.bodyMedium),
-          ],
-        ),
-      ],
     );
   }
 }

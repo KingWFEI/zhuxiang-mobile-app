@@ -7,8 +7,8 @@ class AppTextStyles {
 
   static const logoTitle = TextStyle(
     color: AppColors.primary,
-    fontSize: 12,
-    fontWeight: FontWeight.w800,
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
   );
   static const houseCardH1 = TextStyle(
     color: Color.fromARGB(255, 0, 0, 0),

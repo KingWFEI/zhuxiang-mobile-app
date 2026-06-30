@@ -14,6 +14,9 @@ import 'package:zhuxiang_app/features/auth/presentation/pages/register_page.dart
 import 'package:zhuxiang_app/features/home/data/models/home_data.dart';
 import 'package:zhuxiang_app/features/home/data/providers/home_providers.dart';
 import 'package:zhuxiang_app/features/home/presentation/pages/home_page.dart';
+import 'package:zhuxiang_app/features/message/data/providers/message_providers.dart';
+import 'package:zhuxiang_app/features/message/data/services/message_service.dart';
+import 'package:zhuxiang_app/features/message/domain/entities/app_message.dart';
 
 void main() {
   testWidgets('Zhuxiang app renders loading page', (tester) async {
@@ -23,6 +26,7 @@ void main() {
         overrides: [
           tokenStorageProvider.overrideWithValue(_EmptyTokenStorage()),
           guestModeStorageProvider.overrideWithValue(_FakeGuestModeStorage()),
+          messageServiceProvider.overrideWithValue(_FakeMessageService()),
           homeDataProvider.overrideWith(
             (ref) async => const ApiSuccess(_testHomeData),
           ),
@@ -32,10 +36,10 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('住享'), findsWidgets);
-    expect(find.text('把租住安排得更简单'), findsOneWidget);
-    expect(find.text('正在加载房源与租约信息'), findsOneWidget);
-    expect(find.bySemanticsLabel('加载页占位图'), findsOneWidget);
+    expect(find.text('住享'), findsOneWidget);
+    expect(find.text('让每一次归家，都心中有数'), findsOneWidget);
+    expect(find.bySemanticsLabel('住享社区建筑背景'), findsOneWidget);
+    expect(find.bySemanticsLabel('正在加载'), findsOneWidget);
   });
 
   testWidgets('first launch without login enters login page', (tester) async {
@@ -50,6 +54,7 @@ void main() {
         overrides: [
           tokenStorageProvider.overrideWithValue(_EmptyTokenStorage()),
           guestModeStorageProvider.overrideWithValue(_FakeGuestModeStorage()),
+          messageServiceProvider.overrideWithValue(_FakeMessageService()),
           homeDataProvider.overrideWith(
             (ref) async => const ApiSuccess(_testHomeData),
           ),
@@ -80,6 +85,7 @@ void main() {
         overrides: [
           tokenStorageProvider.overrideWithValue(_EmptyTokenStorage()),
           guestModeStorageProvider.overrideWithValue(guestStorage),
+          messageServiceProvider.overrideWithValue(_FakeMessageService()),
           homeDataProvider.overrideWith(
             (ref) async => const ApiSuccess(_testHomeData),
           ),
@@ -111,6 +117,7 @@ void main() {
         overrides: [
           tokenStorageProvider.overrideWithValue(_EmptyTokenStorage()),
           guestModeStorageProvider.overrideWithValue(guestStorage),
+          messageServiceProvider.overrideWithValue(_FakeMessageService()),
           homeDataProvider.overrideWith(
             (ref) async => const ApiSuccess(_testHomeData),
           ),
@@ -463,4 +470,42 @@ class _FakeGuestModeStorage implements GuestModeStorage {
   Future<void> clear() async {
     _enabled = false;
   }
+}
+
+class _FakeMessageService implements MessageServiceContract {
+  @override
+  Future<ApiResult<MessagePageData>> fetchMessages({
+    MessageCategory? category,
+    bool? isRead,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    return ApiSuccess(
+      MessagePageData(
+        items: const [],
+        page: page,
+        pageSize: pageSize,
+        total: 0,
+        hasMore: false,
+      ),
+    );
+  }
+
+  @override
+  Future<ApiResult<MessageUnreadCounts>> fetchUnreadCounts() async {
+    return const ApiSuccess(MessageUnreadCounts());
+  }
+
+  @override
+  Future<ApiResult<bool>> markAsRead(String id) async => const ApiSuccess(true);
+
+  @override
+  Future<ApiResult<bool>> markAllAsRead() async => const ApiSuccess(true);
+
+  @override
+  Future<ApiResult<bool>> deleteMessage(String id) async =>
+      const ApiSuccess(true);
+
+  @override
+  Future<ApiResult<bool>> clearReadMessages() async => const ApiSuccess(true);
 }

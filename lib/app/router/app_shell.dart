@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/message/data/providers/message_providers.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import 'role_navigation_config.dart';
+import 'route_names.dart';
 
-class AppShell extends StatelessWidget {
+class AppShell extends ConsumerWidget {
   const AppShell({
     required this.navigationShell,
     required this.tabs,
@@ -16,13 +19,27 @@ class AppShell extends StatelessWidget {
   final List<AppTabConfig> tabs;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasMessageTab = tabs.any(
+      (tab) => tab.routeName == RouteNames.messageCenter,
+    );
+    final unreadMessageCount = hasMessageTab
+        ? ref.watch(
+            messageControllerProvider.select(
+              (state) => state.unreadCounts.total,
+            ),
+          )
+        : 0;
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: _BottomTabBar(
         currentIndex: navigationShell.currentIndex,
         tabs: tabs,
+        unreadMessageCount: unreadMessageCount,
         onSelected: (index) {
+          if (tabs[index].routeName == RouteNames.messageCenter) {
+            ref.read(messageControllerProvider.notifier).refreshUnreadCounts();
+          }
           navigationShell.goBranch(
             index,
             initialLocation: index == navigationShell.currentIndex,
@@ -37,11 +54,13 @@ class _BottomTabBar extends StatelessWidget {
   const _BottomTabBar({
     required this.currentIndex,
     required this.tabs,
+    required this.unreadMessageCount,
     required this.onSelected,
   });
 
   final int currentIndex;
   final List<AppTabConfig> tabs;
+  final int unreadMessageCount;
   final ValueChanged<int> onSelected;
 
   @override
@@ -53,7 +72,7 @@ class _BottomTabBar extends StatelessWidget {
         selectedIcon: tab.selectedIcon,
         label: tab.label,
         isSelected: currentIndex == index,
-        showBadge: tab.showBadge,
+        badgeCount: tab.showBadge ? unreadMessageCount : 0,
         onTap: () => onSelected(index),
       );
     });
@@ -88,14 +107,14 @@ class _TabItem extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.onTap,
-    this.showBadge = false,
+    this.badgeCount = 0,
   });
 
   final IconData icon;
   final IconData selectedIcon;
   final String label;
   final bool isSelected;
-  final bool showBadge;
+  final int badgeCount;
   final VoidCallback onTap;
 
   @override
@@ -110,13 +129,30 @@ class _TabItem extends StatelessWidget {
             clipBehavior: Clip.none,
             children: [
               Icon(isSelected ? selectedIcon : icon, color: color, size: 18),
-              if (showBadge)
-                const Positioned(
-                  right: -2,
-                  top: -2,
-                  child: CircleAvatar(
-                    radius: 5,
-                    backgroundColor: AppColors.error,
+              if (badgeCount > 0)
+                Positioned(
+                  left: 12,
+                  top: -7,
+                  child: Container(
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: AppColors.error,
+                      borderRadius: BorderRadius.circular(100),
+                      border: Border.all(color: AppColors.surface, width: 1.5),
+                    ),
+                    child: Text(
+                      badgeCount > 99 ? '99+' : '$badgeCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 8,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ),
             ],

@@ -167,45 +167,23 @@ class _LockManagePageState extends ConsumerState<LockManagePage> {
   }
 
   Future<void> _showHousePickerAndBind() async {
-    final houses = ref.read(unboundSmartLockHousesProvider).valueOrNull ?? [];
+    setState(() => _actionLoading = true);
+    try {
+      ref.invalidate(unboundSmartLockHousesProvider);
+      await ref.read(unboundSmartLockHousesProvider.future);
+    } catch (_) {
+      // ignore fetch error, dialog will handle display
+    }
     if (!mounted) return;
+    setState(() => _actionLoading = false);
 
     StaffHouse? selected;
-    await showDialog(
+    await showDialog<StaffHouse?>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) {
-          return AlertDialog(
-            title: const Text('选择房源'),
-            content: SizedBox(
-              width: double.maxFinite,
-              child: houses.isEmpty
-                  ? const Text('暂无未绑定门锁的房源')
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: houses.length,
-                      itemBuilder: (_, i) {
-                        final h = houses[i];
-                        return ListTile(
-                          selected: selected?.id == h.id,
-                          title: Text(h.title),
-                          subtitle: Text(h.roomLabel),
-                          onTap: () => setDialogState(() => selected = h),
-                        );
-                      },
-                    ),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-              ElevatedButton(
-                onPressed: selected != null ? () => Navigator.pop(ctx, selected) : null,
-                child: const Text('确认绑定'),
-              ),
-            ],
-          );
-        },
+      builder: (ctx) => _HousePickerDialog(
+        onRefresh: () => ref.invalidate(unboundSmartLockHousesProvider),
       ),
-    );
+    ).then((value) => selected = value);
 
     if (!mounted || selected == null) return;
 
@@ -653,6 +631,104 @@ class _DangerZoneCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ─── 房源选择弹窗 ──────────────────────────────────────────────────
+
+class _HousePickerDialog extends ConsumerStatefulWidget {
+  const _HousePickerDialog({required this.onRefresh});
+  final VoidCallback onRefresh;
+
+  @override
+  ConsumerState<_HousePickerDialog> createState() => _HousePickerDialogState();
+}
+
+class _HousePickerDialogState extends ConsumerState<_HousePickerDialog> {
+  StaffHouse? _selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final asyncHouses = ref.watch(unboundSmartLockHousesProvider);
+
+    return AlertDialog(
+      title: Row(
+        children: [
+          const Expanded(child: Text('选择房源')),
+          IconButton(
+            icon: const Icon(Icons.refresh, size: 20),
+            tooltip: '刷新',
+            onPressed: () {
+              widget.onRefresh();
+              setState(() => _selected = null);
+            },
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: asyncHouses.when(
+          loading: () => const Center(
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.xl),
+              child: CircularProgressIndicator(),
+            ),
+          ),
+          error: (error, _) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('加载失败：$error', style: AppTextStyles.bodySmall),
+              const SizedBox(height: AppSpacing.md),
+              OutlinedButton(
+                onPressed: widget.onRefresh,
+                child: const Text('重试'),
+              ),
+            ],
+          ),
+          data: (houses) {
+            if (houses.isEmpty) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('暂无未绑定门锁的房源', style: AppTextStyles.bodySmall),
+                  const SizedBox(height: AppSpacing.md),
+                  OutlinedButton.icon(
+                    onPressed: widget.onRefresh,
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('刷新'),
+                  ),
+                ],
+              );
+            }
+            return ListView.builder(
+              shrinkWrap: true,
+              itemCount: houses.length,
+              itemBuilder: (_, i) {
+                final h = houses[i];
+                return ListTile(
+                  selected: _selected?.id == h.id,
+                  title: Text(h.title),
+                  subtitle: Text(h.roomLabel),
+                  onTap: () => setState(() => _selected = h),
+                );
+              },
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('取消'),
+        ),
+        ElevatedButton(
+          onPressed: _selected != null
+              ? () => Navigator.pop(context, _selected)
+              : null,
+          child: const Text('确认绑定'),
+        ),
+      ],
     );
   }
 }
