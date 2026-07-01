@@ -11,6 +11,7 @@ import '../../../home/data/providers/home_providers.dart';
 import '../../../house/application/house_search_notifier.dart';
 import '../../../house/data/providers/house_providers.dart';
 import '../../../lease/data/providers/lease_providers.dart';
+import '../../../lease/domain/entities/lease.dart';
 import '../../../profile/data/providers/profile_providers.dart';
 import '../../data/providers/rental_flow_providers.dart';
 import '../../domain/entities/rental_flow_step.dart';
@@ -170,7 +171,41 @@ class _OnlineSignPageState extends ConsumerState<OnlineSignPage> {
     ref.invalidate(houseSearchProvider);
     ref.invalidate(leaseControllerProvider);
     ref.invalidate(currentHomeProvider);
-    context.goNamed(RouteNames.lease);
+    final leaseId = await _findCurrentLeaseId(houseId: houseId);
+    if (!mounted) return;
+    if (leaseId == null) {
+      context.goNamed(RouteNames.lease);
+      return;
+    }
+    context.goNamed(
+      RouteNames.leaseDetail,
+      pathParameters: {'leaseId': leaseId},
+    );
+  }
+
+  Future<String?> _findCurrentLeaseId({String? houseId}) async {
+    try {
+      final leases = await ref.read(leaseServiceProvider).getMyLeases();
+      Lease? fallback;
+      for (final lease in leases) {
+        if (!lease.isCurrent) continue;
+        fallback ??= lease;
+        if (houseId != null &&
+            houseId.isNotEmpty &&
+            lease.houseId == houseId &&
+            lease.status == LeaseStatus.active) {
+          return lease.id;
+        }
+      }
+      if (houseId != null && houseId.isNotEmpty) {
+        for (final lease in leases) {
+          if (lease.isCurrent && lease.houseId == houseId) return lease.id;
+        }
+      }
+      return fallback?.id;
+    } on Object {
+      return null;
+    }
   }
 }
 

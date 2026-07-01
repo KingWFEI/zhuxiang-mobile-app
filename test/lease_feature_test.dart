@@ -7,6 +7,7 @@ import 'package:zhuxiang_app/features/lease/data/services/lease_service.dart';
 import 'package:zhuxiang_app/features/lease/domain/entities/lease.dart';
 import 'package:zhuxiang_app/features/lease/domain/entities/lease_contract_document.dart';
 import 'package:zhuxiang_app/features/lease/domain/entities/lease_termination.dart';
+import 'package:zhuxiang_app/features/lease/presentation/pages/lease_detail_page.dart';
 import 'package:zhuxiang_app/features/lease/presentation/pages/my_leases_page.dart';
 import 'package:zhuxiang_app/features/lock/data/models/tenant_lock_unlock_data.dart';
 import 'package:zhuxiang_app/features/lock/data/providers/tenant_lock_providers.dart';
@@ -72,7 +73,7 @@ void main() {
     );
   });
 
-  testWidgets('my leases page renders success and history states', (
+  testWidgets('my leases page renders only lease cards and history states', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(430, 1200);
@@ -97,15 +98,52 @@ void main() {
 
     expect(find.text('我的租约'), findsOneWidget);
     expect(find.text('3栋2单元1201'), findsOneWidget);
-    expect(find.text('续租申请'), findsOneWidget);
-    expect(find.text('智能门锁已经生效'), findsOneWidget);
-    expect(find.text('专属管家'), findsOneWidget);
-    expect(find.text('3月租金待支付'), findsOneWidget);
+    expect(find.text('续租申请'), findsNothing);
+    expect(find.text('智能门锁已经生效'), findsNothing);
+    expect(find.text('专属管家'), findsNothing);
+    expect(find.text('3月租金待支付'), findsNothing);
 
     await tester.tap(find.text('历史租约'));
     await tester.pumpAndSettle();
     expect(find.text('悦来公寓6栋802'), findsOneWidget);
     expect(find.text('查看详情'), findsOneWidget);
+  });
+
+  testWidgets('lease detail page renders full lease information', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(430, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          leaseServiceProvider.overrideWithValue(_FakeLeaseService()),
+          tenantLockRepositoryProvider.overrideWithValue(
+            _FakeTenantLockRepository(),
+          ),
+        ],
+        child: const MaterialApp(
+          home: LeaseDetailPage(leaseId: 'lease-2026-001'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('3栋2单元1201'), findsWidgets);
+    expect(find.text('智能门锁已经生效'), findsOneWidget);
+    expect(find.text('续租申请'), findsOneWidget);
+    expect(find.text('专属管家'), findsOneWidget);
+    expect(find.text('3月租金待支付'), findsOneWidget);
+    expect(find.text('租客信息'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('更多服务'),
+      300,
+      scrollable: find.byType(Scrollable),
+    );
+    expect(find.text('更多服务'), findsOneWidget);
   });
 
   testWidgets('my leases page renders empty state', (tester) async {
