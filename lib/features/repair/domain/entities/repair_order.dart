@@ -237,8 +237,16 @@ class CreateRepairRequest {
 }
 
 class RepairOverview {
-  const RepairOverview({required this.currentHouse, required this.orders});
+  const RepairOverview({
+    required this.currentHouse,
+    required this.orders,
+    this.availableHouses = const <RepairHouse>[],
+  });
 
   final RepairHouse currentHouse;
+  final List<RepairHouse> availableHouses;
   final List<RepairOrder> orders;
+
+  List<RepairHouse> get repairHouses =>
+      availableHouses.isEmpty ? [currentHouse] : availableHouses;
 }

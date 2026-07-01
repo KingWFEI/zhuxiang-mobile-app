@@ -124,9 +124,14 @@ class RepairService implements RepairServiceContract {
     final leases = _leaseList(
       leasePayload,
     ).map((json) => LeaseModel(json).toEntity()).toList();
-    final currentLease = _selectRepairLease(leases);
-    final currentHouse = _repairHouseFromLease(currentLease);
-    return RepairOverview(currentHouse: currentHouse, orders: orders);
+    final repairHouses = _repairLeases(
+      leases,
+    ).map(_repairHouseFromLease).toList(growable: false);
+    return RepairOverview(
+      currentHouse: repairHouses.first,
+      availableHouses: repairHouses,
+      orders: orders,
+    );
   }
 
   Future<Response<dynamic>> _request(
@@ -238,16 +243,17 @@ class RepairService implements RepairServiceContract {
         .toList();
   }
 
-  Lease _selectRepairLease(List<Lease> leases) {
+  List<Lease> _repairLeases(List<Lease> leases) {
     if (leases.isEmpty) {
       throw const ApiException(
         type: ApiExceptionType.server,
         message: noActiveRepairLeaseMessage,
       );
     }
-    for (final lease in leases) {
-      if (lease.status == LeaseStatus.active) return lease;
-    }
+    final activeLeases = leases
+        .where((lease) => lease.status == LeaseStatus.active)
+        .toList(growable: false);
+    if (activeLeases.isNotEmpty) return activeLeases;
     throw const ApiException(
       type: ApiExceptionType.server,
       message: noActiveRepairLeaseMessage,
@@ -275,7 +281,11 @@ class MockRepairService implements RepairServiceContract {
   Future<RepairOverview> fetchOverview() async {
     await Future<void>.delayed(const Duration(milliseconds: 320));
     _sortOrders();
-    return RepairOverview(currentHouse: _mockHouse, orders: List.of(_orders));
+    return RepairOverview(
+      currentHouse: _mockHouse,
+      availableHouses: const [_mockHouse],
+      orders: List.of(_orders),
+    );
   }
 
   @override
