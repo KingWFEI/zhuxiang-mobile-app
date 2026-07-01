@@ -8,6 +8,7 @@ class RepairState {
   const RepairState({
     this.overview,
     this.selectedFilter = RepairStatusFilter.all,
+    this.selectedHouseId,
     this.isLoading = true,
     this.isSubmitting = false,
     this.errorMessage,
@@ -16,6 +17,7 @@ class RepairState {
 
   final RepairOverview? overview;
   final RepairStatusFilter selectedFilter;
+  final String? selectedHouseId;
   final bool isLoading;
   final bool isSubmitting;
   final String? errorMessage;
@@ -28,6 +30,23 @@ class RepairState {
 
   List<RepairOrder> get recentOrders =>
       (overview?.orders ?? const <RepairOrder>[]).take(3).toList();
+
+  RepairHouse? get selectedHouse {
+    final houses = overview?.repairHouses ?? const <RepairHouse>[];
+    if (houses.isEmpty) return null;
+    for (final house in houses) {
+      if (house.houseId == selectedHouseId) return house;
+    }
+    return houses.first;
+  }
+
+  RepairHouse? houseById(String? houseId) {
+    if (houseId == null || houseId.isEmpty) return null;
+    for (final house in overview?.repairHouses ?? const <RepairHouse>[]) {
+      if (house.houseId == houseId) return house;
+    }
+    return null;
+  }
 
   int countByFilter(RepairStatusFilter filter) {
     return (overview?.orders ?? const <RepairOrder>[])
@@ -45,6 +64,7 @@ class RepairState {
   RepairState copyWith({
     RepairOverview? overview,
     RepairStatusFilter? selectedFilter,
+    String? selectedHouseId,
     bool? isLoading,
     bool? isSubmitting,
     String? errorMessage,
@@ -55,6 +75,7 @@ class RepairState {
     return RepairState(
       overview: overview ?? this.overview,
       selectedFilter: selectedFilter ?? this.selectedFilter,
+      selectedHouseId: selectedHouseId ?? this.selectedHouseId,
       isLoading: isLoading ?? this.isLoading,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
@@ -75,15 +96,21 @@ class RepairController extends StateNotifier<RepairState> {
     try {
       final overview = await _service.fetchOverview();
       if (!mounted) return;
+      final selectedHouseId = _resolveSelectedHouseId(
+        overview,
+        state.selectedHouseId,
+      );
       state = RepairState(
         overview: overview,
         selectedFilter: state.selectedFilter,
+        selectedHouseId: selectedHouseId,
         isLoading: false,
       );
     } catch (error) {
       if (!mounted) return;
       state = RepairState(
         selectedFilter: state.selectedFilter,
+        selectedHouseId: state.selectedHouseId,
         isLoading: false,
         errorMessage:
             error is ApiException && error.message == noActiveRepairLeaseMessage
@@ -97,6 +124,10 @@ class RepairController extends StateNotifier<RepairState> {
     state = state.copyWith(selectedFilter: filter);
   }
 
+  void selectHouse(String houseId) {
+    state = state.copyWith(selectedHouseId: houseId);
+  }
+
   Future<RepairOrder?> createRepair(CreateRepairRequest request) async {
     state = state.copyWith(isSubmitting: true, clearSubmitMessage: true);
     try {
@@ -106,6 +137,7 @@ class RepairController extends StateNotifier<RepairState> {
         state = state.copyWith(
           overview: RepairOverview(
             currentHouse: currentOverview.currentHouse,
+            availableHouses: currentOverview.repairHouses,
             orders: [order, ...currentOverview.orders],
           ),
         );
@@ -174,8 +206,20 @@ class RepairController extends StateNotifier<RepairState> {
     state = state.copyWith(
       overview: RepairOverview(
         currentHouse: currentOverview.currentHouse,
+        availableHouses: currentOverview.repairHouses,
         orders: orders,
       ),
     );
+  }
+
+  String _resolveSelectedHouseId(RepairOverview overview, String? previousId) {
+    final houses = overview.repairHouses;
+    if (houses.isEmpty) return overview.currentHouse.houseId;
+    if (previousId != null) {
+      for (final house in houses) {
+        if (house.houseId == previousId) return previousId;
+      }
+    }
+    return houses.first.houseId;
   }
 }

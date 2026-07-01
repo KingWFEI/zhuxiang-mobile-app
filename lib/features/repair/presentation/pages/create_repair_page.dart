@@ -15,9 +15,10 @@ import '../../domain/entities/repair_order.dart';
 import '../widgets/repair_type_grid.dart';
 
 class CreateRepairPage extends ConsumerStatefulWidget {
-  const CreateRepairPage({super.key, this.initialType});
+  const CreateRepairPage({super.key, this.initialType, this.initialHouseId});
 
   final RepairType? initialType;
+  final String? initialHouseId;
 
   @override
   ConsumerState<CreateRepairPage> createState() => _CreateRepairPageState();
@@ -50,7 +51,7 @@ class _CreateRepairPageState extends ConsumerState<CreateRepairPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(repairControllerProvider);
-    final house = state.overview?.currentHouse;
+    final house = state.houseById(widget.initialHouseId) ?? state.selectedHouse;
     final hasCurrentHouse = house != null;
 
     return Scaffold(
@@ -240,7 +241,8 @@ class _CreateRepairPageState extends ConsumerState<CreateRepairPage> {
       return;
     }
     if (!_formKey.currentState!.validate()) return;
-    final house = ref.read(repairControllerProvider).overview?.currentHouse;
+    final state = ref.read(repairControllerProvider);
+    final house = state.houseById(widget.initialHouseId) ?? state.selectedHouse;
     if (house == null) {
       ScaffoldMessenger.of(
         context,

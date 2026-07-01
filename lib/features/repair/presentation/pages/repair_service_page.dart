@@ -96,31 +96,31 @@ class RepairServicePage extends ConsumerWidget {
 
     final overview = state.overview;
     if (overview == null) return const RepairEmptyView();
+    final selectedHouse = state.selectedHouse ?? overview.currentHouse;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CurrentRepairHouseCard(
-          house: overview.currentHouse,
+        _RepairHousePicker(
+          houses: overview.repairHouses,
+          selectedHouse: selectedHouse,
+          onChanged: (houseId) =>
+              ref.read(repairControllerProvider.notifier).selectHouse(houseId),
           onContact: () => ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('联系${overview.currentHouse.housekeeperName}'),
-            ),
+            SnackBar(content: Text('联系${selectedHouse.housekeeperName}')),
           ),
         ),
         const SizedBox(height: AppSpacing.xl),
         _SectionTitle(
           title: '快捷报修',
           actionText: '新建报修',
-          onAction: () => context.pushNamed(RouteNames.createRepair),
+          onAction: () => _openCreateRepair(context, selectedHouse),
         ),
         const SizedBox(height: AppSpacing.md),
         RepairTypeGrid(
           selectedType: null,
-          onSelected: (type) => context.pushNamed(
-            RouteNames.createRepair,
-            queryParameters: {'type': type.name},
-          ),
+          onSelected: (type) =>
+              _openCreateRepair(context, selectedHouse, type: type),
         ),
         const SizedBox(height: AppSpacing.xl),
         RepairStatsCard(
@@ -159,12 +159,26 @@ class RepairServicePage extends ConsumerWidget {
           width: double.infinity,
           height: 48,
           child: FilledButton.icon(
-            onPressed: () => context.pushNamed(RouteNames.createRepair),
+            onPressed: () => _openCreateRepair(context, selectedHouse),
             icon: const Icon(Icons.add_rounded),
             label: const Text('新建报修'),
           ),
         ),
       ],
+    );
+  }
+
+  void _openCreateRepair(
+    BuildContext context,
+    RepairHouse house, {
+    RepairType? type,
+  }) {
+    context.pushNamed(
+      RouteNames.createRepair,
+      queryParameters: {
+        'houseId': house.houseId,
+        if (type != null) 'type': type.name,
+      },
     );
   }
 
@@ -290,6 +304,71 @@ class _RepairHeader extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _RepairHousePicker extends StatelessWidget {
+  const _RepairHousePicker({
+    required this.houses,
+    required this.selectedHouse,
+    required this.onChanged,
+    required this.onContact,
+  });
+
+  final List<RepairHouse> houses;
+  final RepairHouse selectedHouse;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onContact;
+
+  @override
+  Widget build(BuildContext context) {
+    if (houses.length <= 1) {
+      return CurrentRepairHouseCard(house: selectedHouse, onContact: onContact);
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('报修房源', style: AppTextStyles.titleMedium),
+        const SizedBox(height: AppSpacing.md),
+        DropdownButtonFormField<String>(
+          initialValue: selectedHouse.houseId,
+          isExpanded: true,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: AppColors.surface,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.card),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.card),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
+            ),
+          ),
+          items: [
+            for (final house in houses)
+              DropdownMenuItem<String>(
+                value: house.houseId,
+                child: Text(
+                  house.houseName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+          ],
+          onChanged: (value) {
+            if (value == null) return;
+            onChanged(value);
+          },
+        ),
+        const SizedBox(height: AppSpacing.md),
+        CurrentRepairHouseCard(house: selectedHouse, onContact: onContact),
+      ],
     );
   }
 }

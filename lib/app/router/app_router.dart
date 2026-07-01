@@ -399,6 +399,7 @@ class AppRouter {
         path: RoutePaths.createRepair,
         builder: (context, state) => CreateRepairPage(
           initialType: RepairType.fromValue(state.uri.queryParameters['type']),
+          initialHouseId: state.uri.queryParameters['houseId'],
         ),
       ),
       GoRoute(

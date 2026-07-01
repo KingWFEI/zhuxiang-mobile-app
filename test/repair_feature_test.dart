@@ -79,6 +79,11 @@ void main() {
     expect(overview.currentHouse.houseId, 'active-house');
     expect(overview.currentHouse.houseName, '真实在租房源');
     expect(overview.currentHouse.leaseStatus, '履约中');
+    expect(overview.repairHouses, hasLength(2));
+    expect(
+      overview.repairHouses.map((house) => house.houseId),
+      containsAll(['active-house', 'second-active-house']),
+    );
   });
 
   test(
@@ -171,6 +176,19 @@ Dio _repairOverviewDio() {
                 'status': 'active',
                 'keeperName': '当前管家',
                 'keeperPhone': '400-000-0000',
+              },
+              {
+                'id': 'second-active-lease',
+                'contractId': 'second-active-contract',
+                'houseId': 'second-active-house',
+                'houseName': '第二套在租房源',
+                'tenantName': '王小明',
+                'tenantPhone': '13800138000',
+                'startDate': '2026-02-01',
+                'endDate': '2027-01-31',
+                'status': 'active',
+                'keeperName': '第二管家',
+                'keeperPhone': '400-000-0001',
               },
             ],
           },
