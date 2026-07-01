@@ -277,12 +277,14 @@ class AppRouter {
         path: RoutePaths.lease,
         builder: (context, state) =>
             const MyLeasesPage(enforceAuthentication: false),
-      ),
-      GoRoute(
-        name: RouteNames.leaseDetail,
-        path: RoutePaths.leaseDetail,
-        builder: (context, state) =>
-            LeaseDetailPage(leaseId: state.pathParameters['leaseId'] ?? ''),
+        routes: [
+          GoRoute(
+            name: RouteNames.leaseDetail,
+            path: RoutePaths.leaseDetail,
+            builder: (context, state) =>
+                LeaseDetailPage(leaseId: state.pathParameters['leaseId'] ?? ''),
+          ),
+        ],
       ),
       GoRoute(
         name: RouteNames.leaseContractView,
@@ -541,8 +543,9 @@ class AppRouter {
     // ── 未登录且非游客 ──
     // 只能访问登录/注册等认证页面，其他页面重定向到登录页
     if (!authState.isLoggedIn && !authState.isGuest) {
-      if (routeName == null) return null;
-      return _isAuthRoute(routeName) ? null : RoutePaths.login;
+      // refreshListenable 因登出刷新嵌套路由时，GoRouterState.name 可能为 null。
+      // 因此不能用 name == null 作为放行条件，需同时根据实际 URI 判断。
+      return _isAuthDestination(routeName, location) ? null : RoutePaths.login;
     }
 
     // ── 游客模式 ──
@@ -562,7 +565,7 @@ class AppRouter {
 
     // 登录/注册页对已登录用户不可见，重定向到角色首页
     final entryLocation = RoleNavigationConfig.entryLocationForRole(user.role);
-    if (_isAuthRoute(routeName)) return entryLocation;
+    if (_isAuthDestination(routeName, location)) return entryLocation;
 
     // 超出角色权限范围的页面重定向到角色首页
     if (!RoleNavigationConfig.canAccess(user.role, routeName)) {
@@ -582,5 +585,11 @@ class AppRouter {
   /// 判断是否为认证相关页面（登录/注册）
   static bool _isAuthRoute(String? routeName) {
     return routeName == RouteNames.login || routeName == RouteNames.register;
+  }
+
+  static bool _isAuthDestination(String? routeName, String location) {
+    return _isAuthRoute(routeName) ||
+        location == RoutePaths.login ||
+        location == RoutePaths.register;
   }
 }

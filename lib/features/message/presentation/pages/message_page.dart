@@ -369,25 +369,54 @@ class _CategoryChip extends StatelessWidget {
             ),
             if (unreadCount > 0) ...[
               const SizedBox(width: AppSpacing.xs),
-              Container(
-                constraints: const BoxConstraints(minWidth: 17, minHeight: 17),
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: active ? Colors.white : AppColors.error,
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: Text(
-                  unreadCount > 99 ? '99+' : '$unreadCount',
-                  style: TextStyle(
-                    color: active ? AppColors.primary : Colors.white,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+              _UnreadBadge(
+                count: unreadCount,
+                active: active,
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _UnreadBadge extends StatelessWidget {
+  const _UnreadBadge({required this.count, required this.active});
+
+  final int count;
+  final bool active;
+
+  double get _size {
+    if (count < 10) return 18;
+    if (count < 100) return 22;
+    return 26;
+  }
+
+  double get _fontSize {
+    if (count < 10) return 10;
+    if (count < 100) return 10;
+    return 9;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = _size;
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: active ? Colors.white : AppColors.error,
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        count > 99 ? '99+' : '$count',
+        style: TextStyle(
+          color: active ? AppColors.primary : Colors.white,
+          fontSize: _fontSize,
+          fontWeight: FontWeight.w700,
+          height: 1.0,
         ),
       ),
     );
