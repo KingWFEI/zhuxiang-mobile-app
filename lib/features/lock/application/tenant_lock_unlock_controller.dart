@@ -28,6 +28,10 @@ class TenantLockUnlockState {
     this.errorCode,
     this.targetMatched = false,
     this.requiresLogin = false,
+    this.passcode,
+    this.isLoadingPasscode = false,
+    this.passcodeError,
+    this.isRetryingPasscode = false,
   });
 
   final TenantLockUnlockStage stage;
@@ -36,6 +40,10 @@ class TenantLockUnlockState {
   final String? errorCode;
   final bool targetMatched;
   final bool requiresLogin;
+  final TenantPasscode? passcode;
+  final bool isLoadingPasscode;
+  final String? passcodeError;
+  final bool isRetryingPasscode;
 
   bool get canUnlock =>
       targetMatched &&
@@ -43,6 +51,35 @@ class TenantLockUnlockState {
       (stage == TenantLockUnlockStage.matched ||
           stage == TenantLockUnlockStage.unlockFailed ||
           stage == TenantLockUnlockStage.unlockSuccess);
+
+  TenantLockUnlockState copyWith({
+    TenantLockUnlockStage? stage,
+    TenantLockUnlockData? unlockData,
+    String? message,
+    String? errorCode,
+    bool? targetMatched,
+    bool? requiresLogin,
+    TenantPasscode? passcode,
+    bool? isLoadingPasscode,
+    String? passcodeError,
+    bool? isRetryingPasscode,
+    bool clearPasscode = false,
+    bool clearPasscodeError = false,
+  }) {
+    return TenantLockUnlockState(
+      stage: stage ?? this.stage,
+      unlockData: unlockData ?? this.unlockData,
+      message: message ?? this.message,
+      errorCode: errorCode ?? this.errorCode,
+      targetMatched: targetMatched ?? this.targetMatched,
+      requiresLogin: requiresLogin ?? this.requiresLogin,
+      passcode: clearPasscode ? null : passcode ?? this.passcode,
+      isLoadingPasscode: isLoadingPasscode ?? this.isLoadingPasscode,
+      passcodeError:
+          clearPasscodeError ? null : passcodeError ?? this.passcodeError,
+      isRetryingPasscode: isRetryingPasscode ?? this.isRetryingPasscode,
+    );
+  }
 }
 
 class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
@@ -73,13 +110,15 @@ class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
     await _cancelCurrentScan();
     if (_disposed) return;
 
-    state = const TenantLockUnlockState(
+    state = state.copyWith(
       stage: TenantLockUnlockStage.loadingUnlockData,
       message: '正在获取门锁权限…',
+      clearPasscode: true,
+      clearPasscodeError: true,
     );
 
     if (_leaseId.trim().isEmpty) {
-      state = const TenantLockUnlockState(
+      state = state.copyWith(
         stage: TenantLockUnlockStage.unlockDataFailed,
         message: '租约信息无效',
       );
@@ -90,7 +129,7 @@ class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
       final data = await _repository.getUnlockData(_leaseId);
       if (_disposed) return;
       if (!data.isActive) {
-        state = TenantLockUnlockState(
+        state = state.copyWith(
           stage: TenantLockUnlockStage.unlockDataFailed,
           unlockData: data,
           message: '门锁权限不可用',
@@ -98,7 +137,7 @@ class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
         return;
       }
       if (data.lockMac.trim().isEmpty || data.lockData.trim().isEmpty) {
-        state = TenantLockUnlockState(
+        state = state.copyWith(
           stage: TenantLockUnlockStage.unlockDataFailed,
           unlockData: data,
           message: '门锁开锁数据不完整',
@@ -106,16 +145,20 @@ class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
         return;
       }
 
-      state = TenantLockUnlockState(
+      state = state.copyWith(
         stage: TenantLockUnlockStage.unlockDataLoaded,
         unlockData: data,
         message: '门锁权限数据已获取',
       );
+      if (data.passcodeAvailable &&
+          data.passcodeStatus.toUpperCase() == 'ACTIVE') {
+        unawaited(loadPasscode());
+      }
       await startScan();
     } on Object catch (error) {
       if (_disposed) return;
       final failure = _mapUnlockDataError(error);
-      state = TenantLockUnlockState(
+      state = state.copyWith(
         stage: TenantLockUnlockStage.unlockDataFailed,
         message: failure.message,
         errorCode: failure.errorCode,
@@ -134,7 +177,7 @@ class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
 
     final generation = ++_scanGeneration;
     _targetHandled = false;
-    state = TenantLockUnlockState(
+    state = state.copyWith(
       stage: TenantLockUnlockStage.scanning,
       unlockData: data,
       message: '正在搜索附近门锁，请靠近门锁',
@@ -144,7 +187,7 @@ class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
       final granted = await _ttlockBleService.requestBlePermissions();
       if (!_isCurrentScan(generation)) return;
       if (!granted) {
-        state = TenantLockUnlockState(
+        state = state.copyWith(
           stage: TenantLockUnlockStage.scanFailed,
           unlockData: data,
           message: '请开启蓝牙和定位权限',
@@ -180,7 +223,7 @@ class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
       if (!_isCurrentScan(generation)) return;
       await _stopScanningSilently();
       if (!_isCurrentScan(generation)) return;
-      state = TenantLockUnlockState(
+      state = state.copyWith(
         stage: TenantLockUnlockStage.scanFailed,
         unlockData: data,
         message: '蓝牙扫描失败，请重试',
@@ -194,7 +237,7 @@ class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
     final data = state.unlockData;
     if (_disposed || !state.targetMatched || data == null) return;
     if (data.lockData.trim().isEmpty) {
-      state = TenantLockUnlockState(
+      state = state.copyWith(
         stage: TenantLockUnlockStage.unlockFailed,
         unlockData: data,
         targetMatched: true,
@@ -203,7 +246,7 @@ class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
       return;
     }
 
-    state = TenantLockUnlockState(
+    state = state.copyWith(
       stage: TenantLockUnlockStage.unlocking,
       unlockData: data,
       targetMatched: true,
@@ -217,7 +260,7 @@ class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
 
       if (result.success) {
         final nextLockData = result.lockData?.trim();
-        state = TenantLockUnlockState(
+        state = state.copyWith(
           stage: TenantLockUnlockStage.unlockSuccess,
           unlockData: nextLockData == null || nextLockData.isEmpty
               ? data
@@ -228,7 +271,7 @@ class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
         return;
       }
 
-      state = TenantLockUnlockState(
+      state = state.copyWith(
         stage: TenantLockUnlockStage.unlockFailed,
         unlockData: data,
         targetMatched: true,
@@ -239,7 +282,7 @@ class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
       );
     } on Object catch (_) {
       if (_disposed) return;
-      state = TenantLockUnlockState(
+      state = state.copyWith(
         stage: TenantLockUnlockStage.unlockFailed,
         unlockData: data,
         targetMatched: true,
@@ -258,7 +301,7 @@ class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
     await _stopScanningSilently();
     if (!_isCurrentScan(generation)) return;
     AppLoggerDebug.lock('已匹配租客门锁，扫描立即停止');
-    state = TenantLockUnlockState(
+    state = state.copyWith(
       stage: TenantLockUnlockStage.matched,
       unlockData: data,
       targetMatched: true,
@@ -273,7 +316,7 @@ class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
     if (!_isCurrentScan(generation) || _targetHandled) return;
     await _stopScanningSilently();
     if (!_isCurrentScan(generation)) return;
-    state = TenantLockUnlockState(
+    state = state.copyWith(
       stage: TenantLockUnlockStage.scanFailed,
       unlockData: data,
       message: '未检测到当前门锁，请靠近门锁后重试',
@@ -322,6 +365,54 @@ class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
       };
     }
     return const _UnlockDataFailure(message: '暂无可用门锁权限');
+  }
+
+  /// 获取当前租约期限线下开门密码。
+  Future<void> loadPasscode() async {
+    if (_disposed) return;
+    state = state.copyWith(isLoadingPasscode: true, clearPasscodeError: true);
+
+    try {
+      final passcode = await _repository.getPasscode(_leaseId);
+      if (_disposed) return;
+      state = state.copyWith(
+        passcode: passcode,
+        isLoadingPasscode: false,
+      );
+      AppLoggerDebug.lock('开门密码获取成功');
+    } on Object catch (error) {
+      if (_disposed) return;
+      final message =
+          error is ApiException ? error.message : '获取开门密码失败';
+      state = state.copyWith(
+        isLoadingPasscode: false,
+        passcodeError: message,
+      );
+    }
+  }
+
+  /// 重新生成当前租约期限开门密码（passcode 不可用时调用）。
+  Future<void> retryPasscode() async {
+    if (_disposed) return;
+    state = state.copyWith(isRetryingPasscode: true, clearPasscodeError: true);
+
+    try {
+      final passcode = await _repository.retryPasscode(_leaseId);
+      if (_disposed) return;
+      state = state.copyWith(
+        passcode: passcode,
+        isRetryingPasscode: false,
+      );
+      AppLoggerDebug.lock('开门密码重新生成成功');
+    } on Object catch (error) {
+      if (_disposed) return;
+      final message =
+          error is ApiException ? error.message : '重新生成开门密码失败';
+      state = state.copyWith(
+        isRetryingPasscode: false,
+        passcodeError: message,
+      );
+    }
   }
 
   /// 页面销毁时取消超时计时器并停止 TTLock 扫描。

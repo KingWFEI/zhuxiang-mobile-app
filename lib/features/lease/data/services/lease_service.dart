@@ -437,6 +437,14 @@ class LeaseService implements LeaseServiceContract {
   ) async {
     try {
       return await remote();
+    } on ApiException catch (e) {
+      // 401 未登录/Token 失效时不降级到 mock 数据，
+      // 让上层控制器收到错误并提示用户登录。
+      if (e.type == ApiExceptionType.unauthorized || e.statusCode == 401) {
+        rethrow;
+      }
+      if (!allowMockFallback) rethrow;
+      return fallback();
     } on Object {
       if (!allowMockFallback) rethrow;
       return fallback();

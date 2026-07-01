@@ -50,4 +50,6 @@ class RoutePaths {
   static const staffLockInit = '/staff/locks/init';
   static const staffLockManage = '/manage';
   static const staffDebug = '/staff/debug';
+  static const userAgreement = '/profile/agreement';
+  static const privacyPolicy = '/profile/privacy';
 }
