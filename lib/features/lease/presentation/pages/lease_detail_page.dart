@@ -8,14 +8,19 @@ import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/network/api_exception.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
-import '../../../auth/presentation/providers/auth_controller.dart';
+import '../../../lock/data/models/tenant_lock_unlock_data.dart';
+import '../../../lock/data/providers/tenant_lock_providers.dart';
 import '../../data/providers/lease_providers.dart';
 import '../../domain/entities/lease.dart';
 import '../../domain/entities/lease_termination.dart';
 import '../widgets/current_lease_card.dart';
+import '../widgets/keeper_service_card.dart';
+import '../widgets/lease_action_grid.dart';
 import '../widgets/lease_status_badge.dart';
+import '../widgets/rent_bill_card.dart';
 
 class LeaseDetailPage extends ConsumerWidget {
   const LeaseDetailPage({required this.leaseId, super.key});
@@ -54,12 +59,6 @@ class LeaseDetailPage extends ConsumerWidget {
     WidgetRef ref,
     Lease lease,
   ) async {
-    final user = ref.read(authControllerProvider).user;
-    if (user?.isVerified != true) {
-      // TODO: 实名认证完成后返回本详情页并恢复操作。
-      context.pushNamed(RouteNames.realNameAuth);
-      return;
-    }
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -99,11 +98,6 @@ class LeaseDetailPage extends ConsumerWidget {
     WidgetRef ref,
     Lease lease,
   ) async {
-    final user = ref.read(authControllerProvider).user;
-    if (user?.isVerified != true) {
-      context.pushNamed(RouteNames.realNameAuth);
-      return;
-    }
     final current = await ref
         .read(leaseServiceProvider)
         .getCurrentTermination(lease.id);
@@ -140,7 +134,7 @@ class LeaseDetailPage extends ConsumerWidget {
   }
 }
 
-class _LeaseDetailContent extends StatelessWidget {
+class _LeaseDetailContent extends ConsumerWidget {
   const _LeaseDetailContent({
     required this.lease,
     required this.onRenew,
@@ -152,7 +146,7 @@ class _LeaseDetailContent extends StatelessWidget {
   final VoidCallback onTerminate;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.xl,
@@ -161,6 +155,39 @@ class _LeaseDetailContent extends StatelessWidget {
         108,
       ),
       children: [
+        CurrentLeaseCard(lease: lease, onTap: () {}),
+        if (lease.canOperate) ...[
+          const SizedBox(height: AppSpacing.md),
+          _SmartLockPermissionCard(leaseId: lease.id),
+          const SizedBox(height: AppSpacing.md),
+          LeaseActionGrid(
+            isContractSigned:
+                lease.contractStatus == LeaseContractStatus.signed,
+            onContractTap: () => _openContract(context, lease),
+            onBillTap: () => context.pushNamed(RouteNames.bill),
+            onRenewTap: onRenew,
+            onCheckoutTap: onTerminate,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          KeeperServiceCard(
+            keeperName: lease.keeperName,
+            onPhoneTap: () => context.pushNamed(RouteNames.customerService),
+            onChatTap: () => context.pushNamed(RouteNames.customerService),
+          ),
+          if (lease.pendingBillTitle.isNotEmpty ||
+              lease.pendingBillAmount > 0) ...[
+            const SizedBox(height: AppSpacing.md),
+            RentBillCard(
+              title: lease.pendingBillTitle.isEmpty
+                  ? '待支付账单'
+                  : lease.pendingBillTitle,
+              amount: lease.pendingBillAmount,
+              dueDate: lease.pendingBillDueDate,
+              onPayTap: () => context.pushNamed(RouteNames.bill),
+            ),
+          ],
+        ],
+        const SizedBox(height: AppSpacing.md),
         _DetailCard(
           title: '房源信息',
           child: Column(
@@ -216,59 +243,19 @@ class _LeaseDetailContent extends StatelessWidget {
               _DetailRow(label: '付款方式', value: lease.paymentMethod),
               _DetailRow(label: '合同状态', value: lease.contractStatus.label),
               _DetailRow(label: '账单状态', value: lease.billStatus.label),
-              _DetailRow(
-                label: '门锁权限',
-                value: lease.lockPermissionStatus.label,
-                valueColor:
-                    lease.lockPermissionStatus ==
-                        LeaseLockPermissionStatus.active
-                    ? AppColors.success
-                    : AppColors.warning,
-              ),
             ],
           ),
         ),
         if (lease.canOperate) ...[
           const SizedBox(height: AppSpacing.md),
           _DetailCard(
-            title: '租后服务',
+            title: '更多服务',
             child: Column(
               children: [
                 _ServiceButton(
-                  icon: Icons.receipt_long_outlined,
-                  label: '查看账单',
-                  onTap: () => context.pushNamed(RouteNames.bill),
-                ),
-                _ServiceButton(
-                  icon: Icons.description_outlined,
-                  label: '查看合同',
-                  onTap: () => _openContract(context, lease),
-                ),
-                _ServiceButton(
                   icon: Icons.lock_clock_outlined,
                   label: '查看开锁记录',
-                  onTap: () => context.pushNamed(RouteNames.lock),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: onRenew,
-                        child: const Text('续租'),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: onTerminate,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.error,
-                        ),
-                        child: const Text('退租'),
-                      ),
-                    ),
-                  ],
+                  onTap: () => context.pushNamed(RouteNames.unlockRecords),
                 ),
               ],
             ),
@@ -286,6 +273,213 @@ class _LeaseDetailContent extends StatelessWidget {
     context.pushNamed(
       RouteNames.leaseContractView,
       pathParameters: {'leaseId': lease.id},
+    );
+  }
+}
+
+class _SmartLockPermissionCard extends ConsumerWidget {
+  const _SmartLockPermissionCard({required this.leaseId});
+
+  final String leaseId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lockStatus = ref.watch(tenantLockStatusProvider(leaseId));
+    return lockStatus.when(
+      data: (data) => _SmartLockPermissionContent(
+        status: _statusFromLockData(data),
+        lockName: data.lockName,
+      ),
+      loading: () => const _SmartLockPermissionContent(
+        title: '正在查询门锁状态',
+        subtitle: '正在获取当前租约的门锁权限',
+        statusLabel: '查询中',
+        statusColor: AppColors.primary,
+        icon: Icons.sync_rounded,
+        showProgress: true,
+      ),
+      error: (error, _) => _SmartLockPermissionContent(
+        title: _lockErrorTitle(error),
+        subtitle: _lockErrorSubtitle(error),
+        statusLabel: '不可用',
+        statusColor: AppColors.warning,
+        icon: Icons.lock_clock_rounded,
+      ),
+    );
+  }
+
+  static LeaseLockPermissionStatus _statusFromLockData(
+    TenantLockUnlockData data,
+  ) {
+    return switch (data.permissionStatus.toUpperCase()) {
+      'ACTIVE' => LeaseLockPermissionStatus.active,
+      'EXPIRED' => LeaseLockPermissionStatus.expired,
+      'REVOKED' || 'DISABLED' => LeaseLockPermissionStatus.revoked,
+      _ =>
+        data.isActive
+            ? LeaseLockPermissionStatus.active
+            : LeaseLockPermissionStatus.revoked,
+    };
+  }
+
+  static String _lockErrorTitle(Object error) {
+    if (error is ApiException && error.statusCode == 404) {
+      return '当前租约未绑定门锁';
+    }
+    if (error is ApiException && error.statusCode == 403) {
+      return '暂无门锁权限';
+    }
+    return '门锁状态获取失败';
+  }
+
+  static String _lockErrorSubtitle(Object error) {
+    if (error is ApiException && error.message.trim().isNotEmpty) {
+      return error.message;
+    }
+    return '请稍后刷新，或联系管家确认门锁状态';
+  }
+}
+
+class _SmartLockPermissionContent extends StatelessWidget {
+  const _SmartLockPermissionContent({
+    this.status,
+    this.lockName = '',
+    this.title,
+    this.subtitle,
+    this.statusLabel,
+    this.statusColor,
+    this.icon,
+    this.showProgress = false,
+  });
+
+  final LeaseLockPermissionStatus? status;
+  final String lockName;
+  final String? title;
+  final String? subtitle;
+  final String? statusLabel;
+  final Color? statusColor;
+  final IconData? icon;
+  final bool showProgress;
+
+  String get _title =>
+      title ??
+      switch (status) {
+        LeaseLockPermissionStatus.active => '智能门锁已经生效',
+        LeaseLockPermissionStatus.expired => '智能门锁权限已过期',
+        LeaseLockPermissionStatus.revoked => '智能门锁权限已回收',
+        null => '门锁状态未知',
+      };
+
+  String get _subtitle =>
+      subtitle ??
+      switch (status) {
+        LeaseLockPermissionStatus.active =>
+          lockName.trim().isEmpty
+              ? '可使用门锁开门权限，入住期间保持有效'
+              : '$lockName 可使用，入住期间保持有效',
+        LeaseLockPermissionStatus.expired => '当前门锁权限已过期，请联系管家处理',
+        LeaseLockPermissionStatus.revoked => '当前门锁权限已回收，如需开门请联系管家',
+        null => '请稍后刷新，或联系管家确认门锁状态',
+      };
+
+  String get _statusLabel =>
+      statusLabel ??
+      switch (status) {
+        LeaseLockPermissionStatus.active => '有效',
+        LeaseLockPermissionStatus.expired => '已过期',
+        LeaseLockPermissionStatus.revoked => '已回收',
+        null => '未知',
+      };
+
+  Color get _statusColor =>
+      statusColor ??
+      switch (status) {
+        LeaseLockPermissionStatus.active => AppColors.success,
+        LeaseLockPermissionStatus.expired => AppColors.warning,
+        LeaseLockPermissionStatus.revoked => AppColors.error,
+        null => AppColors.textMuted,
+      };
+
+  IconData get _icon =>
+      icon ??
+      switch (status) {
+        LeaseLockPermissionStatus.active => Icons.lock_open_rounded,
+        LeaseLockPermissionStatus.expired => Icons.lock_clock_rounded,
+        LeaseLockPermissionStatus.revoked => Icons.lock_reset_rounded,
+        null => Icons.lock_outline_rounded,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 16,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: _statusColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+            ),
+            child: showProgress
+                ? const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(_icon, color: _statusColor),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _title,
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  _subtitle,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xs,
+            ),
+            decoration: BoxDecoration(
+              color: _statusColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: Text(
+              _statusLabel,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: _statusColor,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -318,11 +512,10 @@ class _DetailCard extends StatelessWidget {
 }
 
 class _DetailRow extends StatelessWidget {
-  const _DetailRow({required this.label, required this.value, this.valueColor});
+  const _DetailRow({required this.label, required this.value});
 
   final String label;
   final String value;
-  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
@@ -340,7 +533,7 @@ class _DetailRow extends StatelessWidget {
               value,
               textAlign: TextAlign.right,
               style: AppTextStyles.bodyMedium.copyWith(
-                color: valueColor ?? AppColors.textPrimary,
+                color: AppColors.textPrimary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -364,12 +557,15 @@ class _ServiceButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(icon, color: AppColors.primary),
-      title: Text(label, style: AppTextStyles.bodyLarge),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: onTap,
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: Icon(icon, color: AppColors.primary),
+        title: Text(label, style: AppTextStyles.bodyLarge),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onTap,
+      ),
     );
   }
 }
