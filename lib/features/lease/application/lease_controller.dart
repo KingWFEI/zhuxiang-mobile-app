@@ -72,13 +72,6 @@ class LeaseController extends StateNotifier<LeaseState> {
     return _operate(() => _service.renew(leaseId), successMessage: '续租申请已提交');
   }
 
-  Future<bool> checkout(String leaseId) {
-    return _operate(
-      () => _service.checkout(leaseId),
-      successMessage: '退租申请已提交',
-    );
-  }
-
   Future<bool> _operate(
     Future<void> Function() operation, {
     required String successMessage,

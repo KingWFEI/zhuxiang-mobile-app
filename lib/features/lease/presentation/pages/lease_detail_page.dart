@@ -104,16 +104,9 @@ class LeaseDetailPage extends ConsumerWidget {
       context.pushNamed(RouteNames.realNameAuth);
       return;
     }
-    final contractId = lease.contractId.trim();
-    if (contractId.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('当前租约缺少合同信息，暂时无法提交退租申请')));
-      return;
-    }
     final current = await ref
         .read(leaseServiceProvider)
-        .getCurrentTerminationApplication(contractId);
+        .getCurrentTermination(lease.id);
     if (!context.mounted) return;
     if (current != null) {
       await _showExistingTerminationDialog(context, current);
@@ -127,7 +120,7 @@ class LeaseDetailPage extends ConsumerWidget {
 
   Future<void> _showExistingTerminationDialog(
     BuildContext context,
-    LeaseTerminationApplication application,
+    TerminationApplication application,
   ) {
     return showDialog<void>(
       context: context,
