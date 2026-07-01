@@ -14,6 +14,9 @@ class SettingsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authControllerProvider);
+    final showAccountActions = authState.isLoggedIn && !authState.isGuest;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -26,37 +29,52 @@ class SettingsPage extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.all(AppSpacing.pageHorizontal),
               children: [
+                if (showAccountActions)
+                  _SettingsItem(
+                    icon: Icons.person_outline,
+                    label: '修改账号信息',
+                    subtitle: '修改密码、手机号',
+                    onTap: () => context.pushNamed(RouteNames.profileEdit),
+                  ),
+                const SizedBox(height: AppSpacing.lg),
+                const _SectionHeader(label: '关于'),
                 _SettingsItem(
-                  icon: Icons.person_outline,
-                  label: '修改账号信息',
-                  subtitle: '修改密码、手机号',
-                  onTap: () => context.pushNamed(RouteNames.profileEdit),
+                  icon: Icons.description_outlined,
+                  label: '用户协议',
+                  onTap: () => context.pushNamed(RouteNames.userAgreement),
                 ),
+                _SettingsItem(
+                  icon: Icons.shield_outlined,
+                  label: '隐私政策',
+                  onTap: () => context.pushNamed(RouteNames.privacyPolicy),
+                ),
+                _VersionItem(version: '1.0.0'),
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.pageHorizontal,
-              AppSpacing.md,
-              AppSpacing.pageHorizontal,
-              AppSpacing.xxl,
-            ),
-            child: SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () => _confirmLogout(context, ref),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.error,
-                  side: const BorderSide(color: AppColors.error),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.xl),
+          if (showAccountActions)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.pageHorizontal,
+                AppSpacing.md,
+                AppSpacing.pageHorizontal,
+                AppSpacing.xxl,
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => _confirmLogout(context, ref),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    side: const BorderSide(color: AppColors.error),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
+                    ),
                   ),
+                  child: const Text('退出登录'),
                 ),
-                child: const Text('退出登录'),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -85,6 +103,64 @@ class SettingsPage extends ConsumerWidget {
 
     if (confirmed != true || !context.mounted) return;
     await ref.read(authControllerProvider.notifier).logout();
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Text(
+        label,
+        style: AppTextStyles.bodySmall.copyWith(
+          color: AppColors.textSecondary,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class _VersionItem extends StatelessWidget {
+  const _VersionItem({required this.version});
+
+  final String version;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Material(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.info_outline, color: AppColors.textPrimary, size: 22),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Text('当前版本', style: AppTextStyles.bodyMedium),
+              ),
+              Text(
+                version,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

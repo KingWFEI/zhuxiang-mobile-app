@@ -123,6 +123,8 @@ class RoleNavigationConfig {
       // 个人信息 & 设置
       RouteNames.profileEdit,
       RouteNames.settings,
+      RouteNames.userAgreement,
+      RouteNames.privacyPolicy,
       // 客服
       RouteNames.customerService,
       // 租房流程

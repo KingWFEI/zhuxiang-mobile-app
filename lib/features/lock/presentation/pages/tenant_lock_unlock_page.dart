@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,6 +7,7 @@ import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/utils/date_time_utils.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../auth/presentation/providers/auth_controller.dart';
 import '../../application/tenant_lock_unlock_controller.dart';
@@ -184,6 +186,8 @@ class TenantLockUnlockPage extends ConsumerWidget {
               : null,
         ),
         const SizedBox(height: AppSpacing.lg),
+        _PasscodeCard(data: data, state: state, ref: ref),
+        const SizedBox(height: AppSpacing.md),
         _LockInfoCard(data: data),
         const SizedBox(height: AppSpacing.md),
         const _NearbyTipCard(),
@@ -541,32 +545,89 @@ class _SignalBars extends StatelessWidget {
   }
 }
 
-class _UnlockButton extends StatelessWidget {
+class _UnlockButton extends StatefulWidget {
   const _UnlockButton({required this.state, required this.onPressed});
 
   final TenantLockUnlockState state;
   final VoidCallback? onPressed;
 
   @override
+  State<_UnlockButton> createState() => _UnlockButtonState();
+}
+
+class _UnlockButtonState extends State<_UnlockButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _waveController;
+
+  bool get _isUnlocking =>
+      widget.state.stage == TenantLockUnlockStage.unlocking;
+
+  bool get _isSuccess =>
+      widget.state.stage == TenantLockUnlockStage.unlockSuccess;
+
+  bool get _isEnabled => widget.onPressed != null && !_isUnlocking;
+
+  bool get _shouldRadiate => _isEnabled && !_isSuccess;
+
+  @override
+  void initState() {
+    super.initState();
+    _waveController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncWaveAnimation();
+  }
+
+  @override
+  void didUpdateWidget(covariant _UnlockButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncWaveAnimation();
+  }
+
+  void _syncWaveAnimation() {
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (_shouldRadiate && !reduceMotion) {
+      if (!_waveController.isAnimating) {
+        _waveController.repeat();
+      }
+      return;
+    }
+    _waveController
+      ..stop()
+      ..value = 0;
+  }
+
+  @override
+  void dispose() {
+    _waveController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final isUnlocking = state.stage == TenantLockUnlockStage.unlocking;
-    final success = state.stage == TenantLockUnlockStage.unlockSuccess;
-    final enabled = onPressed != null && !isUnlocking;
-    final label = switch (state.stage) {
+    final label = switch (widget.state.stage) {
       TenantLockUnlockStage.unlocking => '正在开锁',
       TenantLockUnlockStage.unlockSuccess => '再次开锁',
-      TenantLockUnlockStage.unlockFailed when state.targetMatched => '再次开锁',
-      _ when state.targetMatched => '点击开锁',
+      TenantLockUnlockStage.unlockFailed when widget.state.targetMatched =>
+        '再次开锁',
+      _ when widget.state.targetMatched => '点击开锁',
       _ => '等待匹配',
     };
-    final activeColor = success ? AppColors.success : _brandBlue;
+    final activeColor = _isSuccess ? AppColors.success : _brandBlue;
 
     return Semantics(
       button: true,
-      enabled: enabled,
+      enabled: _isEnabled,
       label: label,
       child: InkWell(
-        onTap: enabled ? onPressed : null,
+        onTap: _isEnabled ? widget.onPressed : null,
         customBorder: const CircleBorder(),
         child: SizedBox(
           width: 214,
@@ -574,20 +635,33 @@ class _UnlockButton extends StatelessWidget {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              _Ring(size: 214, color: activeColor.withValues(alpha: 0.10)),
-              _Ring(size: 178, color: activeColor.withValues(alpha: 0.14)),
+              if (_shouldRadiate)
+                RepaintBoundary(
+                  child: CustomPaint(
+                    key: const ValueKey('unlock-radiating-waves'),
+                    size: const Size.square(214),
+                    painter: _RadiatingWavePainter(
+                      animation: _waveController,
+                      color: activeColor,
+                    ),
+                  ),
+                )
+              else ...[
+                _Ring(size: 214, color: activeColor.withValues(alpha: 0.08)),
+                _Ring(size: 178, color: activeColor.withValues(alpha: 0.12)),
+              ],
               AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
                 width: 146,
                 height: 146,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: enabled || isUnlocking
+                  gradient: _isEnabled || _isUnlocking
                       ? LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            success
+                            _isSuccess
                                 ? const Color(0xFF45C988)
                                 : const Color(0xFF4C91FF),
                             activeColor,
@@ -600,17 +674,17 @@ class _UnlockButton extends StatelessWidget {
                   boxShadow: [
                     BoxShadow(
                       color: activeColor.withValues(
-                        alpha: enabled ? 0.28 : 0.10,
+                        alpha: _isEnabled ? 0.32 : 0.10,
                       ),
-                      blurRadius: 22,
-                      spreadRadius: 3,
+                      blurRadius: _shouldRadiate ? 28 : 22,
+                      spreadRadius: _shouldRadiate ? 5 : 3,
                     ),
                   ],
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    if (isUnlocking)
+                    if (_isUnlocking)
                       const SizedBox(
                         width: 34,
                         height: 34,
@@ -621,7 +695,7 @@ class _UnlockButton extends StatelessWidget {
                       )
                     else
                       Icon(
-                        success
+                        _isSuccess
                             ? Icons.check_circle_rounded
                             : Icons.lock_open_rounded,
                         color: Colors.white,
@@ -644,6 +718,52 @@ class _UnlockButton extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _RadiatingWavePainter extends CustomPainter {
+  _RadiatingWavePainter({
+    required Animation<double> animation,
+    required this.color,
+  }) : _animation = animation,
+       super(repaint: animation);
+
+  final Animation<double> _animation;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final maxRadius = size.shortestSide / 2 - 1;
+    const buttonRadius = 73.0;
+
+    for (var index = 0; index < 3; index++) {
+      final phase = (_animation.value + index / 3) % 1.0;
+      final easedPhase = Curves.easeOutCubic.transform(phase);
+      final radius = buttonRadius + (maxRadius - buttonRadius) * easedPhase;
+      final opacity = (1 - phase) * 0.22;
+
+      canvas.drawCircle(
+        center,
+        radius,
+        Paint()
+          ..color = color.withValues(alpha: opacity * 0.28)
+          ..style = PaintingStyle.fill,
+      );
+      canvas.drawCircle(
+        center,
+        radius,
+        Paint()
+          ..color = color.withValues(alpha: opacity)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.4,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _RadiatingWavePainter oldDelegate) {
+    return oldDelegate.color != color;
   }
 }
 
@@ -749,7 +869,10 @@ class _LockInfoCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      _validPeriod(data),
+                      DateTimeUtils.formatDateRange(
+                        data.startTime,
+                        data.endTime,
+                      ),
                       style: const TextStyle(
                         color: Color(0xFF253147),
                         fontSize: 13,
@@ -764,19 +887,6 @@ class _LockInfoCard extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  /// 将后端时间压缩为适合信息卡展示的日期区间。
-  String _validPeriod(TenantLockUnlockData data) {
-    String compact(String value) {
-      final date = value.trim().split(' ').first;
-      return date.replaceAll('-', '.');
-    }
-
-    final start = compact(data.startTime);
-    final end = compact(data.endTime);
-    if (start.isEmpty && end.isEmpty) return '--';
-    return '$start  -  $end';
   }
 }
 
@@ -827,6 +937,367 @@ class _InfoMetric extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PasscodeCard extends StatelessWidget {
+  const _PasscodeCard({
+    required this.data,
+    required this.state,
+    required this.ref,
+  });
+
+  final TenantLockUnlockData data;
+  final TenantLockUnlockState state;
+  final WidgetRef ref;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!data.passcodeAvailable &&
+        data.passcodeStatus.toUpperCase() != 'FAILED') {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D0E4A9B),
+            blurRadius: 20,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.vpn_key_rounded, color: _brandBlue, size: 20),
+              SizedBox(width: 8),
+              Text(
+                '开门密码',
+                style: TextStyle(
+                  color: Color(0xFF202B3D),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _PasscodeBody(data: data, state: state, ref: ref),
+        ],
+      ),
+    );
+  }
+}
+
+class _PasscodeBody extends StatelessWidget {
+  const _PasscodeBody({
+    required this.data,
+    required this.state,
+    required this.ref,
+  });
+
+  final TenantLockUnlockData data;
+  final TenantLockUnlockState state;
+  final WidgetRef ref;
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.isRetryingPasscode) {
+      return const _PasscodeLoading(message: '正在生成开门密码…');
+    }
+
+    if (state.isLoadingPasscode) {
+      return const _PasscodeLoading(message: '正在获取开门密码…');
+    }
+
+    if (state.passcode != null && state.passcode!.isActive) {
+      return _PasscodeLoaded(
+        passcode: state.passcode!,
+        onCopy: () {
+          Clipboard.setData(ClipboardData(text: state.passcode!.passcode));
+          AppToast.show(context, '开门密码已复制', type: AppToastType.success);
+        },
+      );
+    }
+
+    if (state.passcodeError != null) {
+      return _PasscodeError(
+        message: state.passcodeError!,
+        onRetry: data.passcodeAvailable
+            ? () => ref
+                  .read(tenantLockUnlockProvider(data.leaseId).notifier)
+                  .loadPasscode()
+            : () => ref
+                  .read(tenantLockUnlockProvider(data.leaseId).notifier)
+                  .retryPasscode(),
+      );
+    }
+
+    if (data.passcodeAvailable && state.passcode == null) {
+      return _PasscodeAction(
+        icon: Icons.download_rounded,
+        label: '获取开门密码',
+        isLoading: false,
+        onPressed: () => ref
+            .read(tenantLockUnlockProvider(data.leaseId).notifier)
+            .loadPasscode(),
+      );
+    }
+
+    return _PasscodeAction(
+      icon: Icons.refresh_rounded,
+      label: '重新获取开门密码',
+      isLoading: false,
+      onPressed: () => ref
+          .read(tenantLockUnlockProvider(data.leaseId).notifier)
+          .retryPasscode(),
+    );
+  }
+}
+
+class _PasscodeLoaded extends StatelessWidget {
+  const _PasscodeLoaded({required this.passcode, required this.onCopy});
+
+  final TenantPasscode passcode;
+  final VoidCallback onCopy;
+
+  String _formatPasscode(String code) {
+    final digits = code.replaceAll(RegExp(r'\D'), '');
+    if (digits.length <= 3) return digits;
+    return '${digits.substring(0, 3)} ${digits.substring(3)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0F5FF),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Column(
+            children: [
+              const Text(
+                '当前开门密码',
+                style: TextStyle(color: _mutedText, fontSize: 12),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _formatPasscode(passcode.passcode),
+                style: const TextStyle(
+                  color: Color(0xFF121C2E),
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 4,
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 40,
+                child: OutlinedButton.icon(
+                  onPressed: onCopy,
+                  icon: const Icon(Icons.copy_rounded, size: 18),
+                  label: const Text('复制密码'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _brandBlue,
+                    side: const BorderSide(color: _brandBlue),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (passcode.startTime.isNotEmpty || passcode.endTime.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          _InfoRow(
+            icon: Icons.schedule_rounded,
+            label: '有效期',
+            value: DateTimeUtils.formatDateRange(
+              passcode.startTime,
+              passcode.endTime,
+            ),
+          ),
+        ],
+        if (passcode.firstUseNotice.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          _InfoRow(
+            icon: Icons.info_outline_rounded,
+            label: '首次使用',
+            value: passcode.firstUseNotice,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _PasscodeLoading extends StatelessWidget {
+  const _PasscodeLoading({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            message,
+            style: const TextStyle(color: _mutedText, fontSize: 14),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PasscodeAction extends StatelessWidget {
+  const _PasscodeAction({
+    required this.icon,
+    required this.label,
+    required this.isLoading,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool isLoading;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        onPressed: isLoading ? null : onPressed,
+        icon: isLoading
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : Icon(icon, size: 20),
+        label: Text(label),
+        style: FilledButton.styleFrom(
+          backgroundColor: _brandBlue,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PasscodeError extends StatelessWidget {
+  const _PasscodeError({required this.message, this.onRetry});
+
+  final String message;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            const Icon(
+              Icons.error_outline_rounded,
+              color: AppColors.warning,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(color: AppColors.warning, fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+        if (onRetry != null) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('重试'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _brandBlue,
+                side: const BorderSide(color: _brandBlue),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: _brandBlue, size: 18),
+        const SizedBox(width: 8),
+        Text(
+          '$label：',
+          style: const TextStyle(color: _mutedText, fontSize: 12),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              color: Color(0xFF253147),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],

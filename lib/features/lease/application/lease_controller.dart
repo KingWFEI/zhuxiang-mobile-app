@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/network/api_exception.dart';
 import '../data/services/lease_service.dart';
 import '../domain/entities/lease.dart';
 
@@ -106,6 +107,9 @@ class LeaseController extends StateNotifier<LeaseState> {
   }
 
   String _message(Object error, String fallback) {
+    if (error is ApiException) {
+      return error.message.isNotEmpty ? error.message : fallback;
+    }
     final message = error.toString().replaceFirst('Exception: ', '');
     return message.isEmpty ? fallback : message;
   }

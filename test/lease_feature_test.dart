@@ -59,18 +59,17 @@ void main() {
     expect(lease.isCurrent, isFalse);
   });
 
-  test('mock lease datasource moves checked out lease to history', () async {
+  test('mock lease service supports termination application', () async {
     final service = MockLeaseService();
     final before = await service.getMyLeases();
     expect(before.where((lease) => lease.isCurrent), hasLength(1));
 
-    await service.checkout('lease-2026-001');
-    final after = await service.getMyLeases();
-    expect(after.where((lease) => lease.isCurrent), isEmpty);
-    expect(
-      after.firstWhere((lease) => lease.id == 'lease-2026-001').status,
-      LeaseStatus.checkedOut,
+    final application = await service.applyTermination(
+      'lease-2026-001',
+      {'reason': '个人原因'},
     );
+    expect(application.applicationNo, isNotEmpty);
+    expect(application.status, 'pending_review');
   });
 
   testWidgets('my leases page renders success and history states', (
@@ -184,9 +183,6 @@ class _FakeLeaseService implements LeaseServiceContract {
   Future<void> renew(String leaseId) async {}
 
   @override
-  Future<void> checkout(String leaseId) async {}
-
-  @override
   Future<LeaseTerminationAttachment> uploadTerminationAttachment({
     required String filePath,
     required String fileName,
@@ -199,23 +195,31 @@ class _FakeLeaseService implements LeaseServiceContract {
   }
 
   @override
-  Future<LeaseTerminationApplication> submitTerminationApplication(
+  Future<TerminationApplication?> getCurrentTermination(String leaseId) async {
+    return null;
+  }
+
+  @override
+  Future<TerminationCheck> checkTermination(String leaseId) async {
+    return const TerminationCheck(
+      canApply: true,
+      hasPendingApplication: false,
+      hasUnpaidBills: false,
+      message: '',
+    );
+  }
+
+  @override
+  Future<TerminationApplication> applyTermination(
     String leaseId,
-    LeaseTerminationRequest request,
+    Map<String, dynamic> body,
   ) async {
-    return const LeaseTerminationApplication(
+    return const TerminationApplication(
       id: 'termination-1',
       applicationNo: 'TZ202606290001',
       status: 'pending_review',
       statusText: '待审核',
     );
-  }
-
-  @override
-  Future<LeaseTerminationApplication?> getCurrentTerminationApplication(
-    String contractId,
-  ) async {
-    return null;
   }
 }
 

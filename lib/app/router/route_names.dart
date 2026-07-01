@@ -48,4 +48,6 @@ class RouteNames {
   static const staffLockInit = 'staffLockInit';
   static const staffLockManage = 'staffLockManage';
   static const staffDebug = 'staffDebug';
+  static const userAgreement = 'userAgreement';
+  static const privacyPolicy = 'privacyPolicy';
 }
