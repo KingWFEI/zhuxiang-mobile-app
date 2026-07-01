@@ -6,6 +6,8 @@ import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../lease/data/providers/lease_providers.dart';
+import '../../../lease/domain/entities/lease.dart';
 import '../../data/providers/rental_flow_providers.dart';
 import '../../domain/entities/rental_flow_step.dart';
 import '../widgets/rental_flow_page_shell.dart';
@@ -80,7 +82,7 @@ class _MoveInCompletePageState extends ConsumerState<MoveInCompletePage> {
         ),
         const SizedBox(height: AppSpacing.xl),
         ElevatedButton(
-          onPressed: () => context.goNamed(RouteNames.lease),
+          onPressed: () => _openCurrentLeaseDetail(order?.houseId),
           style: ElevatedButton.styleFrom(
             fixedSize: const Size.fromHeight(48),
             backgroundColor: AppColors.primary,
@@ -89,7 +91,7 @@ class _MoveInCompletePageState extends ConsumerState<MoveInCompletePage> {
               borderRadius: BorderRadius.circular(16),
             ),
           ),
-          child: const Text('查看我的租约'),
+          child: const Text('查看租约详情'),
         ),
         const SizedBox(height: AppSpacing.md),
         OutlinedButton(
@@ -111,5 +113,43 @@ class _MoveInCompletePageState extends ConsumerState<MoveInCompletePage> {
         ),
       ],
     );
+  }
+
+  Future<void> _openCurrentLeaseDetail(String? houseId) async {
+    final leaseId = await _findCurrentLeaseId(houseId: houseId);
+    if (!mounted) return;
+    if (leaseId == null) {
+      context.goNamed(RouteNames.lease);
+      return;
+    }
+    context.goNamed(
+      RouteNames.leaseDetail,
+      pathParameters: {'leaseId': leaseId},
+    );
+  }
+
+  Future<String?> _findCurrentLeaseId({String? houseId}) async {
+    try {
+      final leases = await ref.read(leaseServiceProvider).getMyLeases();
+      Lease? fallback;
+      for (final lease in leases) {
+        if (!lease.isCurrent) continue;
+        fallback ??= lease;
+        if (houseId != null &&
+            houseId.isNotEmpty &&
+            lease.houseId == houseId &&
+            lease.status == LeaseStatus.active) {
+          return lease.id;
+        }
+      }
+      if (houseId != null && houseId.isNotEmpty) {
+        for (final lease in leases) {
+          if (lease.isCurrent && lease.houseId == houseId) return lease.id;
+        }
+      }
+      return fallback?.id;
+    } on Object {
+      return null;
+    }
   }
 }

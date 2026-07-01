@@ -14,12 +14,8 @@ import '../../../auth/presentation/providers/auth_controller.dart';
 import '../../application/lease_controller.dart';
 import '../../data/providers/lease_providers.dart';
 import '../../domain/entities/lease.dart';
-import '../../domain/entities/lease_termination.dart';
 import '../widgets/current_lease_card.dart';
-import '../widgets/keeper_service_card.dart';
-import '../widgets/lease_action_grid.dart';
 import '../widgets/lease_empty_view.dart';
-import '../widgets/rent_bill_card.dart';
 
 class MyLeasesPage extends ConsumerStatefulWidget {
   const MyLeasesPage({super.key, this.enforceAuthentication = true});
@@ -97,11 +93,7 @@ class _MyLeasesPageState extends ConsumerState<MyLeasesPage> {
                       108,
                     ),
                     sliver: SliverToBoxAdapter(
-                      child: _buildContent(
-                        leaseState,
-                        authState?.user?.isVerified == true ||
-                            !widget.enforceAuthentication,
-                      ),
+                      child: _buildContent(leaseState),
                     ),
                   ),
                 ],
@@ -113,7 +105,7 @@ class _MyLeasesPageState extends ConsumerState<MyLeasesPage> {
     );
   }
 
-  Widget _buildContent(LeaseState state, bool isVerified) {
+  Widget _buildContent(LeaseState state) {
     if (state.isLoading && state.leases.isEmpty) {
       return const SizedBox(
         height: 360,
@@ -141,18 +133,6 @@ class _MyLeasesPageState extends ConsumerState<MyLeasesPage> {
               lease: lease,
               isOperating: state.isOperating,
               onDetailTap: () => _openDetail(lease),
-              onContractTap: () => _openContract(lease),
-              onBillTap: _openBills,
-              onRenewTap: () => _requestRenew(lease, isVerified),
-              onCheckoutTap: () {
-                if (!isVerified) {
-                  context.pushNamed(RouteNames.realNameAuth);
-                  return;
-                }
-                _openTerminationApply(lease);
-              },
-              onKeeperTap: _openCustomerService,
-              onPayTap: _openBills,
             ),
             const SizedBox(height: AppSpacing.xl),
           ],
@@ -187,87 +167,6 @@ class _MyLeasesPageState extends ConsumerState<MyLeasesPage> {
       pathParameters: {'leaseId': lease.id},
     );
   }
-
-  void _openBills() {
-    context.pushNamed(RouteNames.bill);
-  }
-
-  void _openContract(Lease lease) {
-    if (lease.contractStatus != LeaseContractStatus.signed) {
-      context.pushNamed(RouteNames.rentOrders);
-      return;
-    }
-    context.pushNamed(
-      RouteNames.leaseContractView,
-      pathParameters: {'leaseId': lease.id},
-    );
-  }
-
-  void _openCustomerService() {
-    context.pushNamed(RouteNames.customerService);
-  }
-
-  Future<void> _requestRenew(Lease lease, bool isVerified) async {
-    if (!isVerified) {
-      context.pushNamed(RouteNames.realNameAuth);
-      return;
-    }
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('确认续租申请'),
-        content: Text('确认对「${lease.houseName}」发起续租申请吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('确认'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-    final controller = ref.read(leaseControllerProvider.notifier);
-    await controller.renew(lease.id);
-  }
-
-  Future<void> _openTerminationApply(Lease lease) async {
-    final current = await ref
-        .read(leaseServiceProvider)
-        .getCurrentTermination(lease.id);
-    if (!mounted) return;
-    if (current != null) {
-      await _showExistingTerminationDialog(current);
-      return;
-    }
-    context.pushNamed(
-      RouteNames.leaseTerminationApply,
-      pathParameters: {'leaseId': lease.id},
-    );
-  }
-
-  Future<void> _showExistingTerminationDialog(
-    TerminationApplication application,
-  ) {
-    return showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('已提交退租申请'),
-        content: Text(
-          '当前租约已有退租申请（${application.applicationNo}），状态为${application.statusText}，请等待管家处理。',
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('知道了'),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _CurrentLeaseDashboard extends StatelessWidget {
@@ -275,23 +174,11 @@ class _CurrentLeaseDashboard extends StatelessWidget {
     required this.lease,
     required this.isOperating,
     required this.onDetailTap,
-    required this.onContractTap,
-    required this.onBillTap,
-    required this.onRenewTap,
-    required this.onCheckoutTap,
-    required this.onKeeperTap,
-    required this.onPayTap,
   });
 
   final Lease lease;
   final bool isOperating;
   final VoidCallback onDetailTap;
-  final VoidCallback onContractTap;
-  final VoidCallback onBillTap;
-  final VoidCallback onRenewTap;
-  final VoidCallback onCheckoutTap;
-  final VoidCallback onKeeperTap;
-  final VoidCallback onPayTap;
 
   @override
   Widget build(BuildContext context) {
@@ -300,140 +187,7 @@ class _CurrentLeaseDashboard extends StatelessWidget {
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 160),
         opacity: isOperating ? 0.65 : 1,
-        child: Column(
-          children: [
-            CurrentLeaseCard(lease: lease, onTap: onDetailTap),
-            const SizedBox(height: AppSpacing.lg),
-            _SmartLockPermissionCard(status: lease.lockPermissionStatus),
-            const SizedBox(height: AppSpacing.lg),
-            LeaseActionGrid(
-              isContractSigned:
-                  lease.contractStatus == LeaseContractStatus.signed,
-              onContractTap: onContractTap,
-              onBillTap: onBillTap,
-              onRenewTap: onRenewTap,
-              onCheckoutTap: onCheckoutTap,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            KeeperServiceCard(
-              keeperName: lease.keeperName,
-              onPhoneTap: onKeeperTap,
-              onChatTap: onKeeperTap,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            RentBillCard(
-              title: lease.pendingBillTitle,
-              amount: lease.pendingBillAmount,
-              dueDate: lease.pendingBillDueDate,
-              onPayTap: onPayTap,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SmartLockPermissionCard extends StatelessWidget {
-  const _SmartLockPermissionCard({required this.status});
-
-  final LeaseLockPermissionStatus status;
-
-  String get _title => switch (status) {
-    LeaseLockPermissionStatus.active => '智能门锁已经生效',
-    LeaseLockPermissionStatus.expired => '智能门锁权限已过期',
-    LeaseLockPermissionStatus.revoked => '智能门锁权限已回收',
-  };
-
-  String get _subtitle => switch (status) {
-    LeaseLockPermissionStatus.active => '可使用门锁开门权限，入住期间保持有效',
-    LeaseLockPermissionStatus.expired => '当前门锁权限已过期，请联系管家处理',
-    LeaseLockPermissionStatus.revoked => '当前门锁权限已回收，如需开门请联系管家',
-  };
-
-  String get _statusLabel => switch (status) {
-    LeaseLockPermissionStatus.active => '有效',
-    LeaseLockPermissionStatus.expired => '已过期',
-    LeaseLockPermissionStatus.revoked => '已回收',
-  };
-
-  Color get _statusColor => switch (status) {
-    LeaseLockPermissionStatus.active => AppColors.success,
-    LeaseLockPermissionStatus.expired => AppColors.warning,
-    LeaseLockPermissionStatus.revoked => AppColors.error,
-  };
-
-  IconData get _icon => switch (status) {
-    LeaseLockPermissionStatus.active => Icons.lock_open_rounded,
-    LeaseLockPermissionStatus.expired => Icons.lock_clock_rounded,
-    LeaseLockPermissionStatus.revoked => Icons.lock_reset_rounded,
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F000000),
-            blurRadius: 16,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: _statusColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-            ),
-            child: Icon(_icon, color: _statusColor),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _title,
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  _subtitle,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm,
-              vertical: AppSpacing.xs,
-            ),
-            decoration: BoxDecoration(
-              color: _statusColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-            ),
-            child: Text(
-              _statusLabel,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: _statusColor,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
+        child: CurrentLeaseCard(lease: lease, onTap: onDetailTap),
       ),
     );
   }
