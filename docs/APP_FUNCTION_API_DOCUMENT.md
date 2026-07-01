@@ -137,6 +137,7 @@
 | 方法 | 路径 | App 功能 | 请求参数 | 成功数据 |
 | --- | --- | --- | --- | --- |
 | GET | `/leases/my` | 我的租约列表 | 无 | 租约列表 |
+| GET | `/leases/{leaseId}` | 租约详情 | `leaseId` | `Lease` |
 | GET | `/leases/{leaseId}/contract` | 查看电子合同 | `leaseId` | `LeaseContractDocument` |
 | POST | `/leases/{leaseId}/renew` | 续租申请旧动作 | `leaseId` | 空 |
 | POST | `/leases/{leaseId}/checkout` | 退租旧动作 | `leaseId` | 空 |
@@ -144,7 +145,7 @@
 实现功能：
 
 - 我的租约页展示当前租约和历史租约。
-- 租约详情从列表数据中匹配当前 `leaseId`，展示房源、租金、押金、账单、门锁、管家等信息。
+- 租约详情通过 `GET /leases/{leaseId}` 独立接口获取，展示房源、租金、押金、账单、门锁、管家等信息。
 - 电子合同页通过租约 ID 拉取合同详情，支持合同正文、合同条款、签署时间、合同文件 URL 等字段。
 - 租约接口失败时允许使用 Mock 租约数据回退，便于开发调试。
 
