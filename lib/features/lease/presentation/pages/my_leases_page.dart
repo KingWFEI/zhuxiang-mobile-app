@@ -8,9 +8,12 @@ import '../../../../app/theme/app_icon.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/network/api_exception.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
 import '../../../auth/presentation/providers/auth_controller.dart';
+import '../../../lock/data/models/tenant_lock_unlock_data.dart';
+import '../../../lock/data/providers/tenant_lock_providers.dart';
 import '../../application/lease_controller.dart';
 import '../../data/providers/lease_providers.dart';
 import '../../domain/entities/lease.dart';
@@ -304,7 +307,7 @@ class _CurrentLeaseDashboard extends StatelessWidget {
           children: [
             CurrentLeaseCard(lease: lease, onTap: onDetailTap),
             const SizedBox(height: AppSpacing.lg),
-            _SmartLockPermissionCard(status: lease.lockPermissionStatus),
+            _SmartLockPermissionCard(leaseId: lease.id),
             const SizedBox(height: AppSpacing.lg),
             LeaseActionGrid(
               isContractSigned:
@@ -334,40 +337,137 @@ class _CurrentLeaseDashboard extends StatelessWidget {
   }
 }
 
-class _SmartLockPermissionCard extends StatelessWidget {
-  const _SmartLockPermissionCard({required this.status});
+class _SmartLockPermissionCard extends ConsumerWidget {
+  const _SmartLockPermissionCard({required this.leaseId});
 
-  final LeaseLockPermissionStatus status;
+  final String leaseId;
 
-  String get _title => switch (status) {
-    LeaseLockPermissionStatus.active => '智能门锁已经生效',
-    LeaseLockPermissionStatus.expired => '智能门锁权限已过期',
-    LeaseLockPermissionStatus.revoked => '智能门锁权限已回收',
-  };
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lockStatus = ref.watch(tenantLockStatusProvider(leaseId));
+    return lockStatus.when(
+      data: (data) => _SmartLockPermissionContent(
+        status: _statusFromLockData(data),
+        lockName: data.lockName,
+      ),
+      loading: () => const _SmartLockPermissionContent(
+        title: '正在查询门锁状态',
+        subtitle: '正在获取当前租约的门锁权限',
+        statusLabel: '查询中',
+        statusColor: AppColors.primary,
+        icon: Icons.sync_rounded,
+        showProgress: true,
+      ),
+      error: (error, _) => _SmartLockPermissionContent(
+        title: _lockErrorTitle(error),
+        subtitle: _lockErrorSubtitle(error),
+        statusLabel: '不可用',
+        statusColor: AppColors.warning,
+        icon: Icons.lock_clock_rounded,
+      ),
+    );
+  }
 
-  String get _subtitle => switch (status) {
-    LeaseLockPermissionStatus.active => '可使用门锁开门权限，入住期间保持有效',
-    LeaseLockPermissionStatus.expired => '当前门锁权限已过期，请联系管家处理',
-    LeaseLockPermissionStatus.revoked => '当前门锁权限已回收，如需开门请联系管家',
-  };
+  static LeaseLockPermissionStatus _statusFromLockData(
+    TenantLockUnlockData data,
+  ) {
+    return switch (data.permissionStatus.toUpperCase()) {
+      'ACTIVE' => LeaseLockPermissionStatus.active,
+      'EXPIRED' => LeaseLockPermissionStatus.expired,
+      'REVOKED' || 'DISABLED' => LeaseLockPermissionStatus.revoked,
+      _ =>
+        data.isActive
+            ? LeaseLockPermissionStatus.active
+            : LeaseLockPermissionStatus.revoked,
+    };
+  }
 
-  String get _statusLabel => switch (status) {
-    LeaseLockPermissionStatus.active => '有效',
-    LeaseLockPermissionStatus.expired => '已过期',
-    LeaseLockPermissionStatus.revoked => '已回收',
-  };
+  static String _lockErrorTitle(Object error) {
+    if (error is ApiException && error.statusCode == 404) {
+      return '当前租约未绑定门锁';
+    }
+    if (error is ApiException && error.statusCode == 403) {
+      return '暂无门锁权限';
+    }
+    return '门锁状态获取失败';
+  }
 
-  Color get _statusColor => switch (status) {
-    LeaseLockPermissionStatus.active => AppColors.success,
-    LeaseLockPermissionStatus.expired => AppColors.warning,
-    LeaseLockPermissionStatus.revoked => AppColors.error,
-  };
+  static String _lockErrorSubtitle(Object error) {
+    if (error is ApiException && error.message.trim().isNotEmpty) {
+      return error.message;
+    }
+    return '请稍后刷新，或联系管家确认门锁状态';
+  }
+}
 
-  IconData get _icon => switch (status) {
-    LeaseLockPermissionStatus.active => Icons.lock_open_rounded,
-    LeaseLockPermissionStatus.expired => Icons.lock_clock_rounded,
-    LeaseLockPermissionStatus.revoked => Icons.lock_reset_rounded,
-  };
+class _SmartLockPermissionContent extends StatelessWidget {
+  const _SmartLockPermissionContent({
+    this.status,
+    this.lockName = '',
+    this.title,
+    this.subtitle,
+    this.statusLabel,
+    this.statusColor,
+    this.icon,
+    this.showProgress = false,
+  });
+
+  final LeaseLockPermissionStatus? status;
+  final String lockName;
+  final String? title;
+  final String? subtitle;
+  final String? statusLabel;
+  final Color? statusColor;
+  final IconData? icon;
+  final bool showProgress;
+
+  String get _title =>
+      title ??
+      switch (status) {
+        LeaseLockPermissionStatus.active => '智能门锁已经生效',
+        LeaseLockPermissionStatus.expired => '智能门锁权限已过期',
+        LeaseLockPermissionStatus.revoked => '智能门锁权限已回收',
+        null => '门锁状态未知',
+      };
+
+  String get _subtitle =>
+      subtitle ??
+      switch (status) {
+        LeaseLockPermissionStatus.active =>
+          lockName.trim().isEmpty
+              ? '可使用门锁开门权限，入住期间保持有效'
+              : '$lockName 可使用，入住期间保持有效',
+        LeaseLockPermissionStatus.expired => '当前门锁权限已过期，请联系管家处理',
+        LeaseLockPermissionStatus.revoked => '当前门锁权限已回收，如需开门请联系管家',
+        null => '请稍后刷新，或联系管家确认门锁状态',
+      };
+
+  String get _statusLabel =>
+      statusLabel ??
+      switch (status) {
+        LeaseLockPermissionStatus.active => '有效',
+        LeaseLockPermissionStatus.expired => '已过期',
+        LeaseLockPermissionStatus.revoked => '已回收',
+        null => '未知',
+      };
+
+  Color get _statusColor =>
+      statusColor ??
+      switch (status) {
+        LeaseLockPermissionStatus.active => AppColors.success,
+        LeaseLockPermissionStatus.expired => AppColors.warning,
+        LeaseLockPermissionStatus.revoked => AppColors.error,
+        null => AppColors.textMuted,
+      };
+
+  IconData get _icon =>
+      icon ??
+      switch (status) {
+        LeaseLockPermissionStatus.active => Icons.lock_open_rounded,
+        LeaseLockPermissionStatus.expired => Icons.lock_clock_rounded,
+        LeaseLockPermissionStatus.revoked => Icons.lock_reset_rounded,
+        null => Icons.lock_outline_rounded,
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -393,7 +493,12 @@ class _SmartLockPermissionCard extends StatelessWidget {
               color: _statusColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
-            child: Icon(_icon, color: _statusColor),
+            child: showProgress
+                ? const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(_icon, color: _statusColor),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
