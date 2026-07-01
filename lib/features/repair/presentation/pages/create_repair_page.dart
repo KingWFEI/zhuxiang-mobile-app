@@ -10,6 +10,7 @@ import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../data/providers/repair_providers.dart';
+import '../../data/services/repair_service.dart';
 import '../../domain/entities/repair_order.dart';
 import '../widgets/repair_type_grid.dart';
 
@@ -50,6 +51,7 @@ class _CreateRepairPageState extends ConsumerState<CreateRepairPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(repairControllerProvider);
     final house = state.overview?.currentHouse;
+    final hasCurrentHouse = house != null;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -75,21 +77,31 @@ class _CreateRepairPageState extends ConsumerState<CreateRepairPage> {
                         children: [
                           _CardSection(
                             title: '房屋信息',
-                            child: ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              leading: const CircleAvatar(
-                                backgroundColor: AppColors.primaryLight,
-                                child: Icon(
-                                  Icons.apartment_rounded,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                              title: Text(house?.houseName ?? '3栋2单元1201'),
-                              subtitle: Text(
-                                house?.leaseStatus ?? '履约中',
-                                style: AppTextStyles.bodySmall,
-                              ),
-                            ),
+                            child: state.isLoading && !hasCurrentHouse
+                                ? const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 8),
+                                    child: Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  )
+                                : ListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    leading: const CircleAvatar(
+                                      backgroundColor: AppColors.primaryLight,
+                                      child: Icon(
+                                        Icons.apartment_rounded,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                    title: Text(
+                                      house?.houseName ??
+                                          noActiveRepairLeaseMessage,
+                                    ),
+                                    subtitle: Text(
+                                      house?.leaseStatus ?? '请先确认当前租约',
+                                      style: AppTextStyles.bodySmall,
+                                    ),
+                                  ),
                           ),
                           const SizedBox(height: AppSpacing.lg),
                           _CardSection(
@@ -179,7 +191,9 @@ class _CreateRepairPageState extends ConsumerState<CreateRepairPage> {
                             child: FilledButton(
                               onPressed: state.isSubmitting
                                   ? null
-                                  : _submitRepair,
+                                  : hasCurrentHouse
+                                  ? _submitRepair
+                                  : null,
                               child: state.isSubmitting
                                   ? const SizedBox(
                                       width: 18,
@@ -227,10 +241,16 @@ class _CreateRepairPageState extends ConsumerState<CreateRepairPage> {
     }
     if (!_formKey.currentState!.validate()) return;
     final house = ref.read(repairControllerProvider).overview?.currentHouse;
+    if (house == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('暂无有效租房合同，无法提交报修')));
+      return;
+    }
     final request = CreateRepairRequest(
-      houseId: house?.houseId ?? 'house-001',
-      houseName: house?.houseName ?? '3栋2单元1201',
-      roomName: house?.roomName ?? '3栋2单元1201',
+      houseId: house.houseId,
+      houseName: house.houseName,
+      roomName: house.roomName,
       repairType: _selectedType!,
       description: _descriptionController.text.trim(),
       imageUrls: List.of(_mockImages),

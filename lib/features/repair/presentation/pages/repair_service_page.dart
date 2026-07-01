@@ -12,6 +12,7 @@ import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
 import '../../application/repair_controller.dart';
 import '../../data/providers/repair_providers.dart';
+import '../../data/services/repair_service.dart';
 import '../../domain/entities/repair_order.dart';
 import '../widgets/current_repair_house_card.dart';
 import '../widgets/repair_empty_view.dart';
@@ -75,10 +76,19 @@ class RepairServicePage extends ConsumerWidget {
       );
     }
     if (state.errorMessage != null && state.overview == null) {
+      if (state.errorMessage == noActiveRepairLeaseMessage) {
+        return const SizedBox(
+          height: 420,
+          child: RepairEmptyView(
+            title: noActiveRepairLeaseMessage,
+            subtitle: '签约并入住后，可在这里提交房屋报修',
+          ),
+        );
+      }
       return SizedBox(
         height: 420,
         child: AppErrorView(
-          message: '报修记录加载失败',
+          message: state.errorMessage!,
           onRetry: ref.read(repairControllerProvider.notifier).load,
         ),
       );

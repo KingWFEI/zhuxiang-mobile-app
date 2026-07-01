@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/network/api_exception.dart';
 import '../data/services/repair_service.dart';
 import '../domain/entities/repair_order.dart';
 
@@ -79,12 +80,15 @@ class RepairController extends StateNotifier<RepairState> {
         selectedFilter: state.selectedFilter,
         isLoading: false,
       );
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
       state = RepairState(
         selectedFilter: state.selectedFilter,
         isLoading: false,
-        errorMessage: '报修记录加载失败',
+        errorMessage:
+            error is ApiException && error.message == noActiveRepairLeaseMessage
+            ? noActiveRepairLeaseMessage
+            : '报修记录加载失败',
       );
     }
   }

@@ -1,10 +1,20 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:zhuxiang_app/core/network/api_client.dart';
+import 'package:zhuxiang_app/core/network/api_exception.dart';
+import 'package:zhuxiang_app/core/storage/storage_service.dart';
 import 'package:zhuxiang_app/features/repair/application/repair_controller.dart';
 import 'package:zhuxiang_app/features/repair/data/models/repair_order_model.dart';
 import 'package:zhuxiang_app/features/repair/data/services/repair_service.dart';
 import 'package:zhuxiang_app/features/repair/domain/entities/repair_order.dart';
 
 void main() {
+  setUpAll(() async {
+    SharedPreferences.setMockInitialValues({});
+    await StorageService.initialize();
+  });
+
   test('RepairOrderModel parses tolerant backend fields', () {
     final order = RepairOrderModel({
       'id': '1',
@@ -57,6 +67,31 @@ void main() {
     );
   });
 
+  test('RepairService uses active lease as repair house', () async {
+    final dio = _repairOverviewDio();
+    final service = RepairService(
+      ApiClient(dio: dio),
+      allowMockFallback: false,
+    );
+
+    final overview = await service.fetchOverview();
+
+    expect(overview.currentHouse.houseId, 'active-house');
+    expect(overview.currentHouse.houseName, '真实在租房源');
+    expect(overview.currentHouse.leaseStatus, '履约中');
+  });
+
+  test(
+    'RepairController shows no contract message when no active lease',
+    () async {
+      final controller = RepairController(_NoActiveLeaseRepairService());
+
+      await controller.load();
+
+      expect(controller.state.errorMessage, noActiveRepairLeaseMessage);
+    },
+  );
+
   test('RepairController filters, creates repair and submits review', () async {
     final controller = RepairController(MockRepairService());
 
@@ -101,4 +136,65 @@ void main() {
       RepairStatus.completed,
     );
   });
+}
+
+Dio _repairOverviewDio() {
+  final dio = Dio(BaseOptions(baseUrl: 'https://example.test'));
+  dio.interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (options, handler) {
+        final data = switch (options.path) {
+          '/repairs/my' => {'code': 200, 'data': <Map<String, dynamic>>[]},
+          '/leases/my' => {
+            'code': 200,
+            'data': [
+              {
+                'id': 'history-lease',
+                'contractId': 'history-contract',
+                'houseId': 'history-house',
+                'houseName': '历史房源',
+                'tenantName': '王小明',
+                'tenantPhone': '13800138000',
+                'startDate': '2025-01-01',
+                'endDate': '2025-12-31',
+                'status': 'expired',
+              },
+              {
+                'id': 'active-lease',
+                'contractId': 'active-contract',
+                'houseId': 'active-house',
+                'houseName': '真实在租房源',
+                'tenantName': '王小明',
+                'tenantPhone': '13800138000',
+                'startDate': '2026-01-01',
+                'endDate': '2026-12-31',
+                'status': 'active',
+                'keeperName': '当前管家',
+                'keeperPhone': '400-000-0000',
+              },
+            ],
+          },
+          _ => {'code': 404, 'message': 'not found'},
+        };
+        handler.resolve(
+          Response<dynamic>(
+            requestOptions: options,
+            statusCode: 200,
+            data: data,
+          ),
+        );
+      },
+    ),
+  );
+  return dio;
+}
+
+class _NoActiveLeaseRepairService extends MockRepairService {
+  @override
+  Future<RepairOverview> fetchOverview() async {
+    throw const ApiException(
+      type: ApiExceptionType.server,
+      message: noActiveRepairLeaseMessage,
+    );
+  }
 }
