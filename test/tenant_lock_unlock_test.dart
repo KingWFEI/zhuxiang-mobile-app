@@ -124,11 +124,16 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
 
       expect(find.text('蓝牙开锁'), findsOneWidget);
       expect(find.text('蓝牙已自动连接'), findsOneWidget);
       expect(find.text('点击开锁'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('unlock-radiating-waves')),
+        findsOneWidget,
+      );
       expect(find.text('门锁信息'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
@@ -147,6 +152,11 @@ const _unlockDataJson = <String, dynamic>{
   'startTime': '2026-06-25 00:00:00',
   'endTime': '2026-07-25 23:59:59',
   'permissionStatus': 'ACTIVE',
+  'bluetoothUnlockAvailable': true,
+  'passcodeAvailable': false,
+  'passcodeStatus': 'FAILED',
+  'passcodeStartTime': '',
+  'passcodeEndTime': '',
 };
 
 class _RecordingApiClient extends ApiClient {
@@ -175,6 +185,38 @@ class _FakeRepository implements TenantLockRepositoryContract {
   Future<TenantLockUnlockData> getUnlockData(String leaseId) async {
     events?.add('repository');
     return TenantLockUnlockData.fromJson(_unlockDataJson);
+  }
+
+  @override
+  Future<TenantPasscode> getPasscode(String leaseId) async {
+    events?.add('getPasscode');
+    return TenantPasscode.fromJson(const {
+      'endTime': '2026-07-25 23:59:59',
+      'firstUseNotice': '首次使用需激活',
+      'leaseId': 'lease_001',
+      'passcode': '123456',
+      'passcodeType': 'PERIOD',
+      'roomName': '3栋2单元1201',
+      'smartLockId': 'smart-lock-001',
+      'startTime': '2026-06-25 00:00:00',
+      'status': 'ACTIVE',
+    });
+  }
+
+  @override
+  Future<TenantPasscode> retryPasscode(String leaseId) async {
+    events?.add('retryPasscode');
+    return TenantPasscode.fromJson(const {
+      'endTime': '2026-07-25 23:59:59',
+      'firstUseNotice': '首次使用需激活',
+      'leaseId': 'lease_001',
+      'passcode': '654321',
+      'passcodeType': 'PERIOD',
+      'roomName': '3栋2单元1201',
+      'smartLockId': 'smart-lock-001',
+      'startTime': '2026-06-25 00:00:00',
+      'status': 'ACTIVE',
+    });
   }
 }
 

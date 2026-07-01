@@ -63,14 +63,17 @@ void main() {
     expect(lease.isCurrent, isFalse);
   });
 
-  test('mock lease datasource exposes current and history leases', () async {
+  test('mock lease service supports termination application', () async {
     final service = MockLeaseService();
-    final leases = await service.getMyLeases();
-    expect(leases.where((lease) => lease.isCurrent), hasLength(1));
-    expect(
-      leases.firstWhere((lease) => lease.id == 'lease-2025-006').isCurrent,
-      isFalse,
+    final before = await service.getMyLeases();
+    expect(before.where((lease) => lease.isCurrent), hasLength(1));
+
+    final application = await service.applyTermination(
+      'lease-2026-001',
+      {'reason': '个人原因'},
     );
+    expect(application.applicationNo, isNotEmpty);
+    expect(application.status, 'pending_review');
   });
 
   testWidgets('my leases page renders only lease cards and history states', (
