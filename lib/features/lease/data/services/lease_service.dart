@@ -13,17 +13,15 @@ abstract class LeaseServiceContract {
   Future<Lease> getLeaseDetail(String leaseId);
   Future<LeaseContractDocument> getLeaseContract(String leaseId);
   Future<void> renew(String leaseId);
-  Future<void> checkout(String leaseId);
   Future<LeaseTerminationAttachment> uploadTerminationAttachment({
     required String filePath,
     required String fileName,
   });
-  Future<LeaseTerminationApplication> submitTerminationApplication(
-    String contractId,
-    LeaseTerminationRequest request,
-  );
-  Future<LeaseTerminationApplication?> getCurrentTerminationApplication(
-    String contractId,
+  Future<TerminationApplication?> getCurrentTermination(String leaseId);
+  Future<TerminationCheck> checkTermination(String leaseId);
+  Future<TerminationApplication> applyTermination(
+    String leaseId,
+    Map<String, dynamic> body,
   );
 }
 
@@ -68,14 +66,6 @@ class LeaseService implements LeaseServiceContract {
   }
 
   @override
-  Future<void> checkout(String leaseId) {
-    return _withFallback(
-      () => _submitAction(leaseId, 'checkout'),
-      () => _fallback.checkout(leaseId),
-    );
-  }
-
-  @override
   Future<LeaseTerminationAttachment> uploadTerminationAttachment({
     required String filePath,
     required String fileName,
@@ -84,18 +74,27 @@ class LeaseService implements LeaseServiceContract {
   }
 
   @override
-  Future<LeaseTerminationApplication> submitTerminationApplication(
-    String contractId,
-    LeaseTerminationRequest request,
-  ) {
-    return _submitTerminationApplication(contractId, request);
+  Future<TerminationApplication?> getCurrentTermination(String leaseId) {
+    return _fetchCurrentTermination(leaseId);
   }
 
   @override
-  Future<LeaseTerminationApplication?> getCurrentTerminationApplication(
-    String contractId,
+  Future<TerminationCheck> checkTermination(String leaseId) {
+    return _withFallback(
+      () => _checkTermination(leaseId),
+      () => _fallback.checkTermination(leaseId),
+    );
+  }
+
+  @override
+  Future<TerminationApplication> applyTermination(
+    String leaseId,
+    Map<String, dynamic> body,
   ) {
-    return _fetchCurrentTerminationApplication(contractId);
+    return _withFallback(
+      () => _applyTermination(leaseId, body),
+      () => _fallback.applyTermination(leaseId, body),
+    );
   }
 
   Future<List<Lease>> _fetchMyLeases() async {
@@ -139,11 +138,14 @@ class LeaseService implements LeaseServiceContract {
     required String fileName,
   }) async {
     final formData = FormData.fromMap({
-      'bizType': 'lease_termination',
       'file': await MultipartFile.fromFile(filePath, filename: fileName),
     });
     final response = await _request(
-      () => _apiClient.post('/files/upload', data: formData),
+      () => _apiClient.post(
+        '/files/upload',
+        data: formData,
+        queryParameters: {'bizType': 'lease_termination'},
+      ),
     );
     final payload = _payload(response.data);
     if (payload is! Map<String, dynamic>) {
@@ -170,31 +172,11 @@ class LeaseService implements LeaseServiceContract {
     );
   }
 
-  Future<LeaseTerminationApplication> _submitTerminationApplication(
-    String contractId,
-    LeaseTerminationRequest request,
+  Future<TerminationApplication?> _fetchCurrentTermination(
+    String leaseId,
   ) async {
     final response = await _request(
-      () => _apiClient.post(
-        '/app/contracts/$contractId/termination/apply',
-        data: request.toJson(),
-      ),
-    );
-    final payload = _payload(response.data);
-    if (payload is! Map<String, dynamic>) {
-      throw const ApiException(
-        type: ApiExceptionType.server,
-        message: '退租申请数据格式错误',
-      );
-    }
-    return _terminationApplicationFromJson(payload);
-  }
-
-  Future<LeaseTerminationApplication?> _fetchCurrentTerminationApplication(
-    String contractId,
-  ) async {
-    final response = await _request(
-      () => _apiClient.get('/app/contracts/$contractId/termination/current'),
+      () => _apiClient.get('/leases/$leaseId/termination/current'),
     );
     final payload = _payload(response.data);
     if (payload == null) return null;
@@ -204,18 +186,38 @@ class LeaseService implements LeaseServiceContract {
         message: '退租申请数据格式错误',
       );
     }
-    return _terminationApplicationFromJson(payload);
+    return TerminationApplication.fromJson(payload);
   }
 
-  LeaseTerminationApplication _terminationApplicationFromJson(
-    Map<String, dynamic> json,
-  ) {
-    return LeaseTerminationApplication(
-      id: _string(json, ['id', 'applicationId']),
-      applicationNo: _string(json, ['applicationNo', 'application_no']),
-      status: _string(json, ['status'], fallback: 'pending_review'),
-      statusText: _string(json, ['statusText', 'status_text'], fallback: '待审核'),
+  Future<TerminationCheck> _checkTermination(String leaseId) async {
+    final response = await _request(
+      () => _apiClient.get('/leases/$leaseId/termination/check'),
     );
+    final payload = _payload(response.data);
+    if (payload is! Map<String, dynamic>) {
+      throw const ApiException(
+        type: ApiExceptionType.server,
+        message: '退租检查数据格式错误',
+      );
+    }
+    return TerminationCheck.fromJson(payload);
+  }
+
+  Future<TerminationApplication> _applyTermination(
+    String leaseId,
+    Map<String, dynamic> body,
+  ) async {
+    final response = await _request(
+      () => _apiClient.post('/leases/$leaseId/termination/apply', data: body),
+    );
+    final payload = _payload(response.data);
+    if (payload is! Map<String, dynamic>) {
+      throw const ApiException(
+        type: ApiExceptionType.server,
+        message: '退租申请数据格式错误',
+      );
+    }
+    return TerminationApplication.fromJson(payload);
   }
 
   LeaseContractDocument _contractFromJson(Map<String, dynamic> json) {
@@ -488,14 +490,6 @@ class MockLeaseService implements LeaseServiceContract {
   }
 
   @override
-  Future<void> checkout(String leaseId) async {
-    await Future<void>.delayed(const Duration(milliseconds: 300));
-    final index = _leases.indexWhere((lease) => lease.id == leaseId);
-    if (index < 0) throw StateError('租约不存在');
-    _leases[index] = _leases[index].copyWith(status: LeaseStatus.checkedOut);
-  }
-
-  @override
   Future<LeaseTerminationAttachment> uploadTerminationAttachment({
     required String filePath,
     required String fileName,
@@ -509,26 +503,35 @@ class MockLeaseService implements LeaseServiceContract {
   }
 
   @override
-  Future<LeaseTerminationApplication> submitTerminationApplication(
-    String contractId,
-    LeaseTerminationRequest request,
+  Future<TerminationApplication?> getCurrentTermination(String leaseId) async {
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    return null;
+  }
+
+  @override
+  Future<TerminationCheck> checkTermination(String leaseId) async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    return const TerminationCheck(
+      canApply: true,
+      hasPendingApplication: false,
+      hasUnpaidBills: false,
+      message: '',
+    );
+  }
+
+  @override
+  Future<TerminationApplication> applyTermination(
+    String leaseId,
+    Map<String, dynamic> body,
   ) async {
     await Future<void>.delayed(const Duration(milliseconds: 450));
-    _leases.firstWhere((lease) => lease.contractId == contractId);
-    return const LeaseTerminationApplication(
+    _leases.firstWhere((lease) => lease.id == leaseId);
+    return const TerminationApplication(
       id: 'termination-2026-001',
       applicationNo: 'TZ202606290001',
       status: 'pending_review',
       statusText: '待审核',
     );
-  }
-
-  @override
-  Future<LeaseTerminationApplication?> getCurrentTerminationApplication(
-    String contractId,
-  ) async {
-    await Future<void>.delayed(const Duration(milliseconds: 180));
-    return null;
   }
 }
 

@@ -14,6 +14,66 @@ class LeaseTerminationAttachment {
   }
 }
 
+class TerminationCheck {
+  const TerminationCheck({
+    required this.canApply,
+    required this.hasPendingApplication,
+    required this.hasUnpaidBills,
+    required this.message,
+    this.existingApplication,
+  });
+
+  final bool canApply;
+  final bool hasPendingApplication;
+  final bool hasUnpaidBills;
+  final String message;
+  final TerminationApplication? existingApplication;
+
+  factory TerminationCheck.fromJson(Map<String, dynamic> json) {
+    final existing = json['existingApplication'];
+    return TerminationCheck(
+      canApply: json['canApply'] as bool? ?? false,
+      hasPendingApplication: json['hasPendingApplication'] as bool? ?? false,
+      hasUnpaidBills: json['hasUnpaidBills'] as bool? ?? false,
+      message: json['message'] as String? ?? '',
+      existingApplication: existing is Map<String, dynamic>
+          ? TerminationApplication.fromJson(existing)
+          : null,
+    );
+  }
+}
+
+class TerminationApplication {
+  const TerminationApplication({
+    required this.id,
+    required this.applicationNo,
+    required this.status,
+    required this.statusText,
+  });
+
+  final String id;
+  final String applicationNo;
+  final String status;
+  final String statusText;
+
+  factory TerminationApplication.fromJson(Map<String, dynamic> json) {
+    return TerminationApplication(
+      id: _string(json, ['id', 'applicationId']),
+      applicationNo: _string(json, ['applicationNo', 'application_no']),
+      status: _string(json, ['status'], fallback: 'pending_review'),
+      statusText: _string(json, ['statusText', 'status_text'], fallback: '待审核'),
+    );
+  }
+
+  static String _string(Map<String, dynamic> json, List<String> keys, {String fallback = ''}) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value != null && value.toString().isNotEmpty) return value.toString();
+    }
+    return fallback;
+  }
+}
+
 class LeaseTerminationRequest {
   const LeaseTerminationRequest({
     required this.reason,
@@ -36,7 +96,7 @@ class LeaseTerminationRequest {
   Map<String, dynamic> toJson() {
     return {
       'reason': reason,
-      'expectedMoveOutDate': _formatDate(expectedMoveOutDate),
+      'expectedMoveOutDate': formatDate(expectedMoveOutDate),
       'hasMovedOut': hasMovedOut,
       'contactName': contactName,
       'contactPhone': contactPhone,
@@ -45,22 +105,9 @@ class LeaseTerminationRequest {
     };
   }
 
-  static String _formatDate(DateTime date) {
+  static String formatDate(DateTime date) {
     String two(int value) => value.toString().padLeft(2, '0');
     return '${date.year}-${two(date.month)}-${two(date.day)}';
   }
 }
 
-class LeaseTerminationApplication {
-  const LeaseTerminationApplication({
-    required this.id,
-    required this.applicationNo,
-    required this.status,
-    required this.statusText,
-  });
-
-  final String id;
-  final String applicationNo;
-  final String status;
-  final String statusText;
-}

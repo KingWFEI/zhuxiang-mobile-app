@@ -143,16 +143,14 @@ class _MyLeasesPageState extends ConsumerState<MyLeasesPage> {
               onDetailTap: () => _openDetail(lease),
               onContractTap: () => _openContract(lease),
               onBillTap: _openBills,
-              onRenewTap: () => _requestAction(
-                lease: lease,
-                isVerified: isVerified,
-                isCheckout: false,
-              ),
-              onCheckoutTap: () => _requestAction(
-                lease: lease,
-                isVerified: isVerified,
-                isCheckout: true,
-              ),
+              onRenewTap: () => _requestRenew(lease, isVerified),
+              onCheckoutTap: () {
+                if (!isVerified) {
+                  context.pushNamed(RouteNames.realNameAuth);
+                  return;
+                }
+                _openTerminationApply(lease);
+              },
               onKeeperTap: _openCustomerService,
               onPayTap: _openBills,
             ),
@@ -209,26 +207,16 @@ class _MyLeasesPageState extends ConsumerState<MyLeasesPage> {
     context.pushNamed(RouteNames.customerService);
   }
 
-  Future<void> _requestAction({
-    required Lease lease,
-    required bool isVerified,
-    required bool isCheckout,
-  }) async {
+  Future<void> _requestRenew(Lease lease, bool isVerified) async {
     if (!isVerified) {
-      // TODO: 实名认证页完成后应携带回跳地址，返回当前租约操作。
       context.pushNamed(RouteNames.realNameAuth);
       return;
     }
-    if (isCheckout) {
-      await _openTerminationApply(lease);
-      return;
-    }
-    final action = isCheckout ? '退租' : '续租';
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('确认$action申请'),
-        content: Text('确认对「${lease.houseName}」发起$action申请吗？'),
+        title: const Text('确认续租申请'),
+        content: Text('确认对「${lease.houseName}」发起续租申请吗？'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -247,16 +235,9 @@ class _MyLeasesPageState extends ConsumerState<MyLeasesPage> {
   }
 
   Future<void> _openTerminationApply(Lease lease) async {
-    final contractId = lease.contractId.trim();
-    if (contractId.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('当前租约缺少合同信息，暂时无法提交退租申请')));
-      return;
-    }
     final current = await ref
         .read(leaseServiceProvider)
-        .getCurrentTerminationApplication(contractId);
+        .getCurrentTermination(lease.id);
     if (!mounted) return;
     if (current != null) {
       await _showExistingTerminationDialog(current);
@@ -269,7 +250,7 @@ class _MyLeasesPageState extends ConsumerState<MyLeasesPage> {
   }
 
   Future<void> _showExistingTerminationDialog(
-    LeaseTerminationApplication application,
+    TerminationApplication application,
   ) {
     return showDialog<void>(
       context: context,
