@@ -93,12 +93,6 @@ class _LeaseTerminationApplyPageState
             title: '租约信息',
             child: Column(
               children: [
-                if (lease.contractId.trim().isEmpty) ...[
-                  const _InlineWarning(
-                    message: '当前租约缺少合同信息，提交退租申请需要后端返回合同 ID。',
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                ],
                 _InfoRow(label: '房源', value: lease.houseName),
                 _InfoRow(
                   label: '租期',
@@ -246,13 +240,6 @@ class _LeaseTerminationApplyPageState
 
   Future<void> _submit(Lease lease) async {
     if (!_formKey.currentState!.validate()) return;
-    final contractId = lease.contractId.trim();
-    if (contractId.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('当前租约缺少合同信息，暂时无法提交退租申请')));
-      return;
-    }
     if (_isUploadingAttachment) {
       ScaffoldMessenger.of(
         context,
@@ -267,20 +254,12 @@ class _LeaseTerminationApplyPageState
     }
 
     setState(() => _isSubmitting = true);
-    final request = LeaseTerminationRequest(
-      reason: _reasonController.text.trim(),
-      expectedMoveOutDate: _expectedMoveOutDate!,
-      hasMovedOut: _hasMovedOut,
-      contactName: _contactNameController.text.trim(),
-      contactPhone: _contactPhoneController.text.trim(),
-      remark: _remarkController.text.trim(),
-      attachments: List.of(_attachments),
-    );
 
     try {
-      final current = await ref
-          .read(leaseServiceProvider)
-          .getCurrentTerminationApplication(contractId);
+      final service = ref.read(leaseServiceProvider);
+
+      // 1. 查询是否已有退租申请
+      final current = await service.getCurrentTermination(widget.leaseId);
       if (!mounted) return;
       if (current != null) {
         await _showExistingTerminationDialog(current);
@@ -288,9 +267,29 @@ class _LeaseTerminationApplyPageState
         context.pop();
         return;
       }
-      final application = await ref
-          .read(leaseServiceProvider)
-          .submitTerminationApplication(contractId, request);
+
+      // 2. 调用 check 检查是否可以退租
+      final check = await service.checkTermination(widget.leaseId);
+      if (!mounted) return;
+      if (!check.canApply) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(check.message.isNotEmpty ? check.message : '当前不可提交退租申请')),
+        );
+        return;
+      }
+
+      // 3. 提交退租申请
+      final body = <String, dynamic>{
+        'reason': _reasonController.text.trim(),
+        'expectedMoveOutDate': LeaseTerminationRequest.formatDate(_expectedMoveOutDate!),
+        'hasMovedOut': _hasMovedOut,
+        'contactName': _contactNameController.text.trim(),
+        'contactPhone': _contactPhoneController.text.trim(),
+        'remark': _remarkController.text.trim(),
+        'attachments': _attachments.map((item) => item.toJson()).toList(),
+      };
+
+      final application = await service.applyTermination(widget.leaseId, body);
       if (!mounted) return;
       await showDialog<void>(
         context: context,
@@ -319,7 +318,7 @@ class _LeaseTerminationApplyPageState
   }
 
   Future<void> _showExistingTerminationDialog(
-    LeaseTerminationApplication application,
+    TerminationApplication application,
   ) {
     return showDialog<void>(
       context: context,
@@ -440,28 +439,6 @@ class _NoticeCard extends StatelessWidget {
           const SizedBox(width: AppSpacing.sm),
           Expanded(child: Text(message, style: AppTextStyles.bodyMedium)),
         ],
-      ),
-    );
-  }
-}
-
-class _InlineWarning extends StatelessWidget {
-  const _InlineWarning({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.warning.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(AppRadius.card),
-      ),
-      child: Text(
-        message,
-        style: AppTextStyles.bodySmall.copyWith(color: AppColors.warning),
       ),
     );
   }
