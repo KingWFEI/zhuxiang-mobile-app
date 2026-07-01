@@ -8,6 +8,9 @@ import 'package:zhuxiang_app/features/lease/domain/entities/lease.dart';
 import 'package:zhuxiang_app/features/lease/domain/entities/lease_contract_document.dart';
 import 'package:zhuxiang_app/features/lease/domain/entities/lease_termination.dart';
 import 'package:zhuxiang_app/features/lease/presentation/pages/my_leases_page.dart';
+import 'package:zhuxiang_app/features/lock/data/models/tenant_lock_unlock_data.dart';
+import 'package:zhuxiang_app/features/lock/data/providers/tenant_lock_providers.dart';
+import 'package:zhuxiang_app/features/lock/data/repositories/tenant_lock_repository.dart';
 
 void main() {
   test('LeaseModel adapts nested backend fields', () {
@@ -59,17 +62,13 @@ void main() {
     expect(lease.isCurrent, isFalse);
   });
 
-  test('mock lease datasource moves checked out lease to history', () async {
+  test('mock lease datasource exposes current and history leases', () async {
     final service = MockLeaseService();
-    final before = await service.getMyLeases();
-    expect(before.where((lease) => lease.isCurrent), hasLength(1));
-
-    await service.checkout('lease-2026-001');
-    final after = await service.getMyLeases();
-    expect(after.where((lease) => lease.isCurrent), isEmpty);
+    final leases = await service.getMyLeases();
+    expect(leases.where((lease) => lease.isCurrent), hasLength(1));
     expect(
-      after.firstWhere((lease) => lease.id == 'lease-2026-001').status,
-      LeaseStatus.checkedOut,
+      leases.firstWhere((lease) => lease.id == 'lease-2025-006').isCurrent,
+      isFalse,
     );
   });
 
@@ -85,6 +84,9 @@ void main() {
       ProviderScope(
         overrides: [
           leaseServiceProvider.overrideWithValue(_FakeLeaseService()),
+          tenantLockRepositoryProvider.overrideWithValue(
+            _FakeTenantLockRepository(),
+          ),
         ],
         child: const MaterialApp(
           home: MyLeasesPage(enforceAuthentication: false),
@@ -96,6 +98,7 @@ void main() {
     expect(find.text('我的租约'), findsOneWidget);
     expect(find.text('3栋2单元1201'), findsOneWidget);
     expect(find.text('续租申请'), findsOneWidget);
+    expect(find.text('智能门锁已经生效'), findsOneWidget);
     expect(find.text('专属管家'), findsOneWidget);
     expect(find.text('3月租金待支付'), findsOneWidget);
 
@@ -111,6 +114,9 @@ void main() {
         overrides: [
           leaseServiceProvider.overrideWithValue(
             _FakeLeaseService(leases: const []),
+          ),
+          tenantLockRepositoryProvider.overrideWithValue(
+            _FakeTenantLockRepository(),
           ),
         ],
         child: const MaterialApp(
@@ -129,6 +135,9 @@ void main() {
           leaseServiceProvider.overrideWithValue(
             _FakeLeaseService(shouldFail: true),
           ),
+          tenantLockRepositoryProvider.overrideWithValue(
+            _FakeTenantLockRepository(),
+          ),
         ],
         child: const MaterialApp(
           home: MyLeasesPage(enforceAuthentication: false),
@@ -139,6 +148,25 @@ void main() {
     expect(find.textContaining('租约服务不可用'), findsOneWidget);
     expect(find.text('重试'), findsOneWidget);
   });
+}
+
+class _FakeTenantLockRepository implements TenantLockRepositoryContract {
+  @override
+  Future<TenantLockUnlockData> getUnlockData(String leaseId) async {
+    return TenantLockUnlockData(
+      leaseId: leaseId,
+      smartLockId: 'smart-lock-001',
+      houseName: '3栋2单元1201',
+      roomName: '1201',
+      lockName: '住享智能门锁',
+      lockMac: '58:6F:C7:93:B6:E7',
+      lockData: 'tenant-lock-data',
+      ttlockKeyId: 987654,
+      startTime: '2026-03-01T00:00:00',
+      endTime: '2027-02-28T23:59:59',
+      permissionStatus: 'ACTIVE',
+    );
+  }
 }
 
 class _FakeLeaseService implements LeaseServiceContract {
@@ -184,9 +212,6 @@ class _FakeLeaseService implements LeaseServiceContract {
   Future<void> renew(String leaseId) async {}
 
   @override
-  Future<void> checkout(String leaseId) async {}
-
-  @override
   Future<LeaseTerminationAttachment> uploadTerminationAttachment({
     required String filePath,
     required String fileName,
@@ -199,23 +224,31 @@ class _FakeLeaseService implements LeaseServiceContract {
   }
 
   @override
-  Future<LeaseTerminationApplication> submitTerminationApplication(
+  Future<TerminationApplication?> getCurrentTermination(String leaseId) async {
+    return null;
+  }
+
+  @override
+  Future<TerminationCheck> checkTermination(String leaseId) async {
+    return const TerminationCheck(
+      canApply: true,
+      hasPendingApplication: false,
+      hasUnpaidBills: false,
+      message: '',
+    );
+  }
+
+  @override
+  Future<TerminationApplication> applyTermination(
     String leaseId,
-    LeaseTerminationRequest request,
+    Map<String, dynamic> body,
   ) async {
-    return const LeaseTerminationApplication(
+    return const TerminationApplication(
       id: 'termination-1',
       applicationNo: 'TZ202606290001',
       status: 'pending_review',
       statusText: '待审核',
     );
-  }
-
-  @override
-  Future<LeaseTerminationApplication?> getCurrentTerminationApplication(
-    String contractId,
-  ) async {
-    return null;
   }
 }
 
