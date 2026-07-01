@@ -4,8 +4,12 @@ import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/network/api_result.dart';
 import '../../../../core/utils/logger.dart';
+import '../../../lease/data/models/lease_model.dart';
+import '../../../lease/domain/entities/lease.dart';
 import '../../domain/entities/repair_order.dart';
 import '../models/repair_order_model.dart';
+
+const noActiveRepairLeaseMessage = '暂无有效租房合同';
 
 abstract class RepairServiceContract {
   Future<RepairOverview> fetchOverview();
@@ -35,9 +39,8 @@ class RepairService implements RepairServiceContract {
     try {
       return await _fetchRemoteOverview();
     } on Object catch (error) {
-      if (!allowMockFallback) rethrow;
-      AppLogger.debug('RepairService fallback to mock overview: $error');
-      return _fallback.fetchOverview();
+      AppLogger.debug('RepairService overview load failed: $error');
+      rethrow;
     }
   }
 
@@ -118,7 +121,11 @@ class RepairService implements RepairServiceContract {
     final orders = _list(
       repairsPayload,
     ).map((json) => RepairOrderModel(json).toEntity()).toList();
-    final currentHouse = RepairHouseModel(_firstMap(leasePayload)).toEntity();
+    final leases = _leaseList(
+      leasePayload,
+    ).map((json) => LeaseModel(json).toEntity()).toList();
+    final currentLease = _selectRepairLease(leases);
+    final currentHouse = _repairHouseFromLease(currentLease);
     return RepairOverview(currentHouse: currentHouse, orders: orders);
   }
 
@@ -183,6 +190,79 @@ class RepairService implements RepairServiceContract {
         .whereType<Map>()
         .map((item) => Map<String, dynamic>.from(item))
         .toList();
+  }
+
+  List<Map<String, dynamic>> _leaseList(dynamic payload) {
+    dynamic source = payload;
+    if (payload is Map<String, dynamic>) {
+      source =
+          payload['items'] ??
+          payload['records'] ??
+          payload['rows'] ??
+          payload['content'] ??
+          payload['list'] ??
+          payload['leases'];
+      if (source == null) {
+        final current =
+            payload['current'] ??
+            payload['currentLease'] ??
+            payload['currentLeases'] ??
+            payload['activeLease'] ??
+            payload['activeLeases'];
+        final history =
+            payload['history'] ??
+            payload['historical'] ??
+            payload['historyLease'] ??
+            payload['historyLeases'] ??
+            payload['historicalLeases'];
+        source = [
+          if (current is Map<String, dynamic>) current,
+          if (current is List) ...current,
+          if (history is Map<String, dynamic>) history,
+          if (history is List) ...history,
+        ];
+      }
+    }
+    if (source == null && payload is Map<String, dynamic>) {
+      source = [payload];
+    }
+    if (source is! List) {
+      throw const ApiException(
+        type: ApiExceptionType.server,
+        message: '租约列表数据格式错误',
+      );
+    }
+    return source
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+  }
+
+  Lease _selectRepairLease(List<Lease> leases) {
+    if (leases.isEmpty) {
+      throw const ApiException(
+        type: ApiExceptionType.server,
+        message: noActiveRepairLeaseMessage,
+      );
+    }
+    for (final lease in leases) {
+      if (lease.status == LeaseStatus.active) return lease;
+    }
+    throw const ApiException(
+      type: ApiExceptionType.server,
+      message: noActiveRepairLeaseMessage,
+    );
+  }
+
+  RepairHouse _repairHouseFromLease(Lease lease) {
+    return RepairHouse(
+      houseId: lease.houseId,
+      houseName: lease.houseName,
+      roomName: lease.houseName,
+      leaseStatus: lease.status.label,
+      housekeeperName: lease.keeperName,
+      housekeeperPhone: lease.keeperPhone,
+    );
   }
 }
 
