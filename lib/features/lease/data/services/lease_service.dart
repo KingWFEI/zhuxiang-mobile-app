@@ -44,7 +44,7 @@ class LeaseService implements LeaseServiceContract {
   @override
   Future<Lease> getLeaseDetail(String leaseId) {
     return _withFallback(
-      () => _fetchLeaseDetailFromMyLeases(leaseId),
+      () => _fetchLeaseDetail(leaseId),
       () => _fallback.getLeaseDetail(leaseId),
     );
   }
@@ -104,12 +104,18 @@ class LeaseService implements LeaseServiceContract {
     return items.map((json) => LeaseModel(json).toEntity()).toList();
   }
 
-  Future<Lease> _fetchLeaseDetailFromMyLeases(String leaseId) async {
-    final leases = await _fetchMyLeases();
-    for (final lease in leases) {
-      if (lease.id == leaseId) return lease;
+  Future<Lease> _fetchLeaseDetail(String leaseId) async {
+    final response = await _request(
+      () => _apiClient.get('/leases/$leaseId'),
+    );
+    final payload = _payload(response.data);
+    if (payload is! Map<String, dynamic>) {
+      throw const ApiException(
+        type: ApiExceptionType.server,
+        message: '租约详情数据格式错误',
+      );
     }
-    throw const ApiException(type: ApiExceptionType.server, message: '未找到对应租约');
+    return LeaseModel(payload).toEntity();
   }
 
   Future<LeaseContractDocument> _fetchLeaseContract(String leaseId) async {

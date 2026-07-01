@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:zhuxiang_app/app/app.dart';
 import 'package:zhuxiang_app/app/router/app_router.dart';
 import 'package:zhuxiang_app/app/router/route_paths.dart';
+import 'package:zhuxiang_app/core/network/api_result.dart';
 import 'package:zhuxiang_app/core/storage/guest_mode_storage.dart';
 import 'package:zhuxiang_app/core/storage/token_storage.dart';
 import 'package:zhuxiang_app/features/auth/data/auth_repository.dart';
@@ -12,6 +13,9 @@ import 'package:zhuxiang_app/features/auth/domain/entities/auth_user.dart';
 import 'package:zhuxiang_app/features/auth/presentation/auth_controller.dart';
 import 'package:zhuxiang_app/features/profile/data/providers/profile_providers.dart';
 import 'package:zhuxiang_app/features/profile/presentation/pages/profile_edit_page.dart';
+import 'package:zhuxiang_app/features/message/data/providers/message_providers.dart';
+import 'package:zhuxiang_app/features/message/data/services/message_service.dart';
+import 'package:zhuxiang_app/features/message/domain/entities/app_message.dart';
 
 void main() {
   testWidgets('profile card opens profile edit page for tenant user', (
@@ -35,6 +39,7 @@ void main() {
           tokenStorageProvider.overrideWithValue(_EmptyTokenStorage()),
           guestModeStorageProvider.overrideWithValue(_FakeGuestModeStorage()),
           currentHomeProvider.overrideWith((ref) async => null),
+          messageServiceProvider.overrideWithValue(_FakeMessageService()),
         ],
         child: const ZhuxiangApp(),
       ),
@@ -53,6 +58,46 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
 
     expect(find.byType(ProfileEditPage), findsOneWidget);
+  });
+
+  testWidgets('logout from settings redirects to login page', (tester) async {
+    AppRouter.router.go(RoutePaths.splash);
+    tester.view.physicalSize = const Size(430, 932);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authControllerProvider.overrideWith(
+            (ref) => AuthController(
+              AuthUseCases(_FakeAuthRepository(_testUser)),
+              _FakeGuestModeStorage(),
+            ),
+          ),
+          tokenStorageProvider.overrideWithValue(_EmptyTokenStorage()),
+          guestModeStorageProvider.overrideWithValue(_FakeGuestModeStorage()),
+          currentHomeProvider.overrideWith((ref) async => null),
+          messageServiceProvider.overrideWithValue(_FakeMessageService()),
+        ],
+        child: const ZhuxiangApp(),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1500));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byIcon(Icons.person_outline));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('设置'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('退出登录'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, '退出'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('欢迎登录'), findsOneWidget);
   });
 }
 
@@ -165,4 +210,39 @@ class _FakeGuestModeStorage implements GuestModeStorage {
   Future<void> clear() async {
     _enabled = false;
   }
+}
+
+class _FakeMessageService implements MessageServiceContract {
+  @override
+  Future<ApiResult<MessagePageData>> fetchMessages({
+    MessageCategory? category,
+    bool? isRead,
+    int page = 1,
+    int pageSize = 20,
+  }) async => ApiSuccess(
+    MessagePageData(
+      items: const [],
+      page: page,
+      pageSize: pageSize,
+      total: 0,
+      hasMore: false,
+    ),
+  );
+
+  @override
+  Future<ApiResult<MessageUnreadCounts>> fetchUnreadCounts() async =>
+      const ApiSuccess(MessageUnreadCounts());
+
+  @override
+  Future<ApiResult<bool>> markAsRead(String id) async => const ApiSuccess(true);
+
+  @override
+  Future<ApiResult<bool>> markAllAsRead() async => const ApiSuccess(true);
+
+  @override
+  Future<ApiResult<bool>> deleteMessage(String id) async =>
+      const ApiSuccess(true);
+
+  @override
+  Future<ApiResult<bool>> clearReadMessages() async => const ApiSuccess(true);
 }
