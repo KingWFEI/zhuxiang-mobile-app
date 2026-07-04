@@ -33,7 +33,7 @@ class SettingsPage extends ConsumerWidget {
                   _SettingsItem(
                     icon: Icons.person_outline,
                     label: '修改账号信息',
-                    subtitle: '修改密码、手机号',
+                    subtitle: '修改头像、昵称、密码、手机号',
                     onTap: () => context.pushNamed(RouteNames.profileEdit),
                   ),
                 const SizedBox(height: AppSpacing.lg),
@@ -145,11 +145,13 @@ class _VersionItem extends StatelessWidget {
           ),
           child: Row(
             children: [
-              const Icon(Icons.info_outline, color: AppColors.textPrimary, size: 22),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Text('当前版本', style: AppTextStyles.bodyMedium),
+              const Icon(
+                Icons.info_outline,
+                color: AppColors.textPrimary,
+                size: 22,
               ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(child: Text('当前版本', style: AppTextStyles.bodyMedium)),
               Text(
                 version,
                 style: AppTextStyles.bodySmall.copyWith(

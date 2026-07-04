@@ -12,7 +12,9 @@
       "Bash(git pull *)",
       "Bash(git stash *)",
       "WebSearch",
-      "Bash(git restore *)"
+      "Bash(git restore *)",
+      "Bash(dart test *)",
+      "Bash(flutter test *)"
     ]
   }
 }

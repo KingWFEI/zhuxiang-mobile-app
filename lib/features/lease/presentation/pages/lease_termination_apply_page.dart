@@ -273,7 +273,11 @@ class _LeaseTerminationApplyPageState
       if (!mounted) return;
       if (!check.canApply) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(check.message.isNotEmpty ? check.message : '当前不可提交退租申请')),
+          SnackBar(
+            content: Text(
+              check.message.isNotEmpty ? check.message : '当前不可提交退租申请',
+            ),
+          ),
         );
         return;
       }
@@ -281,7 +285,9 @@ class _LeaseTerminationApplyPageState
       // 3. 提交退租申请
       final body = <String, dynamic>{
         'reason': _reasonController.text.trim(),
-        'expectedMoveOutDate': LeaseTerminationRequest.formatDate(_expectedMoveOutDate!),
+        'expectedMoveOutDate': LeaseTerminationRequest.formatDate(
+          _expectedMoveOutDate!,
+        ),
         'hasMovedOut': _hasMovedOut,
         'contactName': _contactNameController.text.trim(),
         'contactPhone': _contactPhoneController.text.trim(),

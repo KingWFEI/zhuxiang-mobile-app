@@ -41,30 +41,16 @@ class ProfilePage extends ConsumerWidget {
               _UserCard(
                 nickname: user.nickname,
                 phone: user.maskedPhone,
+                avatarUrl: user.avatarUrl,
                 isVerified: user.isVerified,
+                onTap: () => context.pushNamed(RouteNames.settings),
               ),
             const SizedBox(height: AppSpacing.lg),
-            if (user != null) const _CurrentHomeCard(),
+            if (user != null) const _DashboardCard(),
             const SizedBox(height: AppSpacing.lg),
-            const _MenuGrid(),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              '更多服务',
-              style: AppTextStyles.bodyLarge.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
+
             Row(
               children: const [
-                Expanded(
-                  child: ProfileMenuTile(
-                    icon: Icons.group,
-                    label: '邀请合租',
-                    subtitle: '与好友一起安心租房',
-                    color: AppColors.primary,
-                  ),
-                ),
                 SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: ProfileMenuTile(
@@ -126,66 +112,83 @@ class _UserCard extends StatelessWidget {
   const _UserCard({
     required this.nickname,
     required this.phone,
+    required this.avatarUrl,
     required this.isVerified,
+    required this.onTap,
   });
 
   final String nickname;
   final String phone;
+  final String avatarUrl;
   final bool isVerified;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        boxShadow: AppShadows.card,
-      ),
-      child: Row(
-        children: [
-          const CircleAvatar(
-            radius: 28,
-            backgroundColor: AppColors.primaryLight,
-            child: Icon(Icons.person, color: AppColors.primary, size: 30),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  nickname,
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(phone, style: AppTextStyles.bodySmall),
-                if (isVerified) const SizedBox(height: AppSpacing.xs),
-                if (isVerified)
-                  Chip(
-                    visualDensity: VisualDensity.compact,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    avatar: const Icon(
-                      Icons.verified_user,
-                      size: 14,
+    final hasAvatar = avatarUrl.isNotEmpty;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.xl),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          boxShadow: AppShadows.card,
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 28,
+              backgroundColor: AppColors.primaryLight,
+              backgroundImage: hasAvatar ? NetworkImage(avatarUrl) : null,
+              child: hasAvatar
+                  ? null
+                  : const Icon(
+                      Icons.person,
                       color: AppColors.primary,
+                      size: 30,
                     ),
-                    label: Text(
-                      '安心住户',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    backgroundColor: AppColors.primaryLight,
-                    side: BorderSide.none,
-                  ),
-              ],
             ),
-          ),
-        ],
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    nickname,
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(phone, style: AppTextStyles.bodySmall),
+                  if (isVerified) const SizedBox(height: AppSpacing.xs),
+                  if (isVerified)
+                    Chip(
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      avatar: const Icon(
+                        Icons.verified_user,
+                        size: 14,
+                        color: AppColors.primary,
+                      ),
+                      label: Text(
+                        '安心住户',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      backgroundColor: AppColors.primaryLight,
+                      side: BorderSide.none,
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -262,114 +265,233 @@ class _GuestCard extends StatelessWidget {
   }
 }
 
-class _CurrentHomeCard extends ConsumerWidget {
-  const _CurrentHomeCard();
+class _DashboardCard extends ConsumerWidget {
+  const _DashboardCard();
+
+  static const _menuItems = [
+    (Icons.description, '我的租约', AppColors.primary),
+    (Icons.receipt_long, '我的订单', AppColors.primary),
+    (Icons.payments, '支付记录', AppColors.secondary),
+    (Icons.lock_clock, '开门记录', AppColors.secondary),
+    (Icons.account_balance_wallet, '押金账单', AppColors.warning),
+    (Icons.build, '报修服务', AppColors.warning),
+    (Icons.badge, '实名认证', AppColors.primary),
+    (Icons.star, '我的收藏', Color(0xFF7667F8)),
+  ];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final result = ref.watch(currentHomeProvider);
 
     return result.when(
-      data: (data) {
-        if (data == null) return const SizedBox.shrink();
-        final home = data.home;
-        final lock = data.lock;
-        final leaseId = home?.leaseId.isNotEmpty == true
-            ? home!.leaseId
-            : lock?.leaseId ?? '';
+      data: (data) => _buildContent(context, data),
+      error: (error, stackTrace) => _buildMenuOnly(context),
+      loading: () => _buildMenuOnly(context),
+    );
+  }
 
-        return Container(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFE0F2FE), Colors.white],
-            ),
-            borderRadius: BorderRadius.circular(AppRadius.xl),
-            boxShadow: AppShadows.card,
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Positioned(
-                top: -8,
-                right: 96,
-                child: Image.asset(
-                  'assets/lock_style.png',
-                  width: 76,
-                  fit: BoxFit.fitWidth,
-                ),
-              ),
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('当前居住', style: AppTextStyles.bodySmall),
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          home?.addressLabel ?? '--',
-                          style: AppTextStyles.bodyLarge.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        _LockStatusChip(lock: lock),
-                      ],
-                    ),
+  Widget _buildContent(
+    BuildContext context,
+    ({CurrentHome? home, LockInfo? lock})? data,
+  ) {
+    final home = data?.home;
+    final lock = data?.lock;
+
+    final lockInvalid =
+        lock?.isLeaseInvalidForLock == true ||
+        (home?.leaseStatus.isNotEmpty == true &&
+            const [
+              'TERMINATED',
+              'EXPIRED',
+              'CHECKED_OUT',
+              'CANCELLED',
+            ].contains(home!.leaseStatus.toUpperCase()));
+
+    final leaseId = lockInvalid
+        ? ''
+        : home?.leaseId.isNotEmpty == true
+        ? home!.leaseId
+        : lock?.leaseId ?? '';
+
+    final hasHomeData =
+        data != null && (home?.addressLabel.isNotEmpty == true || lock != null);
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFE0F2FE), Color.fromARGB(255, 255, 255, 255)],
+          stops: [0.0, 0.5],
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        // boxShadow: AppShadows.card,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // ── 门锁区域 ──
+          if (hasHomeData)
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned(
+                  top: 0,
+                  right: 96,
+                  child: Image.asset(
+                    'assets/lock_style.png',
+                    width: 80,
+                    fit: BoxFit.fitWidth,
                   ),
-                  const SizedBox(width: AppSpacing.md),
-                  SizedBox(
-                    width: 94,
-                    child: OutlinedButton(
-                      onPressed: leaseId.isEmpty
-                          ? null
-                          : () => context.pushNamed(
-                              RouteNames.tenantLockUnlock,
-                              pathParameters: {'leaseId': leaseId},
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('当前居住', style: AppTextStyles.bodySmall),
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              home?.addressLabel ?? '--',
+                              style: AppTextStyles.bodyLarge.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(0, 34),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.xs,
-                        ),
-                        textStyle: AppTextStyles.bodySmall.copyWith(
-                          fontWeight: FontWeight.w600,
+                            const SizedBox(height: AppSpacing.sm),
+                            _LockStatusChip(
+                              lock: lock,
+                              leaseInvalid: lockInvalid,
+                            ),
+                          ],
                         ),
                       ),
-                      child: const Text('查看门锁'),
-                    ),
+                      const SizedBox(width: AppSpacing.md),
+                      SizedBox(
+                        width: 84,
+                        child: OutlinedButton(
+                          onPressed: leaseId.isEmpty
+                              ? null
+                              : () => context.pushNamed(
+                                  RouteNames.tenantLockUnlock,
+                                  pathParameters: {'leaseId': leaseId},
+                                ),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(0, 34),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.xs,
+                            ),
+                            textStyle: AppTextStyles.bodySmall.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                            backgroundColor: Colors.white.withValues(
+                              alpha: 0.8,
+                            ),
+                          ),
+                          child: const Text('查看门锁'),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
+              ],
+            ),
+          // ── 菜单网格 ──
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _menuItems.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                childAspectRatio: 1.18,
+                mainAxisSpacing: AppSpacing.xs,
+                crossAxisSpacing: AppSpacing.xs,
               ),
-            ],
+              itemBuilder: (ctx, index) {
+                final item = _menuItems[index];
+                return InkWell(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  onTap: () => _onMenuItemTap(context, index),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(item.$1, color: item.$3, size: 24),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        item.$2,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
-        );
-      },
-      error: (error, stackTrace) => const SizedBox.shrink(),
-      loading: () => const SizedBox.shrink(),
+        ],
+      ),
     );
+  }
+
+  Widget _buildMenuOnly(BuildContext context) {
+    return _buildContent(context, null);
+  }
+
+  void _onMenuItemTap(BuildContext context, int index) {
+    switch (index) {
+      case 0:
+        context.pushNamed(RouteNames.lease);
+      case 1:
+        context.pushNamed(RouteNames.rentOrders);
+      case 2:
+        context.pushNamed(RouteNames.paymentRecords);
+      case 3:
+        context.pushNamed(RouteNames.unlockRecords);
+      case 5:
+        context.pushNamed(RouteNames.repairs);
+    }
   }
 }
 
 class _LockStatusChip extends StatelessWidget {
-  const _LockStatusChip({required this.lock});
+  const _LockStatusChip({required this.lock, this.leaseInvalid = false});
 
   final LockInfo? lock;
+  final bool leaseInvalid;
 
   @override
   Widget build(BuildContext context) {
-    final hasLock = lock != null;
-    final label = lock?.statusLabel ?? '未绑定门锁';
-    final iconColor = hasLock && lock!.isOnline && !lock!.isLowBattery
+    final hasLock = lock != null && !leaseInvalid;
+    final label = leaseInvalid ? '租约已失效' : lock?.statusLabel ?? '未绑定门锁';
+    final iconColor = leaseInvalid
+        ? AppColors.textMuted
+        : hasLock && lock!.isOnline && !lock!.isLowBattery
         ? AppColors.secondary
         : AppColors.warning;
-    final bgColor = hasLock && lock!.isOnline && !lock!.isLowBattery
+    final bgColor = leaseInvalid
+        ? const Color(0xFFF5F5F5)
+        : hasLock && lock!.isOnline && !lock!.isLowBattery
         ? const Color(0xFFE3FAF4)
         : const Color(0xFFFFF4E5);
-    final textColor = hasLock && lock!.isOnline && !lock!.isLowBattery
+    final textColor = leaseInvalid
+        ? AppColors.textMuted
+        : hasLock && lock!.isOnline && !lock!.isLowBattery
         ? AppColors.secondary
         : AppColors.warning;
 
@@ -391,86 +513,6 @@ class _LockStatusChip extends StatelessWidget {
       ),
       backgroundColor: bgColor,
       side: BorderSide.none,
-    );
-  }
-}
-
-class _MenuGrid extends StatelessWidget {
-  const _MenuGrid();
-
-  @override
-  Widget build(BuildContext context) {
-    final items = [
-      (Icons.description, '我的租约', AppColors.primary),
-      (Icons.receipt_long, '我的订单', AppColors.primary),
-      (Icons.payments, '支付记录', AppColors.secondary),
-      (Icons.lock_clock, '开门记录', AppColors.secondary),
-      (Icons.account_balance_wallet, '押金账单', AppColors.warning),
-      (Icons.build, '报修服务', AppColors.warning),
-      (Icons.badge, '实名认证', AppColors.primary),
-      (Icons.star, '我的收藏', const Color(0xFF7667F8)),
-      (Icons.settings, '设置', AppColors.iconMuted),
-      (Icons.help, '帮助中心', AppColors.primary),
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        boxShadow: AppShadows.card,
-      ),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: items.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4,
-          childAspectRatio: 1.18,
-          mainAxisSpacing: AppSpacing.xs,
-          crossAxisSpacing: AppSpacing.xs,
-        ),
-        itemBuilder: (context, index) {
-          final item = items[index];
-          VoidCallback? onTap;
-
-          if (index == 0) {
-            onTap = () => context.pushNamed(RouteNames.lease);
-          } else if (index == 1) {
-            onTap = () => context.pushNamed(RouteNames.rentOrders);
-          } else if (index == 2) {
-            onTap = () => context.pushNamed(RouteNames.paymentRecords);
-          } else if (index == 3) {
-            onTap = () => context.pushNamed(RouteNames.unlockRecords);
-          } else if (index == 5) {
-            onTap = () => context.pushNamed(RouteNames.repairs);
-          } else if (index == 8) {
-            onTap = () => context.pushNamed(RouteNames.settings);
-          }
-
-          return InkWell(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            onTap: onTap,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(item.$1, color: item.$3, size: 24),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  item.$2,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          );
-        },
-      ),
     );
   }
 }

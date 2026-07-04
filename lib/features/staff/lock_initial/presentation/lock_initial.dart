@@ -42,8 +42,13 @@ class _LockInitialState extends ConsumerState<LockInitial> {
   @override
   void dispose() {
     _scanTimer?.cancel();
+    _scanTimer = null;
     unawaited(_ttlockService.stopScanning());
-    ref.read(nearbyLocksProvider.notifier).onScanStopped();
+    try {
+      ref.read(nearbyLocksProvider.notifier).onScanStopped();
+    } on StateError catch (_) {
+      // ref 已失效（如在 StatefulShellRoute 中因路由重定向导致提前 dispose），忽略
+    }
     super.dispose();
   }
 
@@ -311,8 +316,15 @@ class _LockInitialState extends ConsumerState<LockInitial> {
       await _ttlockService.stopScanning();
     } catch (_) {}
 
+    if (!mounted) return;
+
     AppLoggerDebug.lock('扫描已停止');
-    ref.read(nearbyLocksProvider.notifier).onScanStopped();
+    try {
+      ref.read(nearbyLocksProvider.notifier).onScanStopped();
+    } on StateError catch (_) {
+      // ref 已失效，忽略
+      return;
+    }
 
     // 扫描停止后，自动查询已初始化门锁的后端记录
     if (mounted) {

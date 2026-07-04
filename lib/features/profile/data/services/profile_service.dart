@@ -63,9 +63,7 @@ class ProfileService {
   }
 
   /// 设置密码（首次，无需旧密码）
-  Future<void> setPassword({
-    required String newPassword,
-  }) async {
+  Future<void> setPassword({required String newPassword}) async {
     final result = await apiClient.put(
       '/profile/password/set',
       data: {'newPassword': newPassword},
@@ -187,5 +185,93 @@ class ProfileService {
     if (data is! Map<String, dynamic>) return null;
 
     return fromJson(data);
+  }
+
+  /// 更新当前用户资料（昵称、头像 URL），未传字段保持不变。
+  Future<Map<String, dynamic>> updateProfile({
+    String? nickname,
+    String? avatarUrl,
+  }) async {
+    final Map<String, dynamic> requestData = {};
+    if (nickname != null) requestData['nickname'] = nickname;
+    if (avatarUrl != null) requestData['avatarUrl'] = avatarUrl;
+
+    final result = await apiClient.put('/profile', data: requestData);
+    return result.when(
+      success: (response) {
+        final body = response.data;
+        if (body is Map<String, dynamic>) {
+          final code = body['code'] as int? ?? 0;
+          final message = body['message'] as String? ?? '';
+          if (code != 200) {
+            throw ApiException(
+              type: ApiExceptionType.server,
+              message: message,
+              statusCode: code,
+            );
+          }
+          final data = body['data'];
+          if (data is Map<String, dynamic>) return data;
+        }
+        throw const ApiException(
+          type: ApiExceptionType.server,
+          message: '更新资料失败',
+        );
+      },
+      failure: (message, error) {
+        throw error is ApiException
+            ? error
+            : ApiException(
+                type: ApiExceptionType.unknown,
+                message: message,
+                cause: error,
+              );
+      },
+    );
+  }
+
+  /// 上传头像文件（不超过 5MB），返回更新后的头像 URL。
+  Future<String> uploadAvatar(String filePath) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath),
+    });
+    final result = await apiClient.post(
+      '/profile/avatar',
+      data: formData,
+      options: Options(headers: {'Content-Type': 'multipart/form-data'}),
+    );
+    return result.when(
+      success: (response) {
+        final body = response.data;
+        if (body is Map<String, dynamic>) {
+          final code = body['code'] as int? ?? 0;
+          final message = body['message'] as String? ?? '';
+          if (code != 200) {
+            throw ApiException(
+              type: ApiExceptionType.server,
+              message: message,
+              statusCode: code,
+            );
+          }
+          final data = body['data'];
+          if (data is Map<String, dynamic>) {
+            return data['avatarUrl'] as String? ?? '';
+          }
+        }
+        throw const ApiException(
+          type: ApiExceptionType.server,
+          message: '头像上传失败',
+        );
+      },
+      failure: (message, error) {
+        throw error is ApiException
+            ? error
+            : ApiException(
+                type: ApiExceptionType.unknown,
+                message: message,
+                cause: error,
+              );
+      },
+    );
   }
 }

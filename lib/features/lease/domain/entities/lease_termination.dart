@@ -65,7 +65,11 @@ class TerminationApplication {
     );
   }
 
-  static String _string(Map<String, dynamic> json, List<String> keys, {String fallback = ''}) {
+  static String _string(
+    Map<String, dynamic> json,
+    List<String> keys, {
+    String fallback = '',
+  }) {
     for (final key in keys) {
       final value = json[key];
       if (value != null && value.toString().isNotEmpty) return value.toString();
@@ -110,4 +114,3 @@ class LeaseTerminationRequest {
     return '${date.year}-${two(date.month)}-${two(date.day)}';
   }
 }
-

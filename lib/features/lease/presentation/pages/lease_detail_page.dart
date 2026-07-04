@@ -311,9 +311,11 @@ class _SmartLockPermissionCard extends ConsumerWidget {
   static LeaseLockPermissionStatus _statusFromLockData(
     TenantLockUnlockData data,
   ) {
+    // 租约失效优先判断
+    if (data.isLeaseInvalid) return LeaseLockPermissionStatus.expired;
     return switch (data.permissionStatus.toUpperCase()) {
       'ACTIVE' => LeaseLockPermissionStatus.active,
-      'EXPIRED' => LeaseLockPermissionStatus.expired,
+      'EXPIRED' || 'LEASE_INVALID' => LeaseLockPermissionStatus.expired,
       'REVOKED' || 'DISABLED' => LeaseLockPermissionStatus.revoked,
       _ =>
         data.isActive

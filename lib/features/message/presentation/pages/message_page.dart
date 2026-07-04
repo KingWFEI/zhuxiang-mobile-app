@@ -76,7 +76,7 @@ class _MessagePageState extends ConsumerState<MessagePage> {
               ),
               child: const AppLogo(),
             ),
-            SizedBox(height:15  ),
+            SizedBox(height: 15),
             SizedBox(
               height: 34,
               child: Row(
@@ -369,10 +369,7 @@ class _CategoryChip extends StatelessWidget {
             ),
             if (unreadCount > 0) ...[
               const SizedBox(width: AppSpacing.xs),
-              _UnreadBadge(
-                count: unreadCount,
-                active: active,
-              ),
+              _UnreadBadge(count: unreadCount, active: active),
             ],
           ],
         ),
