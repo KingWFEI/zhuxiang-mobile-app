@@ -198,7 +198,9 @@ class LockApiService {
         final code = body?['code'] as int? ?? 0;
         if (code == 404 || body?['data'] == null) return null;
         if (code == 200 && body!['data'] != null) {
-          return LockByMacResponse.fromJson(body['data'] as Map<String, dynamic>);
+          return LockByMacResponse.fromJson(
+            body['data'] as Map<String, dynamic>,
+          );
         }
         return null;
       },
@@ -227,7 +229,9 @@ class LockApiService {
 
   /// 获取蓝牙开锁数据
   Future<UnlockDataResponse> getUnlockData(String smartLockId) async {
-    final result = await _apiClient.get('/admin/locks/$smartLockId/unlock-data');
+    final result = await _apiClient.get(
+      '/admin/locks/$smartLockId/unlock-data',
+    );
     return result.unwrapData(UnlockDataResponse.fromJson);
   }
 }

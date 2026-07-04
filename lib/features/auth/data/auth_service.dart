@@ -16,6 +16,7 @@ class AuthService {
     );
     return result.unwrapData(SmsCodeResult.fromJson);
   }
+
   // 验证码登录/注册
   Future<AuthResult> loginByCode({
     required String phone,
@@ -39,6 +40,7 @@ class AuthService {
     );
     return result.unwrapData(AuthResult.fromJson);
   }
+
   // 注册
   Future<AuthResult> register({
     required String phone,
@@ -57,6 +59,7 @@ class AuthService {
     );
     return result.unwrapData(AuthResult.fromJson);
   }
+
   // 刷新Token
   Future<TokenResult> refresh(String refreshToken) async {
     final result = await _apiClient.post(

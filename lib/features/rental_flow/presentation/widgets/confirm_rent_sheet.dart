@@ -27,7 +27,7 @@ class ConfirmRentSheet extends ConsumerStatefulWidget {
 
 class _ConfirmRentSheetState extends ConsumerState<ConfirmRentSheet> {
   bool _agreed = false;
-  DateTime _startDate = DateTime(2026, 7, 1);
+  DateTime _startDate = DateTime.now();
   int _leaseMonths = 12;
   String _paymentMethod = '月付';
   int _tenantCount = 1;
@@ -204,12 +204,14 @@ class _ConfirmRentSheetState extends ConsumerState<ConfirmRentSheet> {
   }
 
   Future<void> _pickStartDate() async {
+    final now = DateTime.now();
+    final initialDate = _startDate.isBefore(now) ? now : _startDate;
     final picked = await showDatePicker(
       context: context,
       locale: const Locale('zh', 'CN'),
-      initialDate: _startDate,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDate: initialDate,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
     );
     if (picked == null || !mounted) return;
     setState(() => _startDate = picked);

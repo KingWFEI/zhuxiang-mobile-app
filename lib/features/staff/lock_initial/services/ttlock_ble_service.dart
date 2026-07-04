@@ -14,19 +14,22 @@ abstract interface class TtlockBleServiceContract {
   Future<void> startScanning({
     required void Function(ScannedLockDevice device) onDeviceFound,
     bool requestPermissions = true,
+    Duration notifyInterval = const Duration(seconds: 1),
   });
 
   Future<void> stopScanning();
 
   Future<bool> requestBlePermissions();
+
+  Future<bool> isBluetoothEnabled();
 }
 
 class TtlockBleService implements TtlockBleServiceContract {
-  static const Duration _deviceNotifyInterval = Duration(seconds: 1);
   static const int _rssiChangeThreshold = 6;
 
   final Map<String, ScannedLockDevice> _lastNotifiedDevices = {};
   final Map<String, DateTime> _lastNotifiedAt = {};
+  Duration _deviceNotifyInterval = const Duration(seconds: 1);
 
   @override
   Future<void> init() async {
@@ -67,6 +70,7 @@ class TtlockBleService implements TtlockBleServiceContract {
   Future<void> startScanning({
     required void Function(ScannedLockDevice device) onDeviceFound,
     bool requestPermissions = true,
+    Duration notifyInterval = const Duration(seconds: 1),
   }) async {
     final granted = !requestPermissions || await requestBlePermissions();
 
@@ -74,6 +78,7 @@ class TtlockBleService implements TtlockBleServiceContract {
       debugPrint('蓝牙扫描权限未授权');
       return;
     }
+    _deviceNotifyInterval = notifyInterval;
     _resetScanCache();
 
     TTLock.startScanLock((scanModel) {
@@ -82,6 +87,21 @@ class TtlockBleService implements TtlockBleServiceContract {
         onDeviceFound(device);
       }
     });
+  }
+
+  @override
+  Future<bool> isBluetoothEnabled() async {
+    if (!Platform.isAndroid && !Platform.isIOS) return false;
+    final completer = Completer<bool>();
+    TTLock.getBluetoothState((state) {
+      if (!completer.isCompleted) {
+        completer.complete(state == TTBluetoothState.turnOn);
+      }
+    });
+    return completer.future.timeout(
+      const Duration(seconds: 2),
+      onTimeout: () => false,
+    );
   }
 
   @override

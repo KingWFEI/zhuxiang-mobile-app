@@ -90,8 +90,9 @@ class DateTimeUtils {
       var timePart = v.substring(tIndex + 1);
       final plus = timePart.indexOf('+');
       final minus = timePart.lastIndexOf('-');
-      final tzIndex =
-          plus > 0 ? plus : (minus > 0 ? minus : timePart.indexOf('Z'));
+      final tzIndex = plus > 0
+          ? plus
+          : (minus > 0 ? minus : timePart.indexOf('Z'));
       if (tzIndex > 0) timePart = timePart.substring(0, tzIndex);
 
       final dt = DateTime.tryParse('${datePart}T$timePart');

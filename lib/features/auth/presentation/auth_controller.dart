@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../core/constants/storage_keys.dart';
 import '../../../core/storage/guest_mode_storage.dart';
 import '../../../core/storage/storage_service.dart';
 import '../../../core/storage/token_storage.dart';
@@ -67,14 +68,19 @@ class AuthState {
 
   /// 当前登录用户，null 表示未登录
   final AuthUser? user;
+
   /// 是否正在执行登录/注册/登出等操作
   final bool isLoading;
+
   /// 是否正在发送短信验证码
   final bool isSendingCode;
+
   /// 会话恢复是否已完成（启动页使用）
   final bool isInitialized;
+
   /// 是否处于游客模式
   final bool isGuest;
+
   /// 最近一次操作的错误消息
   final String? errorMessage;
 
@@ -276,8 +282,11 @@ class AuthController extends StateNotifier<AuthState> {
     try {
       await _useCases.logout();
       await _guestModeStorage.clear();
+      await StorageService.localStorage.remove(StorageKeys.autoUnlockEnabled);
       state = AuthState(isInitialized: state.isInitialized);
     } catch (error) {
+      // 即使服务端退出失败，也必须关闭本机无感开锁偏好。
+      await StorageService.localStorage.remove(StorageKeys.autoUnlockEnabled);
       state = AuthState(
         isInitialized: state.isInitialized,
         errorMessage: _messageFromError(error),

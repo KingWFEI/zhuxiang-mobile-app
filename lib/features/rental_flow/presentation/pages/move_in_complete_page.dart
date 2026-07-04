@@ -118,11 +118,15 @@ class _MoveInCompletePageState extends ConsumerState<MoveInCompletePage> {
   Future<void> _openCurrentLeaseDetail(String? houseId) async {
     final leaseId = await _findCurrentLeaseId(houseId: houseId);
     if (!mounted) return;
+    // 先回到首页（清空租房流程栈），再 push 租约详情，确保侧滑返回时回到首页而非退出 app
+    final router = GoRouter.of(context);
     if (leaseId == null) {
-      context.goNamed(RouteNames.lease);
+      router.goNamed(RouteNames.home);
+      router.pushNamed(RouteNames.lease);
       return;
     }
-    context.goNamed(
+    router.goNamed(RouteNames.home);
+    router.pushNamed(
       RouteNames.leaseDetail,
       pathParameters: {'leaseId': leaseId},
     );

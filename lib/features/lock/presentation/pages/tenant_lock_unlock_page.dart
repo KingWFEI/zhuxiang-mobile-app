@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +12,8 @@ import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/utils/date_time_utils.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../auth/presentation/providers/auth_controller.dart';
+import '../../../profile/data/providers/profile_providers.dart';
+import '../../application/auto_unlock_controller.dart';
 import '../../application/tenant_lock_unlock_controller.dart';
 import '../../data/models/tenant_lock_unlock_data.dart';
 import '../../data/providers/tenant_lock_providers.dart';
@@ -19,17 +23,85 @@ const _brandBlue = Color(0xFF2778F6);
 const _softBlue = Color(0xFFE9F2FF);
 const _mutedText = Color(0xFF8C97AA);
 
-class TenantLockUnlockPage extends ConsumerWidget {
+class TenantLockUnlockPage extends ConsumerStatefulWidget {
   const TenantLockUnlockPage({required this.leaseId, super.key});
 
   final String leaseId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TenantLockUnlockPage> createState() =>
+      _TenantLockUnlockPageState();
+}
+
+class _TenantLockUnlockPageState extends ConsumerState<TenantLockUnlockPage>
+    with WidgetsBindingObserver {
+  String get leaseId => widget.leaseId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final controller = ref.read(autoUnlockProvider(leaseId).notifier);
+    if (state == AppLifecycleState.resumed) {
+      unawaited(controller.onAppForegrounded());
+    } else {
+      unawaited(controller.onAppBackgrounded());
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    // provider 为 autoDispose；控制器 dispose 会立即停止扫描并清空 lockData。
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final provider = tenantLockUnlockProvider(leaseId);
     final state = ref.watch(provider);
+    final autoProvider = autoUnlockProvider(leaseId);
+    final autoState = ref.watch(autoProvider);
     ref.listen(provider, (previous, next) {
       _showOperationToast(context, previous, next);
+      // 检测到租约失效时，刷新我的页面的门锁卡片数据
+      if (next.isLeaseInvalid && previous?.isLeaseInvalid != true) {
+        ref.invalidate(currentHomeProvider);
+      }
+    });
+    ref.listen(autoProvider, (previous, next) {
+      if (next.enabled && previous?.enabled != true) {
+        unawaited(
+          ref
+              .read(tenantLockUnlockProvider(leaseId).notifier)
+              .stopScanForAutoUnlock(),
+        );
+      }
+      if (next.targetSeen && previous?.targetSeen != true) {
+        ref
+            .read(tenantLockUnlockProvider(leaseId).notifier)
+            .acceptTargetMatchFromAutoUnlock();
+      }
+      if (previous?.status != next.status && context.mounted) {
+        if (next.status == AutoUnlockState.success) {
+          AppToast.show(context, '无感开锁成功', type: AppToastType.success);
+        } else if (next.status == AutoUnlockState.failed) {
+          AppToast.show(context, next.message, type: AppToastType.error);
+        }
+      }
+    });
+    ref.listen(authControllerProvider, (previous, next) {
+      if (previous?.isLoggedIn == true && !next.isLoggedIn) {
+        unawaited(
+          ref
+              .read(autoUnlockProvider(leaseId).notifier)
+              .disable(clearPreference: true),
+        );
+      }
     });
 
     return Scaffold(
@@ -65,12 +137,130 @@ class TenantLockUnlockPage extends ConsumerWidget {
         ),
         child: SafeArea(
           top: false,
-          child: state.unlockData == null
+          child: state.isLeaseInvalid
+              ? _buildLeaseInvalidView(context, ref, state)
+              : state.unlockData == null
               ? _buildDataState(context, ref, state)
-              : _buildUnlockContent(ref, state),
+              : _buildUnlockContent(ref, state, autoState),
         ),
       ),
     );
+  }
+
+  /// 租约失效时的专用提示页面。
+  Widget _buildLeaseInvalidView(
+    BuildContext context,
+    WidgetRef ref,
+    TenantLockUnlockState state,
+  ) {
+    final data = state.unlockData;
+    final leaseStatusLabel = _leaseStatusLabel(data?.leaseStatus ?? '');
+
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.all(AppSpacing.xl),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xl,
+          vertical: AppSpacing.xxl,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x120E4A9B),
+              blurRadius: 24,
+              offset: Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 82,
+              height: 82,
+              decoration: const BoxDecoration(
+                color: Color(0xFFF5F5F5),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.lock_outline_rounded,
+                color: Color(0xFFB0B8C5),
+                size: 36,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              '门锁功能不可用',
+              style: AppTextStyles.titleMedium.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              state.message ?? '当前租约已失效，门锁功能不可用',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.xs,
+              ),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                '租约状态：$leaseStatusLabel',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            SizedBox(
+              width: 156,
+              height: 46,
+              child: OutlinedButton(
+                onPressed: () {
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.goNamed(RouteNames.home);
+                  }
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.textSecondary,
+                  side: const BorderSide(color: Color(0xFFD0D5DD)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(23),
+                  ),
+                ),
+                child: const Text('返回'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 将后端租约状态转为用户可读的短标签。
+  String _leaseStatusLabel(String status) {
+    return switch (status.toUpperCase()) {
+      'ACTIVE' => '履约中',
+      'PENDING' || 'EFFECTIVE' => '待生效',
+      'TERMINATED' => '已退租',
+      'EXPIRED' => '已到期',
+      'CHECKED_OUT' => '已退租',
+      'CANCELLED' => '已取消',
+      _ => status.isEmpty ? '未知' : status,
+    };
   }
 
   /// 展示接口加载或接口异常状态。
@@ -161,7 +351,11 @@ class TenantLockUnlockPage extends ConsumerWidget {
   }
 
   /// 展示主开锁卡片、门锁信息和靠近提醒。
-  Widget _buildUnlockContent(WidgetRef ref, TenantLockUnlockState state) {
+  Widget _buildUnlockContent(
+    WidgetRef ref,
+    TenantLockUnlockState state,
+    AutoUnlockViewState autoState,
+  ) {
     final data = state.unlockData!;
     return ListView(
       padding: const EdgeInsets.fromLTRB(
@@ -186,6 +380,11 @@ class TenantLockUnlockPage extends ConsumerWidget {
               : null,
         ),
         const SizedBox(height: AppSpacing.lg),
+        _AutoUnlockCard(
+          state: autoState,
+          onChanged: (enabled) => _toggleAutoUnlock(enabled),
+        ),
+        const SizedBox(height: AppSpacing.md),
         _PasscodeCard(data: data, state: state, ref: ref),
         const SizedBox(height: AppSpacing.md),
         _LockInfoCard(data: data),
@@ -193,6 +392,41 @@ class TenantLockUnlockPage extends ConsumerWidget {
         const _NearbyTipCard(),
       ],
     );
+  }
+
+  Future<void> _toggleAutoUnlock(bool enabled) async {
+    final autoController = ref.read(autoUnlockProvider(leaseId).notifier);
+    final manualController = ref.read(
+      tenantLockUnlockProvider(leaseId).notifier,
+    );
+    if (!enabled) {
+      await autoController.disable();
+      if (!ref.read(tenantLockUnlockProvider(leaseId)).targetMatched) {
+        await manualController.startScan();
+      }
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('开启无感开锁？'),
+        content: const Text('无感开锁只在当前门锁页面且 App 位于前台时生效。离开页面、锁屏或切到后台会立即停止蓝牙扫描。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('确认开启'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await manualController.stopScanForAutoUnlock();
+    await autoController.enable();
   }
 
   /// 展示蓝牙开锁帮助说明。
@@ -255,6 +489,186 @@ class TenantLockUnlockPage extends ConsumerWidget {
       return state.message ?? '开锁失败，请靠近门锁后重试';
     }
     return '${state.message ?? '开锁失败'}（错误码：$code）';
+  }
+}
+
+class _AutoUnlockCard extends StatelessWidget {
+  const _AutoUnlockCard({required this.state, required this.onChanged});
+
+  final AutoUnlockViewState state;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color, icon) = _statusPresentation(state);
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D0E4A9B),
+            blurRadius: 18,
+            offset: Offset(0, 7),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(icon, color: color),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '无感开锁',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      '仅在当前页面前台生效',
+                      style: TextStyle(color: _mutedText, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              Switch.adaptive(
+                value: state.enabled,
+                onChanged: onChanged,
+                activeTrackColor: _brandBlue,
+              ),
+            ],
+          ),
+          if (state.status != AutoUnlockState.disabled) ...[
+            const SizedBox(height: AppSpacing.md),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          state.status == AutoUnlockState.cooldown
+                              ? '$label · ${state.cooldownRemaining} 秒'
+                              : label,
+                          style: TextStyle(
+                            color: color,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          state.message,
+                          style: const TextStyle(
+                            color: Color(0xFF667085),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (state.lastRssi != null &&
+                      state.status == AutoUnlockState.scanning)
+                    Text(
+                      '${state.lastRssi} / ${state.triggerRssi ?? -60} dBm',
+                      style: const TextStyle(
+                        color: Color(0xFF667085),
+                        fontSize: 11,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  (String, Color, IconData) _statusPresentation(AutoUnlockViewState state) {
+    return switch (state.status) {
+      AutoUnlockState.disabled => (
+        '未开启',
+        const Color(0xFF98A2B3),
+        Icons.sensors_off_rounded,
+      ),
+      AutoUnlockState.idle || AutoUnlockState.checking => (
+        '检查中',
+        _brandBlue,
+        Icons.manage_search_rounded,
+      ),
+      AutoUnlockState.scanning => (
+        '扫描中',
+        _brandBlue,
+        Icons.bluetooth_searching_rounded,
+      ),
+      AutoUnlockState.unlocking => ('开锁中', _brandBlue, Icons.lock_open_rounded),
+      AutoUnlockState.success => (
+        '开锁成功',
+        const Color(0xFF12A66A),
+        Icons.check_circle_rounded,
+      ),
+      AutoUnlockState.failed => (
+        '开锁失败',
+        AppColors.error,
+        Icons.error_outline_rounded,
+      ),
+      AutoUnlockState.cooldown => (
+        '冷却中',
+        const Color(0xFF7A5AF8),
+        Icons.timer_outlined,
+      ),
+      AutoUnlockState.stopped => (
+        '已停止',
+        const Color(0xFF98A2B3),
+        Icons.stop_circle_outlined,
+      ),
+      AutoUnlockState.blocked when state.enabled => (
+        '已暂停',
+        AppColors.warning,
+        Icons.pause_circle_outline_rounded,
+      ),
+      AutoUnlockState.blocked => (
+        '异常',
+        AppColors.error,
+        Icons.warning_amber_rounded,
+      ),
+    };
   }
 }
 

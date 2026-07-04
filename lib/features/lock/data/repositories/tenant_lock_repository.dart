@@ -9,7 +9,16 @@ abstract interface class TenantLockRepositoryContract {
   Future<TenantPasscode> retryPasscode(String leaseId);
 }
 
-class TenantLockRepository implements TenantLockRepositoryContract {
+abstract interface class AutoUnlockRepositoryContract {
+  Future<TenantLockUnlockData> getUnlockData(String leaseId);
+  Future<void> recordUnlock(
+    String leaseId,
+    UnlockRecordRequest request,
+  );
+}
+
+class TenantLockRepository
+    implements TenantLockRepositoryContract, AutoUnlockRepositoryContract {
   const TenantLockRepository(this.apiClient);
 
   final ApiClient apiClient;
@@ -24,13 +33,36 @@ class TenantLockRepository implements TenantLockRepositoryContract {
     return result.unwrapData(TenantLockUnlockData.fromJson);
   }
 
+  /// 上报开锁记录（手动蓝牙 / 无感自动共用）。
+  @override
+  Future<void> recordUnlock(
+    String leaseId,
+    UnlockRecordRequest request,
+  ) async {
+    final encodedLeaseId = Uri.encodeComponent(leaseId);
+    final result = await apiClient.post(
+      '/leases/$encodedLeaseId/lock/unlock-records',
+      data: request.toJson(),
+    );
+    result.when(
+      success: (response) {
+        final body = response.data;
+        if (body is Map<String, dynamic> &&
+            (body['code'] as int? ?? 0) != 200) {
+          throw StateError(body['message']?.toString() ?? '开锁记录上报失败');
+        }
+      },
+      failure: (message, error) {
+        throw error ?? StateError(message);
+      },
+    );
+  }
+
   /// 获取当前租约期限线下开门密码。
   @override
   Future<TenantPasscode> getPasscode(String leaseId) async {
     final encodedLeaseId = Uri.encodeComponent(leaseId);
-    final result = await apiClient.get(
-      '/leases/$encodedLeaseId/lock/passcode',
-    );
+    final result = await apiClient.get('/leases/$encodedLeaseId/lock/passcode');
     return result.unwrapData(TenantPasscode.fromJson);
   }
 
