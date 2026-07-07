@@ -49,6 +49,52 @@ class HouseSearchNotifier extends Notifier<HouseSearchState> {
     unawaited(search());
   }
 
+  /// 更新区域筛选并搜索。
+  void updateRegion(String region) {
+    _debounceTimer?.cancel();
+    state = state.copyWith(region: region, clearError: true);
+    unawaited(search());
+  }
+
+  /// 更新价格范围并搜索。
+  void updatePriceRange(int minPrice, int maxPrice) {
+    _debounceTimer?.cancel();
+    state = state.copyWith(minPrice: minPrice, maxPrice: maxPrice, clearError: true);
+    unawaited(search());
+  }
+
+  /// 更新户型筛选并搜索。
+  void updateRoomType(String roomType) {
+    _debounceTimer?.cancel();
+    state = state.copyWith(roomType: roomType, clearError: true);
+    unawaited(search());
+  }
+
+  /// 切换快捷标签（近地铁、整租、可月付等），支持多选，立即搜索。
+  void toggleTag(String tag) {
+    _debounceTimer?.cancel();
+    final tags = state.activeTags.toSet();
+    if (!tags.add(tag)) tags.remove(tag);
+    state = state.copyWith(activeTags: tags, clearError: true);
+    unawaited(search());
+  }
+
+  /// 更新额外筛选条件（来自"更多"BottomSheet：排序、装修、朝向等）。
+  void updateExtraFilters({
+    required String sort,
+    required String decoration,
+    required String orientation,
+  }) {
+    _debounceTimer?.cancel();
+    state = state.copyWith(
+      sort: sort,
+      decoration: decoration,
+      orientation: orientation,
+      clearError: true,
+    );
+    unawaited(search());
+  }
+
   /// 批量更新筛选条件（区域、价格、户型、排序）并重新搜索。
   void updateFilter({
     required String region,
@@ -216,6 +262,9 @@ class HouseSearchNotifier extends Notifier<HouseSearchState> {
       if (value.minPrice > 0) 'minPrice': value.minPrice,
       if (value.maxPrice > 0) 'maxPrice': value.maxPrice,
       if (value.roomType.isNotEmpty) 'roomType': value.roomType,
+      if (value.activeTags.isNotEmpty) 'tags': value.activeTags.toList(),
+      if (value.decoration.isNotEmpty) 'decoration': value.decoration,
+      if (value.orientation.isNotEmpty) 'orientation': value.orientation,
       'sort': value.sort,
       'page': value.page,
       'pageSize': _pageSize,

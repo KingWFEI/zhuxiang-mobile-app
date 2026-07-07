@@ -10,6 +10,7 @@ class CurrentHome {
     required this.leaseStatus,
     this.lockId,
     required this.lockStatus,
+    this.address = '',
   });
 
   factory CurrentHome.fromJson(Map<String, dynamic> json) {
@@ -23,6 +24,7 @@ class CurrentHome {
       leaseStatus: json['leaseStatus'] as String? ?? '',
       lockId: json['lockId'] as String?,
       lockStatus: json['lockStatus'] as String? ?? 'unknown',
+      address: json['address'] as String? ?? '',
     );
   }
 
@@ -35,10 +37,11 @@ class CurrentHome {
   final String leaseStatus;
   final String? lockId;
   final String lockStatus;
+  final String address;
 
   String get addressLabel => [
-    if (building.isNotEmpty) building,
-    if (unit.isNotEmpty) unit,
+    if (building.isNotEmpty) '${building}栋',
+    if (unit.isNotEmpty) '${unit}单元',
     room,
   ].where((e) => e.isNotEmpty).join('');
 }

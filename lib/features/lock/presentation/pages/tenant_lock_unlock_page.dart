@@ -727,9 +727,11 @@ class _UnlockHeroCard extends StatelessWidget {
                           size: 30,
                         ),
                         const SizedBox(width: AppSpacing.sm),
+
+                        
                         Expanded(
                           child: Text(
-                            data.roomName.isEmpty ? '当前房间' : data.roomName,
+                            data.room.isEmpty ? '当前房间' : data.formattedRoomName,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(

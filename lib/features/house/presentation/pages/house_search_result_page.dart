@@ -6,7 +6,10 @@ import 'package:zhuxiang_app/features/house/data/models/house.dart';
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/widgets/app_toast.dart';
+import '../../../auth/presentation/providers/auth_controller.dart';
 import '../../application/house_search_notifier.dart';
+import '../../data/providers/house_providers.dart';
 import '../widgets/filter_bottom_sheet.dart';
 import '../widgets/house_card.dart';
 import '../widgets/house_filter_bar.dart';
@@ -28,7 +31,6 @@ class HouseSearchResultPage extends ConsumerStatefulWidget {
 class _HouseSearchResultPageState extends ConsumerState<HouseSearchResultPage> {
   final ScrollController _scrollController = ScrollController();
   final Set<String> _selectedQuickConditions = <String>{};
-  final Map<String, bool> _favoriteStates = <String, bool>{};
 
   @override
   void initState() {
@@ -69,7 +71,6 @@ class _HouseSearchResultPageState extends ConsumerState<HouseSearchResultPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(houseSearchProvider);
     final notifier = ref.read(houseSearchProvider.notifier);
-    final sortText = houseSortLabels[state.sort] ?? '综合排序';
 
     return PopScope(
       canPop: false,
@@ -100,7 +101,6 @@ class _HouseSearchResultPageState extends ConsumerState<HouseSearchResultPage> {
                       onBack: _goBack,
                       onSearchTap: _openSearchPage,
                       onClear: _openSearchPage,
-                      onFilterTap: _openFilterPage,
                     ),
                   ),
                 ),
@@ -113,11 +113,16 @@ class _HouseSearchResultPageState extends ConsumerState<HouseSearchResultPage> {
                   ),
                   sliver: SliverToBoxAdapter(
                     child: HouseFilterBar(
+                      region: state.region,
+                      minPrice: state.minPrice,
+                      maxPrice: state.maxPrice,
+                      roomType: state.roomType,
+                      sort: state.sort,
                       onRegionTap: _openFilterPage,
                       onRentTap: _openFilterPage,
                       onRoomTap: _openFilterPage,
-                      onMoreTap: _openFilterPage,
                       onSortTap: _showSortSheet,
+                      onMoreTap: _openFilterPage,
                     ),
                   ),
                 ),
@@ -142,11 +147,7 @@ class _HouseSearchResultPageState extends ConsumerState<HouseSearchResultPage> {
                     AppSpacing.md,
                   ),
                   sliver: SliverToBoxAdapter(
-                    child: HouseListHeader(
-                      countText: '${state.totalCount}',
-                      sortText: sortText,
-                      onSortTap: _showSortSheet,
-                    ),
+                    child: HouseListHeader(countText: '${state.totalCount}'),
                   ),
                 ),
                 if (state.isLoading && state.houses.isEmpty)
@@ -181,8 +182,7 @@ class _HouseSearchResultPageState extends ConsumerState<HouseSearchResultPage> {
                         return HouseCard(
                           key: ValueKey(house.id),
                           house: house,
-                          isFavorite:
-                              _favoriteStates[house.id] ?? house.isFavorite,
+                          isFavorite: house.isFavorite,
                           onFavoriteTap: () => _toggleFavorite(house),
                           onTap: () => _openDetail(house),
                         );
@@ -254,13 +254,22 @@ class _HouseSearchResultPageState extends ConsumerState<HouseSearchResultPage> {
     // TODO: 后续将快捷条件转换为真实接口参数。
   }
 
-  /// 收藏只更新本地状态，后续对接收藏接口。
-  void _toggleFavorite(House house) {
-    setState(() {
-      final current = _favoriteStates[house.id] ?? house.isFavorite;
-      _favoriteStates[house.id] = !current;
-    });
-    // TODO: 用户登录后调用收藏/取消收藏接口。
+  Future<void> _toggleFavorite(House house) async {
+    final user = ref.read(authControllerProvider).user;
+    if (user == null) {
+      context.pushNamed(RouteNames.login);
+      return;
+    }
+    try {
+      if (house.isFavorite) {
+        await ref.read(houseServiceProvider).removeFavorite(house.id);
+      } else {
+        await ref.read(houseServiceProvider).addFavorite(house.id);
+      }
+      ref.invalidate(houseSearchProvider);
+    } on Object {
+      if (mounted) AppToast.show(context, '操作失败，请稍后重试', type: AppToastType.error);
+    }
   }
 
   void _openSearchPage() => context.pushNamed(RouteNames.houseSearch);

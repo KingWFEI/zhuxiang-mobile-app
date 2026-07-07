@@ -22,17 +22,23 @@ class ProfilePage extends ConsumerWidget {
     final authState = ref.watch(authControllerProvider);
     final user = authState.user;
 
+    Future<void> handleRefresh() async {
+      ref.invalidate(currentHomeProvider);
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.pageHorizontal,
-            AppSpacing.lg,
-            AppSpacing.pageHorizontal,
-            96,
-          ),
-          children: [
+        child: RefreshIndicator(
+          onRefresh: handleRefresh,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.pageHorizontal,
+              AppSpacing.lg,
+              AppSpacing.pageHorizontal,
+              96,
+            ),
+            children: [
             const _ProfileHeader(),
             const SizedBox(height: AppSpacing.lg),
             if (user == null)
@@ -64,6 +70,7 @@ class ProfilePage extends ConsumerWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -372,6 +379,13 @@ class _DashboardCard extends ConsumerWidget {
                               lock: lock,
                               leaseInvalid: lockInvalid,
                             ),
+                            // if (home?.address.isNotEmpty == true) ...[
+                            //   const SizedBox(height: AppSpacing.lg),
+                            //   Text(
+                            //     home!.address,
+                            //     style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
+                            //   ),
+                            // ],
                           ],
                         ),
                       ),
@@ -465,6 +479,8 @@ class _DashboardCard extends ConsumerWidget {
         context.pushNamed(RouteNames.unlockRecords);
       case 5:
         context.pushNamed(RouteNames.repairs);
+      case 7:
+        context.pushNamed(RouteNames.favoriteHouses);
     }
   }
 }

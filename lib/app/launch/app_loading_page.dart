@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/location/user_location_provider.dart';
 import '../../features/auth/presentation/auth_controller.dart';
 import '../router/role_navigation_config.dart';
 import '../router/route_paths.dart';
@@ -39,7 +40,11 @@ class _AppLoadingPageState extends ConsumerState<AppLoadingPage>
       _minimumLoadingFinished = true;
       _navigateWhenReady();
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) => _restoreSession());
+    // 启动阶段并行加载：会话恢复 + 后台定位
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _restoreSession();
+      ref.read(userLocationProvider.notifier).fetch();
+    });
   }
 
   Future<void> _restoreSession() async {

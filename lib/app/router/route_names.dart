@@ -36,6 +36,8 @@ class RouteNames {
   static const repairDetail = 'repairDetail';
   static const messageCenter = 'messageCenter';
   static const customerService = 'customerService';
+  static const customerServiceEnter = 'customerServiceEnter';
+  static const customerServiceChat = 'customerServiceChat';
   static const viewingAppointment = 'viewingAppointment';
   static const viewingDetail = 'viewingDetail';
   static const rentalApplication = 'rentalApplication';
@@ -50,4 +52,5 @@ class RouteNames {
   static const staffDebug = 'staffDebug';
   static const userAgreement = 'userAgreement';
   static const privacyPolicy = 'privacyPolicy';
+  static const favoriteHouses = 'favoriteHouses';
 }

@@ -8,6 +8,7 @@ import '../../../../core/constants/storage_keys.dart';
 import '../../../../core/network/api_client_provider.dart';
 import '../../../../core/storage/local_storage.dart';
 import '../../../../core/storage/storage_service.dart';
+import '../models/house_tag.dart';
 import '../services/house_service.dart';
 
 final localStorageProvider = Provider<LocalStorage>((ref) {
@@ -29,6 +30,12 @@ final houseDetailProvider =
       final service = ref.watch(houseServiceProvider);
       return service.getHouseDetail(houseId);
     });
+
+/// 房源快捷筛选标签（来自 GET /houses/tags）。
+final houseTagsProvider = FutureProvider<List<HouseTag>>((ref) async {
+  final service = ref.watch(houseServiceProvider);
+  return service.fetchTags();
+});
 
 /// 热门搜索关键词
 final hotKeywordsProvider = Provider<List<String>>((ref) {
