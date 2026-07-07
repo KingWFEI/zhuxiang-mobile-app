@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
 
@@ -12,7 +11,6 @@ class SearchResultHeader extends StatefulWidget {
     required this.onBack,
     required this.onSearchTap,
     required this.onClear,
-    required this.onFilterTap,
     super.key,
   });
 
@@ -20,7 +18,6 @@ class SearchResultHeader extends StatefulWidget {
   final VoidCallback onBack;
   final VoidCallback onSearchTap;
   final VoidCallback onClear;
-  final VoidCallback onFilterTap;
 
   @override
   State<SearchResultHeader> createState() => _SearchResultHeaderState();
@@ -104,15 +101,6 @@ class _SearchResultHeaderState extends State<SearchResultHeader> {
             ),
           ),
         ),
-        const SizedBox(width: AppSpacing.sm),
-        TextButton.icon(
-          onPressed: widget.onFilterTap,
-          style: TextButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-          ),
-          icon: const Icon(Icons.filter_alt_outlined, size: 20),
-          label: const Text('筛选'),
-        ),
       ],
     );
   }
@@ -174,64 +162,29 @@ class SearchResultQuickConditions extends StatelessWidget {
   }
 }
 
-/// 首页和结果页共用的房源数量、排序标题行。
+/// 首页和结果页共用的房源数量标题行。
 class HouseListHeader extends StatelessWidget {
-  const HouseListHeader({
-    required this.countText,
-    required this.sortText,
-    required this.onSortTap,
-    super.key,
-  });
+  const HouseListHeader({required this.countText, super.key});
 
   final String countText;
-  final String sortText;
-  final VoidCallback onSortTap;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text.rich(
-            TextSpan(
-              text: '共找到 ',
-              style: TextStyle(fontSize: 10, color: AppColors.textSecondary),
-              children: [
-                TextSpan(
-                  text: countText,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const TextSpan(text: ' 套房源'),
-              ],
+    return Text.rich(
+      TextSpan(
+        text: '共找到 ',
+        style: TextStyle(fontSize: 10, color: AppColors.textSecondary),
+        children: [
+          TextSpan(
+            text: countText,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w700,
             ),
           ),
-        ),
-        InkWell(
-          onTap: onSortTap,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          child: Padding(
-            padding: const EdgeInsets.only(top: 4, bottom: 2),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  sortText,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(width: 2),
-                const Icon(Icons.arrow_drop_down_rounded, size: 18),
-              ],
-            ),
-          ),
-        ),
-      ],
+          const TextSpan(text: ' 套房源'),
+        ],
+      ),
     );
   }
 }

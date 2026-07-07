@@ -4,7 +4,9 @@ class TenantLockUnlockData {
     required this.leaseId,
     required this.smartLockId,
     required this.houseName,
-    required this.roomName,
+    required this.room,
+    this.building = '',
+    this.unit = '',
     required this.lockName,
     required this.lockMac,
     required this.lockData,
@@ -32,7 +34,9 @@ class TenantLockUnlockData {
       leaseId: _string(json['leaseId']),
       smartLockId: _string(json['smartLockId']),
       houseName: _string(json['houseName']),
-      roomName: _string(json['roomName']),
+      room: _string(json['room']),
+      building: _string(json['building']),
+      unit: _string(json['unit']),
       lockName: _string(json['lockName']),
       lockMac: _string(json['lockMac']),
       lockData: _string(json['lockData']),
@@ -60,8 +64,20 @@ class TenantLockUnlockData {
   final String leaseId;
   final String smartLockId;
   final String houseName;
-  final String roomName;
+  final String room;
+  final String building;
+  final String unit;
   final String lockName;
+
+  /// 格式化为 "3栋2单元501" 样式。
+  String get formattedRoomName {
+    if (room.isEmpty) return '';
+    final parts = <String>[];
+    if (building.isNotEmpty) parts.add('$building栋');
+    if (unit.isNotEmpty) parts.add('$unit单元');
+    parts.add(room);
+    return parts.join('');
+  }
   final String lockMac;
   final String lockData;
   final int ttlockKeyId;
@@ -99,7 +115,9 @@ class TenantLockUnlockData {
       leaseId: leaseId,
       smartLockId: smartLockId,
       houseName: houseName,
-      roomName: roomName,
+      room: room,
+      building: building,
+      unit: unit,
       lockName: lockName,
       lockMac: lockMac,
       lockData: value,

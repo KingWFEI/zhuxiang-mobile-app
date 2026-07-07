@@ -30,8 +30,25 @@ class AppShell extends ConsumerWidget {
             ),
           )
         : 0;
+
+    final isTenantShell = tabs.any(
+      (tab) => tab.routeName == RouteNames.home,
+    );
+
     return Scaffold(
       body: navigationShell,
+      floatingActionButton: isTenantShell
+          ? FloatingActionButton(
+              onPressed: () =>
+                  context.pushNamed(RouteNames.customerServiceEnter),
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: const Icon(Icons.headset_mic,
+                  color: Colors.white, size: 24),
+            )
+          : null,
       bottomNavigationBar: _BottomTabBar(
         currentIndex: navigationShell.currentIndex,
         tabs: tabs,

@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>住享需要获取您的位置以便展示所在城市房源</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>住享需要使用蓝牙搜索附近门锁并完成一键开锁</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>

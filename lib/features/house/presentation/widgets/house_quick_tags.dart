@@ -4,21 +4,15 @@ import '../../../../app/theme/app_colors.dart';
 
 class HouseQuickTags extends StatelessWidget {
   const HouseQuickTags({
+    required this.tags,
     required this.selectedTags,
     required this.onTagTap,
     super.key,
   });
 
+  final List<QuickTagItem> tags;
   final Set<String> selectedTags;
   final ValueChanged<String> onTagTap;
-
-  static const List<_QuickTagItem> _tags = [
-    _QuickTagItem(label: '近地铁', icon: Icons.train_rounded),
-    _QuickTagItem(label: '整租', icon: Icons.apartment_rounded),
-    _QuickTagItem(label: '可月付', icon: Icons.event_available_rounded),
-    _QuickTagItem(label: '智能门锁', icon: Icons.lock_outline_rounded),
-    _QuickTagItem(label: '拎包入住', icon: Icons.inventory_2_outlined),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -27,17 +21,16 @@ class HouseQuickTags extends StatelessWidget {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
-        itemCount: _tags.length,
+        itemCount: tags.length,
         separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
-          final tag = _tags[index];
-          final isSelected = selectedTags.contains(tag.label);
+          final tag = tags[index];
+          final isSelected = selectedTags.contains(tag.value);
 
           return _QuickTagChip(
             label: tag.label,
-            icon: tag.icon,
             isSelected: isSelected,
-            onTap: () => onTagTap(tag.label),
+            onTap: () => onTagTap(tag.value),
           );
         },
       ),
@@ -45,16 +38,21 @@ class HouseQuickTags extends StatelessWidget {
   }
 }
 
+class QuickTagItem {
+  const QuickTagItem({required this.label, required this.value});
+
+  final String label;
+  final String value;
+}
+
 class _QuickTagChip extends StatelessWidget {
   const _QuickTagChip({
     required this.label,
-    required this.icon,
     required this.isSelected,
     required this.onTap,
   });
 
   final String label;
-  final IconData icon;
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -80,7 +78,7 @@ class _QuickTagChip extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           height: 26,
-          padding: const EdgeInsets.only(right: 5, left: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           decoration: BoxDecoration(
             color: backgroundColor,
             borderRadius: BorderRadius.circular(10),
@@ -93,30 +91,14 @@ class _QuickTagChip extends StatelessWidget {
               ),
             ],
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 12, color: AppColors.primary),
-              const SizedBox(width: 5),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10,
-                  // fontWeight: FontWeight.w600,
-                  color: textColor,
-                ),
-              ),
-            ],
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 10, color: textColor),
+            ),
           ),
         ),
       ),
     );
   }
-}
-
-class _QuickTagItem {
-  const _QuickTagItem({required this.label, required this.icon});
-
-  final String label;
-  final IconData icon;
 }

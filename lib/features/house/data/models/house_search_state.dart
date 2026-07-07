@@ -9,6 +9,9 @@ class HouseSearchState {
     this.maxPrice = 0,
     this.roomType = '',
     this.sort = 'default',
+    this.activeTags = const <String>{},
+    this.decoration = '',
+    this.orientation = '',
     this.page = 1,
     this.totalCount = 0,
     this.hasMore = true,
@@ -28,6 +31,9 @@ class HouseSearchState {
   final int maxPrice;
   final String roomType;
   final String sort;
+  final Set<String> activeTags;
+  final String decoration;
+  final String orientation;
 
   final int page;
   final int totalCount;
@@ -68,6 +74,9 @@ class HouseSearchState {
     int? maxPrice,
     String? roomType,
     String? sort,
+    Set<String>? activeTags,
+    String? decoration,
+    String? orientation,
     int? page,
     int? totalCount,
     bool? hasMore,
@@ -88,6 +97,9 @@ class HouseSearchState {
       maxPrice: maxPrice ?? this.maxPrice,
       roomType: roomType ?? this.roomType,
       sort: sort ?? this.sort,
+      activeTags: activeTags ?? this.activeTags,
+      decoration: decoration ?? this.decoration,
+      orientation: orientation ?? this.orientation,
       page: page ?? this.page,
       totalCount: totalCount ?? this.totalCount,
       hasMore: hasMore ?? this.hasMore,
