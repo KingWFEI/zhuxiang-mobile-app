@@ -1,0 +1,512 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Immersive Tour</title>
+  <link rel="stylesheet" href="pannellum/pannellum.css">
+  <script src="pannellum/pannellum.js"></script>
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    #viewer, #photoViewer, #floorPlan {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+    }
+
+    #photoViewer, #floorPlan {
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #photoImage, #floorPlanImage {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    #topShadow {
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 132px;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(0,0,0,.62), rgba(0,0,0,0));
+      z-index: 5;
+    }
+
+    #titleWrap {
+      position: fixed;
+      top: calc(env(safe-area-inset-top) + 16px);
+      left: 68px;
+      right: 16px;
+      z-index: 8;
+      pointer-events: none;
+    }
+
+    #title {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 20px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: 0 1px 4px rgba(0,0,0,.55);
+    }
+
+    #subtitle {
+      margin-top: 3px;
+      font-size: 12px;
+      line-height: 16px;
+      color: rgba(255,255,255,.78);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: 0 1px 4px rgba(0,0,0,.55);
+    }
+
+    #sceneTabs {
+      position: fixed;
+      left: 12px;
+      right: 12px;
+      bottom: calc(env(safe-area-inset-bottom) + 14px);
+      z-index: 8;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 8px 0;
+      scrollbar-width: none;
+    }
+
+    #sceneTabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .scene-tab, #floorPlanToggle {
+      flex: 0 0 auto;
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 15px;
+      background: rgba(255,255,255,.93);
+      color: #111827;
+      font-size: 14px;
+      font-weight: 700;
+      box-shadow: 0 8px 20px rgba(0,0,0,.18);
+    }
+
+    .scene-tab.active, #floorPlanToggle.active {
+      background: #1e88e5;
+      color: #fff;
+    }
+
+    #floorPlanToggle {
+      display: none;
+    }
+
+    .tour-hotspot-anchor {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: #fff;
+      box-shadow: 0 0 0 7px rgba(255,255,255,.22), 0 8px 20px rgba(0,0,0,.28);
+    }
+
+    .tour-hotspot-label {
+      position: absolute;
+      left: 50%;
+      top: -9px;
+      transform: translate(-50%, -100%);
+      max-width: 132px;
+      padding: 7px 10px;
+      border: 1px solid rgba(255,255,255,.72);
+      border-radius: 16px;
+      background: rgba(0,0,0,.68);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 16px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      box-shadow: 0 6px 18px rgba(0,0,0,.28);
+      pointer-events: none;
+    }
+
+    .photo-hotspot, .floor-marker {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      border: 0;
+      border-radius: 18px;
+      padding: 8px 11px;
+      background: rgba(0,0,0,.68);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 6px 18px rgba(0,0,0,.28);
+    }
+
+    .floor-marker {
+      background: #1e88e5;
+    }
+
+    #empty {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+      color: rgba(255,255,255,.76);
+      z-index: 10;
+    }
+
+  </style>
+</head>
+<body>
+  <div id="viewer"></div>
+  <div id="photoViewer">
+    <img id="photoImage" alt="">
+  </div>
+  <div id="floorPlan">
+    <img id="floorPlanImage" alt="">
+  </div>
+  <div id="empty">Immersive tour failed to load</div>
+  <div id="topShadow"></div>
+  <div id="titleWrap">
+    <div id="title">Immersive Tour</div>
+    <div id="subtitle"></div>
+  </div>
+  <div id="sceneTabs"></div>
+
+  <script>
+    let tour = null;
+    let viewer = null;
+    let currentScene = null;
+    let currentImage = null;
+    let floorMode = false;
+
+    const coordTransform = {
+      yawSign: 1,
+      yawOffset: 0,
+      pitchSign: 1,
+      pitchOffset: 0,
+    };
+
+    const els = {
+      viewer: document.getElementById('viewer'),
+      photoViewer: document.getElementById('photoViewer'),
+      photoImage: document.getElementById('photoImage'),
+      floorPlan: document.getElementById('floorPlan'),
+      floorPlanImage: document.getElementById('floorPlanImage'),
+      title: document.getElementById('title'),
+      subtitle: document.getElementById('subtitle'),
+      sceneTabs: document.getElementById('sceneTabs'),
+      empty: document.getElementById('empty'),
+    };
+
+    window.renderTour = function(payload) {
+      tour = payload;
+      floorMode = false;
+      currentScene = resolveEntryScene();
+      currentImage = resolveEntryImage(currentScene);
+
+      if (!currentScene || !currentImage) {
+        showEmpty('No tour scenes available');
+        return;
+      }
+
+      renderChrome();
+      renderScene(currentScene, currentImage);
+    };
+
+    function resolveEntryScene() {
+      const scenes = Array.isArray(tour && tour.scenes) ? tour.scenes : [];
+      if (scenes.length === 0) return null;
+      return scenes.find(scene => scene.sceneId === tour.entrySceneId) || scenes[0];
+    }
+
+    function resolveEntryImage(scene) {
+      const images = Array.isArray(scene && scene.images) ? scene.images : [];
+      if (images.length === 0) return null;
+      return images.find(image => image.entry || image.imageId === scene.entryImageId) || images[0];
+    }
+
+    function renderChrome() {
+      els.title.textContent = tour.title || 'Immersive Tour';
+      renderTabs();
+    }
+
+    function renderTabs() {
+      els.sceneTabs.innerHTML = '';
+      const scenes = Array.isArray(tour.scenes) ? tour.scenes : [];
+
+      scenes.forEach(scene => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'scene-tab' + (currentScene && scene.sceneId === currentScene.sceneId && !floorMode ? ' active' : '');
+        button.textContent = scene.name || 'Scene';
+        button.onclick = () => {
+          floorMode = false;
+          currentScene = scene;
+          currentImage = resolveEntryImage(scene);
+          renderTabs();
+          renderScene(currentScene, currentImage);
+        };
+        els.sceneTabs.appendChild(button);
+      });
+
+      if (tour.floorPlanUrl) {
+        const floorButton = document.createElement('button');
+        floorButton.id = 'floorPlanToggle';
+        floorButton.type = 'button';
+        floorButton.style.display = 'block';
+        floorButton.className = floorMode ? 'active' : '';
+        floorButton.textContent = floorMode ? 'Tour' : 'Plan';
+        floorButton.onclick = () => {
+          floorMode = !floorMode;
+          renderTabs();
+          if (floorMode) {
+            renderFloorPlan();
+          } else {
+            renderScene(currentScene, currentImage);
+          }
+        };
+        els.sceneTabs.appendChild(floorButton);
+      }
+    }
+
+    function renderScene(scene, image) {
+      if (!scene || !image || !image.imageUrl) {
+        showEmpty('No image available for this scene');
+        return;
+      }
+
+      hideEmpty();
+      els.subtitle.textContent = scene.name || '';
+      els.floorPlan.style.display = 'none';
+
+      if ((scene.renderMode || '').toUpperCase() === 'PANORAMA') {
+        renderPanorama(scene, image);
+      } else {
+        renderPhoto(scene, image);
+      }
+    }
+
+    function renderPanorama(scene, image) {
+      if (!window.pannellum) {
+        showEmpty('Panorama viewer failed to load');
+        return;
+      }
+
+      els.photoViewer.style.display = 'none';
+      els.viewer.style.display = 'block';
+      els.viewer.innerHTML = '';
+
+      const hfov = Number(scene.initialHfov || 100);
+      const config = {
+        type: 'equirectangular',
+        panorama: image.imageUrl,
+        autoLoad: true,
+        showControls: false,
+        compass: false,
+        yaw: toPannellumYaw(scene.initialYaw || 0),
+        pitch: toPannellumPitch(scene.initialPitch || 0),
+        hfov: Number.isFinite(hfov) && hfov > 0 ? hfov : 100,
+        minHfov: 45,
+        maxHfov: 120,
+        hotSpots: buildPanoramaHotspots(scene, image),
+      };
+
+      viewer = pannellum.viewer('viewer', config);
+    }
+
+    function buildPanoramaHotspots(scene, image) {
+      return collectHotspots(scene, image)
+        .map(hotspot => {
+          const coords = resolvePanoramaCoords(hotspot);
+          if (!coords) return null;
+          return {
+            pitch: coords.pitch,
+            yaw: coords.yaw,
+            createTooltipFunc: createHotspotTooltip,
+            createTooltipArgs: hotspot,
+            clickHandlerFunc: () => openHotspot(hotspot),
+          };
+        })
+        .filter(Boolean);
+    }
+
+    function createHotspotTooltip(div, hotspot) {
+      div.classList.add('tour-hotspot-anchor');
+      div.innerHTML = '';
+      const label = document.createElement('div');
+      label.className = 'tour-hotspot-label';
+      label.textContent = hotspot.label || hotspot.targetSceneName || 'Go';
+      div.appendChild(label);
+      return;
+      // legacy fallback intentionally disabled
+    }
+
+    function renderPhoto(scene, image) {
+      if (viewer && viewer.destroy) viewer.destroy();
+      viewer = null;
+      els.viewer.style.display = 'none';
+      els.photoViewer.style.display = 'flex';
+      els.photoViewer.querySelectorAll('.photo-hotspot').forEach(node => node.remove());
+      els.photoImage.src = image.imageUrl;
+
+      const hotspots = collectHotspots(scene, image);
+      hotspots.forEach(hotspot => {
+        const x = clamp(Number(hotspot.xRatio ?? 0.5), 0.04, 0.96);
+        const y = clamp(Number(hotspot.yRatio ?? 0.5), 0.08, 0.92);
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'photo-hotspot';
+        button.style.left = `${x * 100}%`;
+        button.style.top = `${y * 100}%`;
+        button.textContent = hotspot.label || hotspot.targetSceneName || 'Go';
+        button.onclick = () => openHotspot(hotspot);
+        els.photoViewer.appendChild(button);
+      });
+    }
+
+    function renderFloorPlan() {
+      if (!tour.floorPlanUrl) return;
+      if (viewer && viewer.destroy) viewer.destroy();
+      viewer = null;
+      els.viewer.style.display = 'none';
+      els.photoViewer.style.display = 'none';
+      els.floorPlan.style.display = 'flex';
+      els.subtitle.textContent = 'Floor plan';
+      els.floorPlanImage.src = tour.floorPlanUrl;
+      els.floorPlan.querySelectorAll('.floor-marker').forEach(node => node.remove());
+
+      const scenes = Array.isArray(tour.scenes) ? tour.scenes : [];
+      scenes.forEach(scene => {
+        if (scene.floorPlanXRatio == null || scene.floorPlanYRatio == null) return;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'floor-marker';
+        button.style.left = `${clamp(Number(scene.floorPlanXRatio), 0.04, 0.96) * 100}%`;
+        button.style.top = `${clamp(Number(scene.floorPlanYRatio), 0.08, 0.92) * 100}%`;
+        button.textContent = scene.name || 'Scene';
+        button.onclick = () => {
+          floorMode = false;
+          currentScene = scene;
+          currentImage = resolveEntryImage(scene);
+          renderTabs();
+          renderScene(currentScene, currentImage);
+        };
+        els.floorPlan.appendChild(button);
+      });
+    }
+
+    function openHotspot(hotspot) {
+      const targetScene = findScene(hotspot.targetSceneId);
+      if (!targetScene) return;
+
+      currentScene = targetScene;
+      currentImage = findImage(targetScene, hotspot.targetImageId) || resolveEntryImage(targetScene);
+      floorMode = false;
+      renderTabs();
+      renderScene(currentScene, currentImage);
+    }
+
+    function findScene(sceneId) {
+      const scenes = Array.isArray(tour && tour.scenes) ? tour.scenes : [];
+      return scenes.find(scene => scene.sceneId === sceneId);
+    }
+
+    function findImage(scene, imageId) {
+      const images = Array.isArray(scene && scene.images) ? scene.images : [];
+      return images.find(image => image.imageId === imageId);
+    }
+
+    function showEmpty(message) {
+      els.empty.textContent = message;
+      els.empty.style.display = 'flex';
+    }
+
+    function hideEmpty() {
+      els.empty.style.display = 'none';
+    }
+
+    function clamp(value, min, max) {
+      if (!Number.isFinite(value)) return min;
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function collectHotspots(scene, image) {
+      const result = [];
+      const seen = new Set();
+      const add = hotspot => {
+        if (!hotspot) return;
+        const key = hotspot.hotspotId || `${hotspot.sourceImageId || ''}:${hotspot.yaw ?? hotspot.xRatio}:${hotspot.pitch ?? hotspot.yRatio}:${hotspot.label || ''}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        result.push(hotspot);
+      };
+
+      (Array.isArray(image && image.hotspots) ? image.hotspots : []).forEach(add);
+      const sceneHotspots = Array.isArray(scene && scene.hotspots) ? scene.hotspots : [];
+      sceneHotspots
+        .filter(hotspot => !hotspot.sourceImageId || hotspot.sourceImageId === image.imageId)
+        .forEach(add);
+
+      return result;
+    }
+
+    function resolvePanoramaCoords(hotspot) {
+      const rawYaw = Number(hotspot.yaw);
+      const rawPitch = Number(hotspot.pitch);
+      if (Number.isFinite(rawYaw) && Number.isFinite(rawPitch)) {
+        return {
+          yaw: toPannellumYaw(rawYaw),
+          pitch: toPannellumPitch(rawPitch),
+        };
+      }
+
+      const xRatio = Number(hotspot.xRatio);
+      const yRatio = Number(hotspot.yRatio);
+      if (Number.isFinite(xRatio) && Number.isFinite(yRatio)) {
+        return {
+          yaw: toPannellumYaw(xRatio * 360 - 180),
+          pitch: toPannellumPitch(90 - yRatio * 180),
+        };
+      }
+
+      return null;
+    }
+
+    function toPannellumYaw(value) {
+      return normalizeYaw(Number(value) * coordTransform.yawSign + coordTransform.yawOffset);
+    }
+
+    function toPannellumPitch(value) {
+      return clamp(Number(value) * coordTransform.pitchSign + coordTransform.pitchOffset, -90, 90);
+    }
+
+    function normalizeYaw(value) {
+      if (!Number.isFinite(value)) return 0;
+      let yaw = ((value + 180) % 360 + 360) % 360 - 180;
+      return yaw === -180 ? 180 : yaw;
+    }
+
+  </script>
+</body>
+</html>
+

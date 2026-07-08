@@ -13,6 +13,7 @@ class RouteNames {
   static const houseSearchResult = 'houseSearchResult';
   static const houseFilter = 'houseFilter';
   static const houseDetail = 'houseDetail';
+  static const immersiveTour = 'immersiveTour';
   static const appointment = 'appointment';
   static const realNameAuth = 'realNameAuth';
   static const profile = 'profile';
