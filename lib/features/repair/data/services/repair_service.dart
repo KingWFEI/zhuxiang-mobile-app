@@ -3,7 +3,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/network/api_result.dart';
-import '../../../../core/utils/logger.dart';
+import '../../../../core/utils/app_logger.dart';
 import '../../../lease/data/models/lease_model.dart';
 import '../../../lease/domain/entities/lease.dart';
 import '../../domain/entities/repair_order.dart';
@@ -39,7 +39,7 @@ class RepairService implements RepairServiceContract {
     try {
       return await _fetchRemoteOverview();
     } on Object catch (error) {
-      AppLogger.debug('RepairService overview load failed: $error');
+      AppLoggerDebug.debug('RepairService overview load failed: $error');
       rethrow;
     }
   }
@@ -53,7 +53,7 @@ class RepairService implements RepairServiceContract {
       return RepairOrderModel(_firstMap(_payload(response.data))).toEntity();
     } on Object catch (error) {
       if (!allowMockFallback) rethrow;
-      AppLogger.debug('RepairService fallback to mock detail: $error');
+      AppLoggerDebug.debug('RepairService fallback to mock detail: $error');
       return _fallback.fetchRepairDetail(repairId);
     }
   }
@@ -67,7 +67,7 @@ class RepairService implements RepairServiceContract {
       return RepairOrderModel(_firstMap(_payload(response.data))).toEntity();
     } on Object catch (error) {
       if (!allowMockFallback) rethrow;
-      AppLogger.debug('RepairService fallback to mock create: $error');
+      AppLoggerDebug.debug('RepairService fallback to mock create: $error');
       return _fallback.createRepair(request);
     }
   }
@@ -88,7 +88,7 @@ class RepairService implements RepairServiceContract {
       return RepairOrderModel(_firstMap(_payload(response.data))).toEntity();
     } on Object catch (error) {
       if (!allowMockFallback) rethrow;
-      AppLogger.debug('RepairService fallback to mock review: $error');
+      AppLoggerDebug.debug('RepairService fallback to mock review: $error');
       return _fallback.submitReview(
         repairId: repairId,
         rating: rating,
@@ -106,7 +106,7 @@ class RepairService implements RepairServiceContract {
       return RepairOrderModel(_firstMap(_payload(response.data))).toEntity();
     } on Object catch (error) {
       if (!allowMockFallback) rethrow;
-      AppLogger.debug('RepairService fallback to mock cancel: $error');
+      AppLoggerDebug.debug('RepairService fallback to mock cancel: $error');
       return _fallback.cancelRepair(repairId);
     }
   }

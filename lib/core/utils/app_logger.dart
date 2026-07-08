@@ -33,4 +33,9 @@ class AppLoggerDebug {
   static void lock(String message) {
     debugPrint('$_cyan[TTLOCK] $message$_reset');
   }
+
+  /// 调试日志，黄色高亮
+  static void debug(String message) {
+    debugPrint('$_yellow[DEBUG] $message$_reset');
+  }
 }

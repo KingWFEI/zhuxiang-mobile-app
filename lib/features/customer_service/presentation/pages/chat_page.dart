@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -61,7 +62,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     if (widget.sessionId != null) {
       _resolvedSessionId = widget.sessionId;
     } else {
-      _enter();
+      // 推迟到首帧后执行，避免 enter 的 HTTP 请求和 setState 在转场动画期间阻塞主线程
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _enter();
+      });
     }
   }
 
@@ -73,14 +77,25 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     if (!mounted) return;
     if (result is ApiSuccess<EnterSessionResponse>) {
       setState(() => _resolvedSessionId = result.data.sessionId);
-    } else {
-      final r2 = await api.createSession();
-      if (!mounted) return;
-      if (r2 is ApiSuccess<CsSession>) {
-        setState(() => _resolvedSessionId = r2.data.id);
-      }
+      _isEntering = false;
+      return;
     }
+
+    // enter 失败（401 等由 interceptor 统一处理），退避尝试创建新会话
+    final r2 = await api.createSession();
+    if (!mounted) { _isEntering = false; return; }
+    if (r2 is ApiSuccess<CsSession>) {
+      setState(() => _resolvedSessionId = r2.data.id);
+      _isEntering = false;
+      return;
+    }
+
     _isEntering = false;
+    final errMsg = result is ApiFailure<EnterSessionResponse>
+        ? result.message
+        : (r2 is ApiFailure<CsSession> ? r2.message : '');
+    AppToast.show(context, errMsg.isNotEmpty ? errMsg : '客服服务暂不可用',
+        type: AppToastType.error);
   }
 
   @override
@@ -92,12 +107,15 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     super.dispose();
   }
 
-  void _scrollToBottom() {
+  void _scrollToBottom({bool animate = false}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollCtrl.hasClients) {
+      if (!_scrollCtrl.hasClients) return;
+      if (animate) {
         _scrollCtrl.animateTo(_scrollCtrl.position.maxScrollExtent,
             duration: const Duration(milliseconds: 100),
             curve: Curves.easeOut);
+      } else {
+        _scrollCtrl.jumpTo(_scrollCtrl.position.maxScrollExtent);
       }
     });
   }
@@ -142,7 +160,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       if (!mounted) { t.cancel(); return; }
       setState(() => _dotsCount = (_dotsCount + 1) % 4);
     });
-    _scrollToBottom();
+    _scrollToBottom(animate: true);
 
     final api = ref.read(csApiProvider);
     _sseSub?.cancel();
@@ -169,7 +187,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               _isSending = false;
             });
             ref.invalidate(_messagesProvider(_effectiveSessionId));
-            _scrollToBottom();
+            _scrollToBottom(animate: true);
           case 'session_timeout':
             _dotsTimer?.cancel();
             setState(() => _isSending = false);
@@ -185,12 +203,17 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               ));
             }
             setState(() { _streamingContent = ''; _isSending = false; });
-            AppToast.show(context, j?['message'] as String? ?? '回复失败', type: AppToastType.error);
+            AppToast.show(context,
+                j?['message'] as String? ?? '回复失败', type: AppToastType.error);
         }
       },
       onError: (_) { if (mounted) setState(() => _isSending = false); },
     );
   }
+
+  /// 页面完全就绪（session 已解析 + 历史消息已加载）
+  bool get _ready =>
+      !_isEntering && _effectiveSessionId.isNotEmpty && _historyLoaded && !_isSending;
 
   @override
   Widget build(BuildContext context) {
@@ -199,31 +222,30 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       return Scaffold(
         backgroundColor: const Color(0xFFF3F5F4),
         appBar: AppBar(title: const Text('智能客服')),
-        body: const Center(child: AppLoadingView(message: '进入智能客服...')),
+        body: const Center(
+            child: AppLoadingView(message: '进入智能客服...')),
       );
     }
 
     final async = ref.watch(_messagesProvider(sid));
-    ref.listen(_messagesProvider(sid), (_, next) {
-      if (!_historyLoaded && next is AsyncData<List<CsMessage>>) {
-        _historyLoaded = true;
-        setState(() {
-          _messages.replaceRange(0, _messages.length, next.value);
-        });
-        _scrollToBottom();
-      }
-    });
 
     return Scaffold(
       backgroundColor: const Color(0xFFF3F5F4),
       appBar: AppBar(
         title: const Text('智能客服'),
         actions: [
-          IconButton(icon: const Icon(Icons.add_comment_outlined, size: 20),
-              tooltip: '新建会话', onPressed: _startNewSession),
-          IconButton(icon: const Icon(Icons.history, size: 20),
-              tooltip: '历史会话',
-              onPressed: () => context.pushNamed(RouteNames.customerService)),
+          IconButton(
+              icon: const Icon(Icons.add_comment_outlined, size: 20),
+              tooltip: '新建会话',
+              onPressed: _ready ? _startNewSession : null,
+            ),
+          // IconButton(
+          //     icon: const Icon(Icons.history, size: 20),
+          //     tooltip: '历史会话',
+          //     onPressed: _ready
+          //         ? () =>
+          //             context.pushNamed(RouteNames.customerService)
+          //         : null),
         ],
       ),
       body: Column(children: [Expanded(child: _body(async)), _inputBar()]),
@@ -231,10 +253,28 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Widget _body(AsyncValue<List<CsMessage>> async) {
-    if (_messages.isEmpty && !_historyLoaded && async is AsyncLoading) {
+    // 首次加载完成：延迟一帧同步到本地列表（不在 build 中直接改 _messages）
+    if (!_historyLoaded && async is AsyncData<List<CsMessage>>) {
+      _historyLoaded = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _messages.replaceRange(0, _messages.length, async.value);
+          });
+          _scrollToBottom(); // 初始加载用 jumpTo，不阻塞
+        }
+      });
+    }
+
+    // 本地列表未同步前用服务端数据渲染，同步后走本地列表
+    final msgs = _historyLoaded ? _messages
+        : (async is AsyncData<List<CsMessage>> ? async.value : <CsMessage>[]);
+    final showLoading = !_historyLoaded && _messages.isEmpty && async is AsyncLoading;
+
+    if (showLoading) {
       return const Center(child: AppLoadingView(message: '加载消息'));
     }
-    if (_messages.isEmpty && !_isSending) {
+    if (msgs.isEmpty && !_isSending) {
       return _welcome();
     }
     return ListView.builder(
@@ -242,9 +282,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(AppSpacing.pageHorizontal,
           AppSpacing.md, AppSpacing.pageHorizontal, AppSpacing.lg),
-      itemCount: _messages.length + (_isSending ? 1 : 0),
+      itemCount: msgs.length + (_isSending ? 1 : 0),
       itemBuilder: (_, i) {
-        if (i == _messages.length && _isSending) {
+        if (i == msgs.length && _isSending) {
           return _bubble(
             isUser: false,
             content: _streamingContent,
@@ -252,7 +292,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             dots: _streamingContent.isEmpty ? _dotsCount : 0,
           );
         }
-        final m = _messages[i];
+        final m = msgs[i];
         return _bubble(isUser: m.isUser, content: m.content, streaming: false);
       },
     );
@@ -353,13 +393,35 @@ Widget _bubble({
             ),
             border: isUser ? null : Border.all(color: AppColors.border),
           ),
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: Text(displayText,
-                key: ValueKey(displayText),
-                style: AppTextStyles.bodyMedium.copyWith(
-                    color: isUser ? Colors.white : AppColors.textPrimary, height: 1.55)),
-          ),
+          child: isUser ? Text(displayText,
+              style: AppTextStyles.bodyMedium.copyWith(
+                  color: Colors.white, height: 1.55))
+          : showDots ? Text(displayText,
+              style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textPrimary, height: 1.55))
+          : MarkdownBody(
+              data: content,
+              selectable: true,
+              styleSheet: MarkdownStyleSheet(
+                p: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textPrimary, height: 1.55),
+                h1: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textPrimary, fontWeight: FontWeight.w700, height: 1.4),
+                h2: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textPrimary, fontWeight: FontWeight.w700, height: 1.4),
+                h3: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textPrimary, fontWeight: FontWeight.w600, height: 1.4),
+                strong: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textPrimary, fontWeight: FontWeight.w700),
+                listBullet: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textPrimary, height: 1.55),
+                code: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.primary, backgroundColor: const Color(0xFFF3F5F4)),
+                codeblockDecoration: const BoxDecoration(
+                    color: Color(0xFFF3F5F4),
+                    borderRadius: BorderRadius.all(Radius.circular(AppRadius.sm))),
+              ),
+            ),
         )),
         if (isUser) const SizedBox(width: AppSpacing.sm),
       ],

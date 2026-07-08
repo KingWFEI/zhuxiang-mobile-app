@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -78,6 +79,9 @@ class AppRouter {
 
   static final router = createRouter();
 
+  /// 根 Navigator Key，供客服等全屏页使用，避免 Shell 内跨栈转场 ANR
+  static final rootNavigatorKey = GlobalKey<NavigatorState>();
+
   /// 创建 GoRouter 实例
   ///
   /// [authStateListenable] 用于在认证状态变化时刷新路由守卫。
@@ -85,6 +89,7 @@ class AppRouter {
     ValueListenable<AuthState>? authStateListenable,
   }) {
     return GoRouter(
+      navigatorKey: rootNavigatorKey,
       initialLocation: RoutePaths.splash,
       refreshListenable: authStateListenable,
       redirect: (context, state) =>
@@ -466,15 +471,17 @@ class AppRouter {
         path: RoutePaths.favoriteHouses,
         builder: (context, state) => const FavoriteHousesPage(),
       ),
-      // ── 客服 ──
+      // ── 客服（挂到根 Navigator，不走 Shell 分支栈，避免转场动画 ANR）──
       GoRoute(
         name: RouteNames.customerServiceEnter,
         path: RoutePaths.customerServiceEnter,
+        parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const ChatPage(),
       ),
       GoRoute(
         name: RouteNames.customerServiceChat,
         path: RoutePaths.customerServiceChat,
+        parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => ChatPage(
           sessionId: state.pathParameters['sessionId'],
         ),
@@ -482,6 +489,7 @@ class AppRouter {
       GoRoute(
         name: RouteNames.customerService,
         path: RoutePaths.customerService,
+        parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const SessionListPage(),
       ),
 

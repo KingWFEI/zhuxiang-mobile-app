@@ -3,7 +3,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/network/api_result.dart';
-import '../../../../core/utils/logger.dart';
+import '../../../../core/utils/app_logger.dart';
 import '../../domain/entities/unlock_record.dart';
 import '../models/unlock_record_model.dart';
 
@@ -28,7 +28,7 @@ class LockRecordService implements LockRecordServiceContract {
       return await _fetchRemoteOverview();
     } on Object catch (error) {
       if (!allowMockFallback) rethrow;
-      AppLogger.debug('LockRecordService fallback to mock: $error');
+      AppLoggerDebug.debug('LockRecordService fallback to mock: $error');
       return _fallback.fetchOverview();
     }
   }

@@ -12,7 +12,6 @@ import '../../../auth/presentation/providers/auth_controller.dart';
 import '../../../../core/widgets/app_logo.dart';
 import '../../data/models/profile_models.dart';
 import '../../data/providers/profile_providers.dart';
-import '../widgets/profile_menu_tile.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -53,21 +52,6 @@ class ProfilePage extends ConsumerWidget {
               ),
             const SizedBox(height: AppSpacing.lg),
             if (user != null) const _DashboardCard(),
-            const SizedBox(height: AppSpacing.lg),
-
-            Row(
-              children: const [
-                SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: ProfileMenuTile(
-                    icon: Icons.support_agent,
-                    label: '联系客服',
-                    subtitle: '7×24小时为您服务',
-                    color: Color(0xFF7667F8),
-                  ),
-                ),
-              ],
-            ),
           ],
         ),
       ),
