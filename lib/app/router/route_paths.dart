@@ -15,6 +15,7 @@ class RoutePaths {
   static const houseSearchResult = '/house-search-result';
   static const houseFilter = '/house-filter';
   static const houseDetail = '/houses/:houseId';
+  static const immersiveTour = '/houses/:houseId/immersive-tour';
   static const appointment = '/appointment';
   static const realNameAuth = '/real-name-auth';
   static const profile = '/profile';

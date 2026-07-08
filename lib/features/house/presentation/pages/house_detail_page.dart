@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:zhuxiang_app/app/theme/app_icon.dart';
 import 'package:zhuxiang_app/core/network/api_result.dart';
 import 'package:zhuxiang_app/features/house/data/models/house_detail.dart';
+import 'package:zhuxiang_app/features/house/data/models/immersive_tour.dart';
 import 'package:zhuxiang_app/features/house/data/providers/house_providers.dart';
 
 import '../../../../app/router/route_names.dart';
@@ -279,13 +280,13 @@ class _ImageCarouselState extends State<_ImageCarousel> {
   }
 }
 
-class _DetailContent extends StatelessWidget {
+class _DetailContent extends ConsumerWidget {
   const _DetailContent({required this.house});
 
   final HouseDetail house;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: const BoxDecoration(color: Colors.white),
@@ -430,6 +431,7 @@ class _DetailContent extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           _FacilitiesCard(house: house),
           const SizedBox(height: AppSpacing.sm),
+          _ImmersiveTourEntryCard(house: house),
           _LandlordCard(house: house),
           const SizedBox(height: AppSpacing.sm),
           _SmartLifeCard(house: house),
@@ -578,6 +580,158 @@ class _FacilitiesCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ImmersiveTourEntryCard extends ConsumerWidget {
+  const _ImmersiveTourEntryCard({required this.house});
+
+  final HouseDetail house;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final availabilityAsync = ref.watch(
+      immersiveTourAvailabilityProvider(house.id),
+    );
+
+    return availabilityAsync.when(
+      data: (result) {
+        if (result is! ApiSuccess<ImmersiveTourAvailability>) {
+          return const SizedBox.shrink();
+        }
+
+        final availability = result.data;
+        if (!availability.available) return const SizedBox.shrink();
+
+        final coverUrl = availability.coverImageUrl.isNotEmpty
+            ? availability.coverImageUrl
+            : house.coverImage;
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            onTap: () {
+              context.pushNamed(
+                RouteNames.immersiveTour,
+                pathParameters: {'houseId': house.id},
+              );
+            },
+            child: Container(
+              height: 112,
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(AppRadius.xl),
+                boxShadow: AppShadows.card,
+              ),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (coverUrl.isNotEmpty)
+                    Image.network(
+                      coverUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(color: const Color(0xFF1F2937));
+                      },
+                    )
+                  else
+                    Container(color: const Color(0xFF1F2937)),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.74),
+                          Colors.black.withValues(alpha: 0.30),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.view_in_ar,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '沉浸式看房',
+                                    style: AppTextStyles.housedetailtoolTitle
+                                        .copyWith(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                '在线浏览房间场景和空间动线',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '立即体验',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              SizedBox(width: 2),
+                              Icon(
+                                Icons.chevron_right,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+      error: (error, stackTrace) => const SizedBox.shrink(),
+      loading: () => const SizedBox.shrink(),
     );
   }
 }

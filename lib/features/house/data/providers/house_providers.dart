@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zhuxiang_app/core/network/api_result.dart';
 import 'package:zhuxiang_app/features/house/data/models/house_detail.dart';
+import 'package:zhuxiang_app/features/house/data/models/immersive_tour.dart';
 
 import '../../../../core/constants/storage_keys.dart';
 import '../../../../core/network/api_client_provider.dart';
@@ -36,6 +37,21 @@ final houseTagsProvider = FutureProvider<List<HouseTag>>((ref) async {
   final service = ref.watch(houseServiceProvider);
   return service.fetchTags();
 });
+
+final immersiveTourAvailabilityProvider =
+    FutureProvider.family<ApiResult<ImmersiveTourAvailability>, String>((
+      ref,
+      houseId,
+    ) async {
+      final service = ref.watch(houseServiceProvider);
+      return service.getImmersiveTourAvailability(houseId);
+    });
+
+final immersiveTourProvider =
+    FutureProvider.family<ApiResult<ImmersiveTour>, String>((ref, houseId) {
+      final service = ref.watch(houseServiceProvider);
+      return service.getImmersiveTour(houseId);
+    });
 
 /// 热门搜索关键词
 final hotKeywordsProvider = Provider<List<String>>((ref) {
