@@ -138,6 +138,60 @@ class HouseService {
     return ApiFailure(message: '获取房源详情失败');
   }
 
+  /// 获取沉浸式看房可用性。
+  Future<ApiResult<ImmersiveTourAvailability>> getImmersiveTourAvailability(
+    String houseId,
+  ) async {
+    final result = await apiClient.get(
+      '/houses/$houseId/immersive-tour/availability',
+    );
+    if (result is ApiSuccess<Response<dynamic>>) {
+      final responseData = result.data.data;
+      if (responseData is! Map<String, dynamic>) {
+        return const ApiFailure(message: '沉浸式看房状态数据格式错误');
+      }
+      if (responseData['code'] != 200) {
+        return ApiFailure(
+          message: responseData['message'] as String? ?? '获取沉浸式看房状态失败',
+        );
+      }
+      final data = responseData['data'];
+      if (data is! Map<String, dynamic>) {
+        return const ApiFailure(message: '沉浸式看房状态数据为空');
+      }
+      return ApiSuccess(ImmersiveTourAvailability.fromJson(data));
+    }
+    if (result is ApiFailure<Response<dynamic>>) {
+      return ApiFailure(message: result.message, error: result.error);
+    }
+    return const ApiFailure(message: '获取沉浸式看房状态失败');
+  }
+
+  /// 获取沉浸式看房数据。
+  Future<ApiResult<ImmersiveTour>> getImmersiveTour(String houseId) async {
+    final result = await apiClient.get('/houses/$houseId/immersive-tour');
+    if (result is ApiSuccess<Response<dynamic>>) {
+      final responseData = result.data.data;
+      if (responseData is! Map<String, dynamic>) {
+        return const ApiFailure(message: '沉浸式看房数据格式错误');
+      }
+      if (responseData['code'] != 200) {
+        return ApiFailure(
+          message: responseData['message'] as String? ?? '获取沉浸式看房数据失败',
+        );
+      }
+      final data = responseData['data'];
+      if (data is! Map<String, dynamic>) {
+        return const ApiFailure(message: '沉浸式看房数据为空');
+      }
+      return ApiSuccess(ImmersiveTour.fromJson(data));
+    }
+    if (result is ApiFailure<Response<dynamic>>) {
+      return ApiFailure(message: result.message, error: result.error);
+    }
+    return const ApiFailure(message: '获取沉浸式看房数据失败');
+  }
+
   /// 添加收藏。
   Future<void> addFavorite(String houseId) async {
     final result = await apiClient.post('/houses/$houseId/favorite');
