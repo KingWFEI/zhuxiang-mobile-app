@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,13 +8,18 @@ import 'package:zhuxiang_app/features/house/data/models/house.dart';
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/location/user_location_provider.dart';
+import '../../../../core/widgets/app_toast.dart';
+import '../../../auth/presentation/providers/auth_controller.dart';
 import '../../../../core/widgets/app_empty_view.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../../home/presentation/widgets/home_search_bar.dart';
 import '../../application/house_search_notifier.dart';
-import '../widgets/filter_bottom_sheet.dart';
+import '../../data/providers/house_providers.dart';
+import '../widgets/city_selection_sheet.dart';
 import '../widgets/house_card.dart';
 import '../widgets/house_filter_bar.dart';
+import '../widgets/house_filter_sheets.dart';
 import '../widgets/house_location_header.dart';
 import '../widgets/house_quick_tags.dart';
 import '../widgets/house_sort_sheet.dart';
@@ -29,8 +36,6 @@ class FindHomePage extends ConsumerStatefulWidget {
 
 class _FindHomePageState extends ConsumerState<FindHomePage> {
   final ScrollController _scrollController = ScrollController();
-  final Set<String> _selectedQuickTags = <String>{};
-  final Map<String, bool> _favoriteStates = <String, bool>{};
 
   @override
   void initState() {
@@ -40,6 +45,25 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
     Future<void>.microtask(
       () => ref.read(houseSearchProvider.notifier).search(),
     );
+    // 首次进入时自动获取位置（启动阶段已用缓存，这里很快），失败才弹窗
+    WidgetsBinding.instance.addPostFrameCallback((_) => _autoLocateIfNeeded());
+  }
+
+  Future<void> _autoLocateIfNeeded() async {
+    if (!mounted) return;
+    final loc = ref.read(userLocationProvider);
+    if (loc.hasSelection) {
+      debugPrint('[FIND_HOUSE] city already set: ${loc.city}');
+      return;
+    }
+    debugPrint('[FIND_HOUSE] no city, auto-fetching location');
+    await ref.read(userLocationProvider.notifier).fetch();
+    if (!mounted) return;
+    final after = ref.read(userLocationProvider);
+    if (!after.hasSelection) {
+      debugPrint('[FIND_HOUSE] auto-fetch failed, showing toast');
+      AppToast.show(context, '定位失败，请检查是否打开定位权限', type: AppToastType.error);
+    }
   }
 
   @override
@@ -62,14 +86,17 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
   Widget build(BuildContext context) {
     final state = ref.watch(houseSearchProvider);
     final notifier = ref.read(houseSearchProvider.notifier);
-    final sortText = houseSortLabels[state.sort] ?? '综合排序';
+    final location = ref.watch(userLocationProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(
-          onRefresh: notifier.refresh,
+          onRefresh: () async {
+            await notifier.refresh();
+            unawaited(ref.read(userLocationProvider.notifier).refresh());
+          },
           child: CustomScrollView(
             controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
@@ -86,9 +113,9 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       HouseLocationHeader(
-                        city: '重庆',
-                        district: '渝北区',
-                        onMapTap: _showMapPlaceholder,
+                        city: location.hasSelection ? location.city : (location.error != null ? '重新定位' : '选择城市'),
+                        district: location.hasSelection ? location.district : '',
+                        onMapTap: () => CitySelectionSheet.show(context),
                       ),
                       SizedBox(
                         width: 220,
@@ -111,11 +138,16 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
                     0,
                   ),
                   child: HouseFilterBar(
-                    onRegionTap: _showFilters,
-                    onRentTap: _showFilters,
-                    onRoomTap: _showFilters,
-                    onMoreTap: _showFilters,
+                    region: state.region,
+                    minPrice: state.minPrice,
+                    maxPrice: state.maxPrice,
+                    roomType: state.roomType,
+                    sort: state.sort,
+                    onRegionTap: _showRegionSheet,
+                    onRentTap: _showRentSheet,
+                    onRoomTap: _showRoomSheet,
                     onSortTap: _showSortSheet,
+                    onMoreTap: _showMoreSheet,
                   ),
                 ),
               ),
@@ -127,10 +159,7 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
                     AppSpacing.pageHorizontal,
                     0,
                   ),
-                  child: HouseQuickTags(
-                    selectedTags: _selectedQuickTags,
-                    onTagTap: _toggleQuickTag,
-                  ),
+                  child: _buildQuickTags(),
                 ),
               ),
               SliverPadding(
@@ -141,11 +170,7 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
                   AppSpacing.md,
                 ),
                 sliver: SliverToBoxAdapter(
-                  child: HouseListHeader(
-                    countText: '${state.totalCount}',
-                    sortText: sortText,
-                    onSortTap: _showSortSheet,
-                  ),
+                  child: HouseListHeader(countText: '${state.totalCount}'),
                 ),
               ),
               if (state.isLoading && state.houses.isEmpty)
@@ -188,8 +213,7 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
                       return HouseCard(
                         key: ValueKey(house.id),
                         house: house,
-                        isFavorite:
-                            _favoriteStates[house.id] ?? house.isFavorite,
+                        isFavorite: house.isFavorite,
                         onFavoriteTap: () => _toggleFavorite(house),
                         onTap: () => _openDetail(house),
                       );
@@ -216,62 +240,104 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
   /// 打开独立搜索页，避免在首页直接弹出键盘。
   void _openSearchPage() => context.pushNamed(RouteNames.houseSearch);
 
-  /// 地图找房尚未接入，先提供明确点击反馈。
-  void _showMapPlaceholder() {
-    // TODO: 接入地图 SDK 后跳转地图找房页面。
-    _showMessage('地图找房功能待接入');
+  /// 区域选择 BottomSheet。
+  Future<void> _showRegionSheet() async {
+    final selected = await showRegionSheet(context, selectedValue: ref.read(houseSearchProvider).region);
+    if (selected == null || !mounted) return;
+    ref.read(houseSearchProvider.notifier).updateRegion(selected);
+  }
+
+  /// 租金范围 BottomSheet。
+  Future<void> _showRentSheet() async {
+    final state = ref.read(houseSearchProvider);
+    final result = await showRentSheet(context, minPrice: state.minPrice, maxPrice: state.maxPrice);
+    if (result == null || !mounted) return;
+    ref.read(houseSearchProvider.notifier).updatePriceRange(result.start.round(), result.end >= 1000000 ? 0 : result.end.round());
+  }
+
+  /// 户型选择 BottomSheet。
+  Future<void> _showRoomSheet() async {
+    final selected = await showRoomSheet(context, selectedValue: ref.read(houseSearchProvider).roomType);
+    if (selected == null || !mounted) return;
+    ref.read(houseSearchProvider.notifier).updateRoomType(selected);
   }
 
   /// 打开全屏筛选页并同步有效筛选字段。
-  Future<void> _showFilters() async {
-    final selection = await context.pushNamed<HouseFilterSelection>(
-      RouteNames.houseFilter,
-    );
-    if (selection == null || !mounted) return;
-    ref
-        .read(houseSearchProvider.notifier)
-        .updateFilter(
-          region: selection.region,
-          minPrice: selection.minPrice,
-          maxPrice: selection.maxPrice,
-          roomType: selection.roomType,
-          sort: selection.sort,
-        );
-  }
-
   Future<void> _showSortSheet() async {
-    final selected = await showHouseSortSheet(
-      context,
-      selectedValue: ref.read(houseSearchProvider).sort,
-    );
+    final selected = await showHouseSortSheet(context, selectedValue: ref.read(houseSearchProvider).sort);
     if (selected == null || !mounted) return;
     final current = ref.read(houseSearchProvider);
-    ref
-        .read(houseSearchProvider.notifier)
-        .updateFilter(
-          region: current.region,
-          minPrice: current.minPrice,
-          maxPrice: current.maxPrice,
-          roomType: current.roomType,
-          sort: selected,
+    ref.read(houseSearchProvider.notifier).updateExtraFilters(
+      sort: selected,
+      decoration: current.decoration,
+      orientation: current.orientation,
+    );
+  }
+
+  /// 更多筛选条件 BottomSheet。
+  Future<void> _showMoreSheet() async {
+    final state = ref.read(houseSearchProvider);
+    final result = await showMoreFilterSheet(
+      context,
+      sort: state.sort,
+      decoration: state.decoration,
+      orientation: state.orientation,
+    );
+    if (result == null || !mounted) return;
+    ref.read(houseSearchProvider.notifier).updateExtraFilters(
+      sort: result.sort,
+      decoration: result.decoration,
+      orientation: result.orientation,
+    );
+  }
+
+  /// 从接口获取标签并组装成快捷标签组件。
+  Widget _buildQuickTags() {
+    final tagsAsync = ref.watch(houseTagsProvider);
+    final activeTags = ref.watch(houseSearchProvider).activeTags;
+
+    return tagsAsync.when(
+      data: (houseTags) {
+        if (houseTags.isEmpty) return const SizedBox.shrink();
+        final items = houseTags
+            .map((t) => QuickTagItem(label: t.label, value: t.value))
+            .toList();
+        return HouseQuickTags(
+          tags: items,
+          selectedTags: activeTags,
+          onTagTap: _toggleQuickTag,
         );
+      },
+      loading: () => const SizedBox(
+        height: 26,
+        child: Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))),
+      ),
+      error: (error, stackTrace) => const SizedBox.shrink(),
+    );
   }
 
-  /// 快捷标签当前只维护本地选中态，后续可映射为真实接口参数。
+  /// 切换快捷标签，通知搜索状态刷新列表。
   void _toggleQuickTag(String tag) {
-    setState(() {
-      if (!_selectedQuickTags.add(tag)) _selectedQuickTags.remove(tag);
-    });
-    // TODO: 后续将快捷标签转换为后端筛选参数并刷新列表。
+    ref.read(houseSearchProvider.notifier).toggleTag(tag);
   }
 
-  /// 收藏状态仅在本页本地切换，后续再接收藏接口。
-  void _toggleFavorite(House house) {
-    setState(() {
-      final current = _favoriteStates[house.id] ?? house.isFavorite;
-      _favoriteStates[house.id] = !current;
-    });
-    // TODO: 用户登录后调用收藏/取消收藏接口。
+  Future<void> _toggleFavorite(House house) async {
+    final user = ref.read(authControllerProvider).user;
+    if (user == null) {
+      context.pushNamed(RouteNames.login);
+      return;
+    }
+    try {
+      if (house.isFavorite) {
+        await ref.read(houseServiceProvider).removeFavorite(house.id);
+      } else {
+        await ref.read(houseServiceProvider).addFavorite(house.id);
+      }
+      // 刷新列表以更新 isFavorite 状态
+      ref.invalidate(houseSearchProvider);
+    } on Object {
+      if (mounted) AppToast.show(context, '操作失败，请稍后重试', type: AppToastType.error);
+    }
   }
 
   /// 复用项目已有房源详情路由。
@@ -282,11 +348,6 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
     );
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
-  }
 }
 
 class _PaginationFooter extends StatelessWidget {

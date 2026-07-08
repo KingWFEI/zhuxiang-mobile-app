@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/widgets/app_placeholder_page.dart';
 import '../../core/widgets/static_content_page.dart';
+import '../../features/customer_service/presentation/pages/chat_page.dart';
+import '../../features/customer_service/presentation/pages/session_list_page.dart';
 import '../../features/auth/presentation/auth_controller.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
@@ -23,6 +25,7 @@ import '../../features/lock/presentation/pages/tenant_lock_unlock_page.dart';
 import '../../features/message/presentation/pages/message_page.dart';
 import '../../features/payment/presentation/pages/payment_detail_page.dart';
 import '../../features/payment/presentation/pages/payment_records_page.dart';
+import '../../features/profile/presentation/pages/favorite_houses_page.dart';
 import '../../features/profile/presentation/pages/profile_edit_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/settings_page.dart';
@@ -457,11 +460,29 @@ class AppRouter {
         ),
       ),
 
+      // ── 收藏 ──
+      GoRoute(
+        name: RouteNames.favoriteHouses,
+        path: RoutePaths.favoriteHouses,
+        builder: (context, state) => const FavoriteHousesPage(),
+      ),
       // ── 客服 ──
+      GoRoute(
+        name: RouteNames.customerServiceEnter,
+        path: RoutePaths.customerServiceEnter,
+        builder: (context, state) => const ChatPage(),
+      ),
+      GoRoute(
+        name: RouteNames.customerServiceChat,
+        path: RoutePaths.customerServiceChat,
+        builder: (context, state) => ChatPage(
+          sessionId: state.pathParameters['sessionId'],
+        ),
+      ),
       GoRoute(
         name: RouteNames.customerService,
         path: RoutePaths.customerService,
-        builder: (context, state) => const AppPlaceholderPage(title: '客服管家'),
+        builder: (context, state) => const SessionListPage(),
       ),
 
       // ── 租房流程（预约看房 → 看房 → 申请 → 实名 → 签约 → 支付 → 入住）──

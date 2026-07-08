@@ -126,8 +126,11 @@ class RoleNavigationConfig {
       RouteNames.settings,
       RouteNames.userAgreement,
       RouteNames.privacyPolicy,
+      RouteNames.favoriteHouses,
       // 客服
       RouteNames.customerService,
+      RouteNames.customerServiceEnter,
+      RouteNames.customerServiceChat,
       // 租房流程
       RouteNames.viewingAppointment,
       RouteNames.viewingDetail,

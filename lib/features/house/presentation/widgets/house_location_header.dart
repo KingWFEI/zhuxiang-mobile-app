@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
-import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_logo.dart';
 
 class HouseLocationHeader extends StatelessWidget {
@@ -36,33 +35,37 @@ class HouseLocationHeader extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.location_on_rounded,
-                          color: AppColors.primary,
-                          size: 14,
-                        ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Text(
-                          city,
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
+                    GestureDetector(
+                      onTap: onMapTap,
+                      behavior: HitTestBehavior.opaque,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.location_on_rounded,
+                            color: AppColors.primary,
+                            size: 14,
                           ),
-                        ),
-                        const SizedBox(width: 2),
-                        Transform.translate(
-                          offset: const Offset(0, 1),
-                          child: const Icon(
-                            Icons.arrow_drop_down_rounded,
-                            size: 18,
-                            color: Colors.black,
+                          const SizedBox(width: AppSpacing.xs),
+                          Text(
+                            city,
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 2),
+                          Transform.translate(
+                            offset: const Offset(0, 1),
+                            child: const Icon(
+                              Icons.arrow_drop_down_rounded,
+                              size: 18,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     Text(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
@@ -21,6 +22,7 @@ class ProfileEditPage extends ConsumerStatefulWidget {
 }
 
 class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
+  final _nicknameController = TextEditingController();
   final _oldPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -29,12 +31,17 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
   final _smsCodeController = TextEditingController();
 
   bool _passwordVisible = false;
+  bool _isSavingProfile = false;
+  bool _isUploadingAvatar = false;
   bool _isChangingPassword = false;
   bool _isChangingPhone = false;
   bool _isSendingCode = false;
 
+  String? _avatarUrl;
+
   @override
   void dispose() {
+    _nicknameController.dispose();
     _oldPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
@@ -48,6 +55,12 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
     final user = ref.watch(authControllerProvider).user;
     if (user == null) return const SizedBox.shrink();
 
+    // 初始化：仅首次加载时从 user 填充
+    if (_nicknameController.text.isEmpty && user.nickname.isNotEmpty) {
+      _nicknameController.text = user.nickname;
+    }
+    _avatarUrl ??= user.avatarUrl;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -57,7 +70,14 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.pageHorizontal),
         children: [
-          _UserInfoCard(user: user),
+          _ProfileEditCard(
+            avatarUrl: _avatarUrl,
+            isUploading: _isUploadingAvatar,
+            onPickAvatar: _handlePickAvatar,
+            nicknameController: _nicknameController,
+            isSaving: _isSavingProfile,
+            onSave: _handleSaveProfile,
+          ),
           const SizedBox(height: AppSpacing.lg),
           _SectionCard(
             title: user.hasPassword ? '修改密码' : '设置密码',
@@ -88,8 +108,8 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                   onPressed: _isChangingPassword
                       ? null
                       : user.hasPassword
-                          ? _handleChangePassword
-                          : _handleSetPassword,
+                      ? _handleChangePassword
+                      : _handleSetPassword,
                   child: _isChangingPassword
                       ? const SizedBox(
                           width: 18,
@@ -247,17 +267,19 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
           .setPassword(newPassword: newPassword);
       final user = ref.read(authControllerProvider).user;
       if (user != null) {
-        await ref.read(authControllerProvider.notifier).updateUser(
-          AuthUser(
-            id: user.id,
-            phone: user.phone,
-            nickname: user.nickname,
-            avatarUrl: user.avatarUrl,
-            isVerified: user.isVerified,
-            role: user.role,
-            hasPassword: true,
-          ),
-        );
+        await ref
+            .read(authControllerProvider.notifier)
+            .updateUser(
+              AuthUser(
+                id: user.id,
+                phone: user.phone,
+                nickname: user.nickname,
+                avatarUrl: user.avatarUrl,
+                isVerified: user.isVerified,
+                role: user.role,
+                hasPassword: true,
+              ),
+            );
       }
       if (!mounted) return;
       AppToast.show(context, '密码设置成功', type: AppToastType.success);
@@ -334,12 +356,83 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
       if (mounted) setState(() => _isChangingPhone = false);
     }
   }
+
+  Future<void> _handlePickAvatar() async {
+    final picker = ImagePicker();
+    final image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: 512,
+    );
+    if (image == null || !mounted) return;
+
+    setState(() => _isUploadingAvatar = true);
+    try {
+      final url = await ref
+          .read(profileServiceProvider)
+          .uploadAvatar(image.path);
+      if (!mounted) return;
+      setState(() {
+        _avatarUrl = url;
+        _isUploadingAvatar = false;
+      });
+      AppToast.show(context, '头像上传成功', type: AppToastType.success);
+    } on Object catch (e) {
+      if (!mounted) return;
+      setState(() => _isUploadingAvatar = false);
+      final message = e is Exception
+          ? e.toString().replaceFirst('Exception: ', '')
+          : '头像上传失败';
+      AppToast.show(context, message, type: AppToastType.error);
+    }
+  }
+
+  Future<void> _handleSaveProfile() async {
+    final nickname = _nicknameController.text.trim();
+    if (nickname.isEmpty) {
+      AppToast.show(context, '请输入昵称', type: AppToastType.error);
+      return;
+    }
+
+    setState(() => _isSavingProfile = true);
+    try {
+      final data = await ref
+          .read(profileServiceProvider)
+          .updateProfile(nickname: nickname, avatarUrl: _avatarUrl);
+      // 同步更新全局用户状态
+      await ref
+          .read(authControllerProvider.notifier)
+          .updateUser(AuthUser.fromJson(data));
+      if (!mounted) return;
+      AppToast.show(context, '个人信息已更新', type: AppToastType.success);
+    } on Object catch (e) {
+      if (!mounted) return;
+      final message = e is Exception
+          ? e.toString().replaceFirst('Exception: ', '')
+          : '更新失败';
+      AppToast.show(context, message, type: AppToastType.error);
+    } finally {
+      if (mounted) setState(() => _isSavingProfile = false);
+    }
+  }
 }
 
-class _UserInfoCard extends StatelessWidget {
-  const _UserInfoCard({required this.user});
+class _ProfileEditCard extends StatelessWidget {
+  const _ProfileEditCard({
+    required this.avatarUrl,
+    required this.isUploading,
+    required this.onPickAvatar,
+    required this.nicknameController,
+    required this.isSaving,
+    required this.onSave,
+  });
 
-  final AuthUser user;
+  final String? avatarUrl;
+  final bool isUploading;
+  final VoidCallback onPickAvatar;
+  final TextEditingController nicknameController;
+  final bool isSaving;
+  final VoidCallback onSave;
 
   @override
   Widget build(BuildContext context) {
@@ -350,27 +443,81 @@ class _UserInfoCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.xl),
         boxShadow: AppShadows.card,
       ),
-      child: Row(
+      child: Column(
         children: [
-          const CircleAvatar(
-            radius: 28,
-            backgroundColor: AppColors.primaryLight,
-            child: Icon(Icons.person, color: AppColors.primary, size: 30),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          // 头像
+          GestureDetector(
+            onTap: isUploading ? null : onPickAvatar,
+            child: Stack(
               children: [
-                Text(
-                  user.nickname,
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    fontWeight: FontWeight.w700,
+                CircleAvatar(
+                  radius: 40,
+                  backgroundColor: AppColors.primaryLight,
+                  backgroundImage: (avatarUrl != null && avatarUrl!.isNotEmpty)
+                      ? NetworkImage(avatarUrl!)
+                      : null,
+                  child: (avatarUrl == null || avatarUrl!.isEmpty)
+                      ? const Icon(
+                          Icons.person,
+                          color: AppColors.primary,
+                          size: 42,
+                        )
+                      : null,
+                ),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 26,
+                    height: 26,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: isUploading
+                        ? const Padding(
+                            padding: EdgeInsets.all(5),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.camera_alt,
+                            color: Colors.white,
+                            size: 14,
+                          ),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(user.maskedPhone, style: AppTextStyles.bodySmall),
               ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text('点击更换头像', style: AppTextStyles.bodySmall),
+          const SizedBox(height: AppSpacing.lg),
+          // 昵称
+          TextField(
+            controller: nicknameController,
+            decoration: const InputDecoration(
+              labelText: '昵称',
+              prefixIcon: Icon(Icons.edit_outlined),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: isSaving ? null : onSave,
+              child: isSaving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('保存'),
             ),
           ),
         ],

@@ -53,10 +53,22 @@ class _LockManagePageState extends ConsumerState<LockManagePage> {
       _error = null;
     });
     try {
-      final detail = await ref.read(lockApiServiceProvider).getDetail(widget.smartLockId);
-      if (mounted) setState(() { _detail = detail; _loading = false; });
+      final detail = await ref
+          .read(lockApiServiceProvider)
+          .getDetail(widget.smartLockId);
+      if (mounted) {
+        setState(() {
+          _detail = detail;
+          _loading = false;
+        });
+      }
     } catch (e) {
-      if (mounted) setState(() { _error = e.toString(); _loading = false; });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -140,9 +152,9 @@ class _LockManagePageState extends ConsumerState<LockManagePage> {
 
     try {
       // 2. 获取蓝牙开锁数据
-      final unlockData = await ref.read(lockApiServiceProvider).getUnlockData(
-        widget.smartLockId,
-      );
+      final unlockData = await ref
+          .read(lockApiServiceProvider)
+          .getUnlockData(widget.smartLockId);
 
       // 3. 初始化通通锁 SDK
       await _ttlockService.init();
@@ -189,10 +201,9 @@ class _LockManagePageState extends ConsumerState<LockManagePage> {
 
     setState(() => _actionLoading = true);
     try {
-      final result = await ref.read(lockInitializeProvider.notifier).bindAndSync(
-        smartLockId: widget.smartLockId,
-        houseId: selected!.id,
-      );
+      final result = await ref
+          .read(lockInitializeProvider.notifier)
+          .bindAndSync(smartLockId: widget.smartLockId, houseId: selected!.id);
       if (!mounted) return;
       if (result != null) {
         _showSnackBar('绑定成功，lockId：${result.lockId}');
@@ -221,7 +232,10 @@ class _LockManagePageState extends ConsumerState<LockManagePage> {
           '4. 门锁仍归本系统管理，可重新绑定其他房间。',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('解除绑定', style: TextStyle(color: AppColors.error)),
@@ -251,22 +265,22 @@ class _LockManagePageState extends ConsumerState<LockManagePage> {
     try {
       await _ttlockService.init();
       final completer = Completer<ScannedLockDevice?>();
-      await _ttlockService.startScanning(onDeviceFound: (device) {
-        if (device.mac == widget.lockMac) {
-          completer.complete(device);
-        }
-      });
+      await _ttlockService.startScanning(
+        onDeviceFound: (device) {
+          if (device.mac == widget.lockMac) {
+            completer.complete(device);
+          }
+        },
+      );
       final device = await completer.future.timeout(
         const Duration(seconds: 10),
         onTimeout: () => null,
       );
       await _ttlockService.stopScanning();
       if (device != null && mounted) {
-        await ref.read(lockApiServiceProvider).bleStatus(
-          widget.smartLockId,
-          device.battery,
-          device.rssi,
-        );
+        await ref
+            .read(lockApiServiceProvider)
+            .bleStatus(widget.smartLockId, device.battery, device.rssi);
         _showSnackBar('蓝牙状态已刷新');
         await _loadDetail();
       } else if (mounted) {
@@ -291,7 +305,9 @@ class _LockManagePageState extends ConsumerState<LockManagePage> {
       if (mounted) {
         // 同步失败，回滚绑定
         try {
-          await ref.read(lockApiServiceProvider).deleteBindRoom(widget.smartLockId);
+          await ref
+              .read(lockApiServiceProvider)
+              .deleteBindRoom(widget.smartLockId);
         } catch (_) {}
         _showSnackBar('同步失败：$e（已回滚绑定关系）');
         await _loadDetail();
@@ -319,10 +335,16 @@ class _LockManagePageState extends ConsumerState<LockManagePage> {
           '4. 听到恢复成功提示后返回 App',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('我已恢复出厂', style: TextStyle(color: AppColors.error)),
+            child: const Text(
+              '我已恢复出厂',
+              style: TextStyle(color: AppColors.error),
+            ),
           ),
         ],
       ),
@@ -395,14 +417,22 @@ class _StatusCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(detail.lockName.isEmpty ? '未命名门锁' : detail.lockName,
-                        style: AppTextStyles.titleMedium),
-                    Text('MAC：${detail.lockMac}', style: AppTextStyles.bodySmall),
+                    Text(
+                      detail.lockName.isEmpty ? '未命名门锁' : detail.lockName,
+                      style: AppTextStyles.titleMedium,
+                    ),
+                    Text(
+                      'MAC：${detail.lockMac}',
+                      style: AppTextStyles.bodySmall,
+                    ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.xs,
+                ),
                 decoration: BoxDecoration(
                   color: _statusColor(detail.status).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(AppRadius.md),
@@ -425,7 +455,10 @@ class _StatusCard extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: unluckLoading ? null : onTestUnlock,
             icon: unluckLoading
-                ? const SizedBox.square(dimension: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox.square(
+                    dimension: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                 : const Icon(Icons.lock_open, size: 18),
             label: const Text('测试蓝牙开锁'),
             style: ElevatedButton.styleFrom(
@@ -468,7 +501,10 @@ class _BindRoomCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('当前门锁未绑定房间', style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted)),
+        Text(
+          '当前门锁未绑定房间',
+          style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
+        ),
         const SizedBox(height: AppSpacing.md),
         ElevatedButton.icon(
           onPressed: loading ? null : onBindRoom,
@@ -519,8 +555,14 @@ class _BleStatusCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _InfoRow(label: '电量', value: detail.battery != null ? '${detail.battery}%' : '--'),
-          _InfoRow(label: '信号', value: detail.rssi != null ? '${detail.rssi} dBm' : '--'),
+          _InfoRow(
+            label: '电量',
+            value: detail.battery != null ? '${detail.battery}%' : '--',
+          ),
+          _InfoRow(
+            label: '信号',
+            value: detail.rssi != null ? '${detail.rssi} dBm' : '--',
+          ),
           _InfoRow(
             label: '来源',
             value: detail.batterySource == 'BLE_SCAN' ? '最近一次蓝牙扫描' : '--',
@@ -530,13 +572,19 @@ class _BleStatusCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           Text(
             '* 普通蓝牙门锁不联网，此处为最近一次蓝牙扫描数据，非实时数据。',
-            style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted, fontSize: 11),
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textMuted,
+              fontSize: 11,
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
           ElevatedButton.icon(
             onPressed: loading ? null : onRefresh,
             icon: loading
-                ? const SizedBox.square(dimension: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox.square(
+                    dimension: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                 : const Icon(Icons.bluetooth, size: 18),
             label: const Text('靠近门锁刷新状态'),
           ),
@@ -560,7 +608,8 @@ class _SyncPlatformCard extends StatelessWidget {
   final VoidCallback onSync;
 
   bool get _isSynced => detail.status == 'BOUND';
-  bool get _canSync => detail.status == 'ROOM_BOUND' || detail.status == 'PLATFORM_FAILED';
+  bool get _canSync =>
+      detail.status == 'ROOM_BOUND' || detail.status == 'PLATFORM_FAILED';
 
   @override
   Widget build(BuildContext context) {
@@ -571,12 +620,20 @@ class _SyncPlatformCard extends StatelessWidget {
         children: [
           if (_isSynced) ...[
             _InfoRow(label: '状态', value: '已同步'),
-            if (detail.lockId != null) _InfoRow(label: 'lockId', value: '${detail.lockId}'),
-            if (detail.keyId != null) _InfoRow(label: 'keyId', value: '${detail.keyId}'),
+            if (detail.lockId != null)
+              _InfoRow(label: 'lockId', value: '${detail.lockId}'),
+            if (detail.keyId != null)
+              _InfoRow(label: 'keyId', value: '${detail.keyId}'),
           ] else if (detail.status == 'PLATFORM_FAILED') ...[
-            Text('状态：同步失败', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error)),
+            Text(
+              '状态：同步失败',
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
+            ),
             if (detail.platformErrorMessage != null)
-              Text('原因：${detail.platformErrorMessage}', style: AppTextStyles.bodySmall),
+              Text(
+                '原因：${detail.platformErrorMessage}',
+                style: AppTextStyles.bodySmall,
+              ),
             const SizedBox(height: AppSpacing.md),
             ElevatedButton.icon(
               onPressed: loading ? null : onSync,
@@ -593,8 +650,12 @@ class _SyncPlatformCard extends StatelessWidget {
             ),
           ] else ...[
             Text(
-              detail.status == 'INIT_LOCAL_SUCCESS' ? '请先绑定房间后同步云平台' : '当前状态不可同步',
-              style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
+              detail.status == 'INIT_LOCAL_SUCCESS'
+                  ? '请先绑定房间后同步云平台'
+                  : '当前状态不可同步',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textMuted,
+              ),
             ),
           ],
         ],
@@ -775,7 +836,10 @@ class _InfoRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 56, child: Text(label, style: AppTextStyles.bodySmall)),
+          SizedBox(
+            width: 56,
+            child: Text(label, style: AppTextStyles.bodySmall),
+          ),
           Expanded(child: Text(value, style: AppTextStyles.bodyMedium)),
         ],
       ),

@@ -21,10 +21,7 @@ class AppLogo extends StatelessWidget {
           color: AppColors.primary,
         ),
         const SizedBox(width: 4),
-        Text(
-          hasCity ? '住享 · $cityName' : '住享',
-          style: AppTextStyles.logoTitle,
-        ),
+        Text(hasCity ? '住享 · $cityName' : '住享', style: AppTextStyles.logoTitle),
       ],
     );
   }

@@ -13,6 +13,7 @@ import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../../../auth/presentation/auth_controller.dart';
 import '../../../rental_flow/presentation/widgets/confirm_rent_sheet.dart';
 
@@ -84,13 +85,13 @@ class HouseDetailPage extends ConsumerWidget {
   }
 }
 
-class _DetailAppBar extends StatelessWidget {
+class _DetailAppBar extends ConsumerWidget {
   const _DetailAppBar({required this.house});
 
   final HouseDetail house;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SliverAppBar(
       expandedHeight: 150,
       pinned: true,
@@ -150,7 +151,23 @@ class _DetailAppBar extends StatelessWidget {
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             iconSize: 16,
-            onPressed: () => _showMessage(context, '收藏状态已模拟更新'),
+            onPressed: () async {
+              final authState = ref.read(authControllerProvider);
+              if (!authState.isLoggedIn) {
+                context.pushNamed(RouteNames.login);
+                return;
+              }
+              try {
+                if (house.isFavorite) {
+                  await ref.read(houseServiceProvider).removeFavorite(house.id);
+                } else {
+                  await ref.read(houseServiceProvider).addFavorite(house.id);
+                }
+                ref.invalidate(houseDetailProvider(house.id));
+              } on Object {
+                if (context.mounted) AppToast.show(context, '操作失败', type: AppToastType.error);
+              }
+            },
             icon: house.isFavorite
                 ? AppIcon.iconNormal(Icons.favorite, color: AppColors.error)
                 : AppIcon.iconNormal(
@@ -752,17 +769,18 @@ class _LandlordCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text(
-                      '${house.landlordName} · 房东',
-                      style: AppTextStyles.housedetailtoolTitle,
+                    Expanded(
+                      child: Text(
+                        '${house.landlordName} · 房东',
+                        style: AppTextStyles.housedetailtoolTitle,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                     if (house.isVerified) ...[
                       const SizedBox(width: AppSpacing.sm),
-                      const Chip(
-                        label: Text('已实名'),
-                        visualDensity: VisualDensity.compact,
-                        backgroundColor: AppColors.primaryLight,
-                        side: BorderSide.none,
+                      const Text(
+                        '已实名',
+                        style: TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.w600),
                       ),
                     ],
                   ],

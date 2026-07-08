@@ -8,8 +8,9 @@ import 'token_storage.dart';
 class StorageService {
   const StorageService._();
 
-  static late final LocalStorage localStorage;
-  static late final GuestModeStorage guestModeStorage;
+  // 测试和热重启场景允许用新的 SharedPreferences 实例重新初始化。
+  static late LocalStorage localStorage;
+  static late GuestModeStorage guestModeStorage;
   static final TokenStorage tokenStorage = TokenStorage();
   static final SecureTokenStorage secureTokenStorage = SecureTokenStorage(
     tokenStorage: tokenStorage,

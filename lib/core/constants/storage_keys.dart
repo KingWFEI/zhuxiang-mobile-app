@@ -10,4 +10,7 @@ class StorageKeys {
   static const houseSearchHistory = 'house_search_history';
   static const userProfile = 'user_profile';
   static const appEnv = 'app_env';
+  static const autoUnlockEnabled = 'auto_unlock_enabled';
+  static const selectedCity = 'selected_city';
+  static const selectedDistrict = 'selected_district';
 }

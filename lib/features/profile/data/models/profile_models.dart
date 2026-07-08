@@ -10,6 +10,7 @@ class CurrentHome {
     required this.leaseStatus,
     this.lockId,
     required this.lockStatus,
+    this.address = '',
   });
 
   factory CurrentHome.fromJson(Map<String, dynamic> json) {
@@ -23,6 +24,7 @@ class CurrentHome {
       leaseStatus: json['leaseStatus'] as String? ?? '',
       lockId: json['lockId'] as String?,
       lockStatus: json['lockStatus'] as String? ?? 'unknown',
+      address: json['address'] as String? ?? '',
     );
   }
 
@@ -35,12 +37,13 @@ class CurrentHome {
   final String leaseStatus;
   final String? lockId;
   final String lockStatus;
+  final String address;
 
   String get addressLabel => [
-        if (building.isNotEmpty) building,
-        if (unit.isNotEmpty) unit,
-        room,
-      ].where((e) => e.isNotEmpty).join('');
+    if (building.isNotEmpty) '${building}栋',
+    if (unit.isNotEmpty) '${unit}单元',
+    room,
+  ].where((e) => e.isNotEmpty).join('');
 }
 
 /// 门锁展示信息
@@ -92,7 +95,18 @@ class LockInfo {
 
   bool get isOnline => lockStatus == 'online';
   bool get isLowBattery => batteryLevel < 20;
-  bool get hasPermission => permissionStatus == 'active';
+  bool get hasPermission => permissionStatus?.toUpperCase() == 'ACTIVE';
+
+  /// 当前租约是否已失效（退租/到期/取消等），失效时门锁卡片应隐藏。
+  bool get isLeaseInvalidForLock {
+    final status = (leaseStatus).toUpperCase();
+    return const [
+      'TERMINATED',
+      'EXPIRED',
+      'CHECKED_OUT',
+      'CANCELLED',
+    ].contains(status);
+  }
 
   String get statusLabel {
     if (!isOnline) return '门锁离线';

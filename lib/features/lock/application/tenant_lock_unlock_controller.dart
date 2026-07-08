@@ -7,11 +7,14 @@ import '../../../core/utils/app_logger.dart';
 import '../../staff/lock_initial/services/ttlock_ble_service.dart';
 import '../data/models/tenant_lock_unlock_data.dart';
 import '../data/repositories/tenant_lock_repository.dart';
+import 'auto_unlock_controller.dart';
 
+/// 租客门锁页面状态阶段。
 enum TenantLockUnlockStage {
   loadingUnlockData,
   unlockDataLoaded,
   unlockDataFailed,
+  leaseInvalid,
   scanning,
   matched,
   scanFailed,
@@ -52,6 +55,11 @@ class TenantLockUnlockState {
           stage == TenantLockUnlockStage.unlockFailed ||
           stage == TenantLockUnlockStage.unlockSuccess);
 
+  /// 租约已失效，不可用任何门锁功能。
+  bool get isLeaseInvalid =>
+      stage == TenantLockUnlockStage.leaseInvalid ||
+      unlockData?.isLeaseInvalid == true;
+
   TenantLockUnlockState copyWith({
     TenantLockUnlockStage? stage,
     TenantLockUnlockData? unlockData,
@@ -75,8 +83,9 @@ class TenantLockUnlockState {
       requiresLogin: requiresLogin ?? this.requiresLogin,
       passcode: clearPasscode ? null : passcode ?? this.passcode,
       isLoadingPasscode: isLoadingPasscode ?? this.isLoadingPasscode,
-      passcodeError:
-          clearPasscodeError ? null : passcodeError ?? this.passcodeError,
+      passcodeError: clearPasscodeError
+          ? null
+          : passcodeError ?? this.passcodeError,
       isRetryingPasscode: isRetryingPasscode ?? this.isRetryingPasscode,
     );
   }
@@ -87,6 +96,8 @@ class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
     required String leaseId,
     required TenantLockRepositoryContract repository,
     required TtlockBleServiceContract ttlockBleService,
+    this.unlockRecordRepository,
+    this.unlockEnvironment,
     Duration scanTimeout = const Duration(seconds: 10),
   }) : _leaseId = leaseId,
        _repository = repository,
@@ -98,6 +109,12 @@ class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
   final TenantLockRepositoryContract _repository;
   final TtlockBleServiceContract _ttlockBleService;
   final Duration _scanTimeout;
+
+  /// 开锁记录上报仓库（手动开锁成功后上报）。
+  final AutoUnlockRepositoryContract? unlockRecordRepository;
+
+  /// 设备环境信息（用于上报记录）。
+  final AutoUnlockEnvironment? unlockEnvironment;
 
   Timer? _scanTimer;
   int _scanGeneration = 0;
@@ -128,6 +145,14 @@ class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
     try {
       final data = await _repository.getUnlockData(_leaseId);
       if (_disposed) return;
+      if (data.isLeaseInvalid) {
+        state = state.copyWith(
+          stage: TenantLockUnlockStage.leaseInvalid,
+          unlockData: data,
+          message: _leaseInvalidMessage(data.leaseStatus),
+        );
+        return;
+      }
       if (!data.isActive) {
         state = state.copyWith(
           stage: TenantLockUnlockStage.unlockDataFailed,
@@ -268,6 +293,7 @@ class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
           targetMatched: true,
           message: '开锁成功',
         );
+        _reportManualUnlock(data, success: true);
         return;
       }
 
@@ -280,6 +306,7 @@ class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
             : '开锁失败，请靠近门锁后重试',
         errorCode: result.errorCode,
       );
+      _reportManualUnlock(data, success: false, failureReason: _safeReason(result.errorCode));
     } on Object catch (_) {
       if (_disposed) return;
       state = state.copyWith(
@@ -289,6 +316,7 @@ class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
         message: '开锁失败，请靠近门锁后重试',
         errorCode: 'BLE_UNLOCK_ERROR',
       );
+      _reportManualUnlock(data, success: false, failureReason: 'BLE_UNLOCK_ERROR');
     }
   }
 
@@ -331,6 +359,24 @@ class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
     await _stopScanningSilently();
   }
 
+  /// 无感开锁接管全局 TTLock 扫描前，仅释放手动扫描资源。
+  /// 手动开锁的 unlock() 数据与执行路径保持不变。
+  Future<void> stopScanForAutoUnlock() => _cancelCurrentScan();
+
+  /// 无感扫描严格匹配目标 MAC 后，同步允许用户随时改用原手动按钮。
+  void acceptTargetMatchFromAutoUnlock() {
+    final data = state.unlockData;
+    if (_disposed || data == null || !data.isActive || state.targetMatched) {
+      return;
+    }
+    state = state.copyWith(
+      stage: TenantLockUnlockStage.matched,
+      unlockData: data,
+      targetMatched: true,
+      message: '已检测到当前房间门锁，可点击开锁',
+    );
+  }
+
   Future<void> _stopScanningSilently() async {
     try {
       await _ttlockBleService.stopScanning();
@@ -367,6 +413,17 @@ class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
     return const _UnlockDataFailure(message: '暂无可用门锁权限');
   }
 
+  /// 根据租约状态生成用户可读的失效提示。
+  String _leaseInvalidMessage(String leaseStatus) {
+    return switch (leaseStatus.toUpperCase()) {
+      'TERMINATED' => '当前租约已退租，门锁功能不可用',
+      'EXPIRED' => '当前租约已到期，门锁功能不可用',
+      'CHECKED_OUT' => '当前租约已退租，门锁功能不可用',
+      'CANCELLED' => '当前租约已取消，门锁功能不可用',
+      _ => '当前租约已失效，门锁功能不可用',
+    };
+  }
+
   /// 获取当前租约期限线下开门密码。
   Future<void> loadPasscode() async {
     if (_disposed) return;
@@ -375,19 +432,12 @@ class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
     try {
       final passcode = await _repository.getPasscode(_leaseId);
       if (_disposed) return;
-      state = state.copyWith(
-        passcode: passcode,
-        isLoadingPasscode: false,
-      );
+      state = state.copyWith(passcode: passcode, isLoadingPasscode: false);
       AppLoggerDebug.lock('开门密码获取成功');
     } on Object catch (error) {
       if (_disposed) return;
-      final message =
-          error is ApiException ? error.message : '获取开门密码失败';
-      state = state.copyWith(
-        isLoadingPasscode: false,
-        passcodeError: message,
-      );
+      final message = error is ApiException ? error.message : '获取开门密码失败';
+      state = state.copyWith(isLoadingPasscode: false, passcodeError: message);
     }
   }
 
@@ -399,20 +449,57 @@ class TenantLockUnlockController extends StateNotifier<TenantLockUnlockState> {
     try {
       final passcode = await _repository.retryPasscode(_leaseId);
       if (_disposed) return;
-      state = state.copyWith(
-        passcode: passcode,
-        isRetryingPasscode: false,
-      );
+      state = state.copyWith(passcode: passcode, isRetryingPasscode: false);
       AppLoggerDebug.lock('开门密码重新生成成功');
     } on Object catch (error) {
       if (_disposed) return;
-      final message =
-          error is ApiException ? error.message : '重新生成开门密码失败';
-      state = state.copyWith(
-        isRetryingPasscode: false,
-        passcodeError: message,
-      );
+      final message = error is ApiException ? error.message : '重新生成开门密码失败';
+      state = state.copyWith(isRetryingPasscode: false, passcodeError: message);
     }
+  }
+
+  /// 上报手动蓝牙开锁结果到后端（fire-and-forget，绝不阻塞主流程）。
+  void _reportManualUnlock(
+    TenantLockUnlockData data, {
+    required bool success,
+    String? failureReason,
+  }) {
+    final repo = unlockRecordRepository;
+    final env = unlockEnvironment;
+    if (repo == null || env == null) return;
+
+    final leaseId = _leaseId;
+    // 整个上报链路包裹在 try-catch 中，确保任何异常都不影响开锁 UI
+    try {
+      unawaited(
+        Future.wait([env.deviceInfo(), env.appVersion()])
+            .then((results) {
+              return repo.recordUnlock(
+                leaseId,
+                UnlockRecordRequest(
+                  smartLockId: data.smartLockId,
+                  ttlockLockId: data.ttlockLockId,
+                  triggerType: 'MANUAL_BLUETOOTH',
+                  result: success ? 'SUCCESS' : 'FAILED',
+                  failureReason: failureReason,
+                  deviceInfo: results[0],
+                  appVersion: results[1],
+                ),
+              );
+            })
+            .catchError((_) {/* 静默吞掉所有错误，不影响开锁流程 */}),
+      );
+    } on Object catch (_) {
+      // 同步部分如果抛异常也静默吞掉
+    }
+  }
+
+  /// 脱敏失败原因码。
+  String _safeReason(String? errorCode) {
+    final normalized = errorCode?.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '');
+    return normalized == null || normalized.isEmpty
+        ? 'BLE_UNLOCK_FAILED'
+        : normalized;
   }
 
   /// 页面销毁时取消超时计时器并停止 TTLock 扫描。

@@ -39,6 +39,8 @@ class RoutePaths {
   static const repairRecords = '/repairs/records';
   static const messageCenter = '/messages';
   static const customerService = '/customer-service';
+  static const customerServiceEnter = '/customer-service-chat';
+  static const customerServiceChat = '/customer-service-chat/:sessionId';
   static const viewingAppointment = '/rental-flow/:houseId/viewing-appointment';
   static const viewingDetail = '/rental-flow/:houseId/viewing-detail';
   static const rentalApplication = '/rental-flow/:houseId/rental-application';
@@ -53,4 +55,5 @@ class RoutePaths {
   static const staffDebug = '/staff/debug';
   static const userAgreement = '/profile/agreement';
   static const privacyPolicy = '/profile/privacy';
+  static const favoriteHouses = '/profile/favorites';
 }

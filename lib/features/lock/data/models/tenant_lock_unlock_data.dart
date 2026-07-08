@@ -4,11 +4,14 @@ class TenantLockUnlockData {
     required this.leaseId,
     required this.smartLockId,
     required this.houseName,
-    required this.roomName,
+    required this.room,
+    this.building = '',
+    this.unit = '',
     required this.lockName,
     required this.lockMac,
     required this.lockData,
     required this.ttlockKeyId,
+    this.ttlockLockId = 0,
     required this.startTime,
     required this.endTime,
     required this.permissionStatus,
@@ -17,6 +20,12 @@ class TenantLockUnlockData {
     this.passcodeStatus = '',
     this.passcodeStartTime = '',
     this.passcodeEndTime = '',
+    this.leaseStatus = '',
+    this.leaseValid = true,
+    this.autoUnlockAvailable = false,
+    this.autoUnlockMinRssi = -60,
+    this.autoUnlockStableMillis = 2000,
+    this.autoUnlockCooldownSeconds = 30,
   });
 
   /// 从后端标准响应的 data 节点解析租客开锁数据。
@@ -25,11 +34,14 @@ class TenantLockUnlockData {
       leaseId: _string(json['leaseId']),
       smartLockId: _string(json['smartLockId']),
       houseName: _string(json['houseName']),
-      roomName: _string(json['roomName']),
+      room: _string(json['room']),
+      building: _string(json['building']),
+      unit: _string(json['unit']),
       lockName: _string(json['lockName']),
       lockMac: _string(json['lockMac']),
       lockData: _string(json['lockData']),
       ttlockKeyId: _int(json['ttlockKeyId']),
+      ttlockLockId: _int(json['ttlockLockId']),
       startTime: _string(json['startTime']),
       endTime: _string(json['endTime']),
       permissionStatus: _string(json['permissionStatus']),
@@ -38,17 +50,38 @@ class TenantLockUnlockData {
       passcodeStatus: _string(json['passcodeStatus']),
       passcodeStartTime: _string(json['passcodeStartTime']),
       passcodeEndTime: _string(json['passcodeEndTime']),
+      leaseStatus: _string(json['leaseStatus']),
+      leaseValid: json['leaseValid'] is bool
+          ? json['leaseValid'] as bool
+          : true, // 字段缺失时默认有效（兼容旧接口）
+      autoUnlockAvailable: _bool(json['autoUnlockAvailable']),
+      autoUnlockMinRssi: _intOr(json['autoUnlockMinRssi'], -60),
+      autoUnlockStableMillis: _intOr(json['autoUnlockStableMillis'], 2000),
+      autoUnlockCooldownSeconds: _intOr(json['autoUnlockCooldownSeconds'], 30),
     );
   }
 
   final String leaseId;
   final String smartLockId;
   final String houseName;
-  final String roomName;
+  final String room;
+  final String building;
+  final String unit;
   final String lockName;
+
+  /// 格式化为 "3栋2单元501" 样式。
+  String get formattedRoomName {
+    if (room.isEmpty) return '';
+    final parts = <String>[];
+    if (building.isNotEmpty) parts.add('$building栋');
+    if (unit.isNotEmpty) parts.add('$unit单元');
+    parts.add(room);
+    return parts.join('');
+  }
   final String lockMac;
   final String lockData;
   final int ttlockKeyId;
+  final int ttlockLockId;
   final String startTime;
   final String endTime;
   final String permissionStatus;
@@ -57,8 +90,24 @@ class TenantLockUnlockData {
   final String passcodeStatus;
   final String passcodeStartTime;
   final String passcodeEndTime;
+  final String leaseStatus;
+  final bool leaseValid;
+  final bool autoUnlockAvailable;
+  final int autoUnlockMinRssi;
+  final int autoUnlockStableMillis;
+  final int autoUnlockCooldownSeconds;
 
   bool get isActive => permissionStatus.toUpperCase() == 'ACTIVE';
+
+  /// 租约是否已失效（退租/到期/取消等）
+  bool get isLeaseInvalid =>
+      leaseValid == false ||
+      const [
+        'TERMINATED',
+        'EXPIRED',
+        'CHECKED_OUT',
+        'CANCELLED',
+      ].contains(leaseStatus.toUpperCase());
 
   /// 仅在当前页面内更新 SDK 返回的新 lockData，不做持久化。
   TenantLockUnlockData copyWithLockData(String value) {
@@ -66,11 +115,14 @@ class TenantLockUnlockData {
       leaseId: leaseId,
       smartLockId: smartLockId,
       houseName: houseName,
-      roomName: roomName,
+      room: room,
+      building: building,
+      unit: unit,
       lockName: lockName,
       lockMac: lockMac,
       lockData: value,
       ttlockKeyId: ttlockKeyId,
+      ttlockLockId: ttlockLockId,
       startTime: startTime,
       endTime: endTime,
       permissionStatus: permissionStatus,
@@ -79,6 +131,12 @@ class TenantLockUnlockData {
       passcodeStatus: passcodeStatus,
       passcodeStartTime: passcodeStartTime,
       passcodeEndTime: passcodeEndTime,
+      leaseStatus: leaseStatus,
+      leaseValid: leaseValid,
+      autoUnlockAvailable: autoUnlockAvailable,
+      autoUnlockMinRssi: autoUnlockMinRssi,
+      autoUnlockStableMillis: autoUnlockStableMillis,
+      autoUnlockCooldownSeconds: autoUnlockCooldownSeconds,
     );
   }
 
@@ -89,11 +147,53 @@ class TenantLockUnlockData {
     return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 
+  static int _intOr(Object? value, int fallback) {
+    if (value is int) return value;
+    return int.tryParse(value?.toString() ?? '') ?? fallback;
+  }
+
   static bool _bool(Object? value) {
     if (value is bool) return value;
     if (value is int) return value != 0;
     return false;
   }
+}
+
+/// 开锁结果上报（手动蓝牙/无感自动共用）。严禁在该模型中包含 lockData、密码或 Token。
+class UnlockRecordRequest {
+  const UnlockRecordRequest({
+    required this.smartLockId,
+    required this.ttlockLockId,
+    required this.triggerType,
+    required this.result,
+    required this.deviceInfo,
+    required this.appVersion,
+    this.rssi,
+    this.stableMillis,
+    this.failureReason,
+  });
+
+  final String smartLockId;
+  final int ttlockLockId;
+  final String triggerType;
+  final int? rssi;
+  final int? stableMillis;
+  final String result;
+  final String? failureReason;
+  final String deviceInfo;
+  final String appVersion;
+
+  Map<String, dynamic> toJson() => {
+    'smartLockId': smartLockId,
+    'ttlockLockId': ttlockLockId,
+    'triggerType': triggerType,
+    'rssi': rssi,
+    'stableMillis': stableMillis,
+    'result': result,
+    'failureReason': failureReason,
+    'deviceInfo': deviceInfo,
+    'appVersion': appVersion,
+  };
 }
 
 /// 开门密码（由 GET/POST /leases/{leaseId}/lock/passcode 返回）。

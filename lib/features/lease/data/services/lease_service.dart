@@ -105,9 +105,7 @@ class LeaseService implements LeaseServiceContract {
   }
 
   Future<Lease> _fetchLeaseDetail(String leaseId) async {
-    final response = await _request(
-      () => _apiClient.get('/leases/$leaseId'),
-    );
+    final response = await _request(() => _apiClient.get('/leases/$leaseId'));
     final payload = _payload(response.data);
     if (payload is! Map<String, dynamic>) {
       throw const ApiException(

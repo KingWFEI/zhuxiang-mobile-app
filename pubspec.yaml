@@ -49,7 +49,9 @@ dependencies:
   ttlock_flutter: ^0.3.8
   permission_handler: ^12.0.3
   image_picker: ^1.2.1
-  webview_flutter: ^4.14.0
+  battery_plus: ^7.1.0
+  package_info_plus: ^10.2.0
+  geolocator: ^14.0.3
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -6,6 +6,7 @@ import 'package:ttlock_flutter/ttlock.dart';
 import 'package:zhuxiang_app/core/network/api_client.dart';
 import 'package:zhuxiang_app/core/network/api_result.dart';
 import 'package:zhuxiang_app/features/lock/application/tenant_lock_unlock_controller.dart';
+import 'package:zhuxiang_app/features/lock/application/auto_unlock_controller.dart';
 import 'package:zhuxiang_app/features/lock/data/models/tenant_lock_unlock_data.dart';
 import 'package:zhuxiang_app/features/lock/data/repositories/tenant_lock_repository.dart';
 import 'package:zhuxiang_app/features/lock/data/providers/tenant_lock_providers.dart';
@@ -118,6 +119,9 @@ void main() {
             tenantTtlockBleServiceProvider.overrideWithValue(
               _FakeBleService(scannedDevices: [_device('58:6F:C7:93:B6:E7')]),
             ),
+            autoUnlockPreferenceStoreProvider.overrideWithValue(
+              _FakeAutoUnlockPreferenceStore(),
+            ),
           ],
           child: const MaterialApp(
             home: TenantLockUnlockPage(leaseId: 'lease_001'),
@@ -128,6 +132,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       expect(find.text('蓝牙开锁'), findsOneWidget);
+      expect(find.text('无感开锁'), findsOneWidget);
+      expect(find.text('仅在当前页面前台生效'), findsOneWidget);
       expect(find.text('蓝牙已自动连接'), findsOneWidget);
       expect(find.text('点击开锁'), findsOneWidget);
       expect(
@@ -144,7 +150,7 @@ const _unlockDataJson = <String, dynamic>{
   'leaseId': 'lease_001',
   'smartLockId': 'smart-lock-001',
   'houseName': '春熙路青年公寓',
-  'roomName': '3栋2单元1201',
+  'room': '3栋2单元1201',
   'lockName': 'S8503_e7b693',
   'lockMac': '58:6F:C7:93:B6:E7',
   'lockData': 'tenant-ekey-lock-data',
@@ -196,7 +202,7 @@ class _FakeRepository implements TenantLockRepositoryContract {
       'leaseId': 'lease_001',
       'passcode': '123456',
       'passcodeType': 'PERIOD',
-      'roomName': '3栋2单元1201',
+      'room': '3栋2单元1201',
       'smartLockId': 'smart-lock-001',
       'startTime': '2026-06-25 00:00:00',
       'status': 'ACTIVE',
@@ -212,7 +218,7 @@ class _FakeRepository implements TenantLockRepositoryContract {
       'leaseId': 'lease_001',
       'passcode': '654321',
       'passcodeType': 'PERIOD',
-      'roomName': '3栋2单元1201',
+      'room': '3栋2单元1201',
       'smartLockId': 'smart-lock-001',
       'startTime': '2026-06-25 00:00:00',
       'status': 'ACTIVE',
@@ -250,12 +256,16 @@ class _FakeBleService implements TtlockBleServiceContract {
   Future<void> startScanning({
     required void Function(ScannedLockDevice device) onDeviceFound,
     bool requestPermissions = true,
+    Duration notifyInterval = const Duration(seconds: 1),
   }) async {
     events?.add('scan');
     for (final device in scannedDevices) {
       onDeviceFound(device);
     }
   }
+
+  @override
+  Future<bool> isBluetoothEnabled() async => true;
 
   @override
   Future<void> stopScanning() async {
@@ -266,6 +276,18 @@ class _FakeBleService implements TtlockBleServiceContract {
   Future<UnlockResult> unlockByLockData(String lockData) async {
     receivedLockData = lockData;
     return unlockResult;
+  }
+}
+
+class _FakeAutoUnlockPreferenceStore implements AutoUnlockPreferenceStore {
+  bool value = false;
+
+  @override
+  bool get enabled => value;
+
+  @override
+  Future<void> setEnabled(bool value) async {
+    this.value = value;
   }
 }
 

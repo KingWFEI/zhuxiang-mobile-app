@@ -165,7 +165,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       case 'repairs':
         context.pushNamed(RouteNames.repairs);
       case 'customer_service':
-        context.pushNamed(RouteNames.customerService);
+        context.pushNamed(RouteNames.customerServiceEnter);
       default:
         if (entry.targetType == 'route') {
           context.pushNamed(RouteNames.home);

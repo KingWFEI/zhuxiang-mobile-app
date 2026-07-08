@@ -11,4 +11,5 @@ class ApiEndpoints {
   static const messages = '/messages';
   static const profile = '/profile';
   static const homeDetail = '/home/detail';
+  static const customerService = '/customer-service';
 }

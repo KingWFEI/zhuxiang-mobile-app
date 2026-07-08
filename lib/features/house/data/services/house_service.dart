@@ -7,6 +7,7 @@ import '../../../../core/network/api_client.dart';
 import '../../../../shared/models/page_result.dart';
 import '../models/hot_community.dart';
 import '../models/house.dart';
+import '../models/house_tag.dart';
 import '../models/immersive_tour.dart';
 
 /// 房源数据服务。
@@ -17,6 +18,34 @@ class HouseService {
 
   /// 返回搜索页热门小区。
   List<HotCommunity> getHotCommunities() {
+    return const [];
+  }
+
+  /// 获取房源快捷筛选标签列表。
+  Future<List<HouseTag>> fetchTags() async {
+    final result = await apiClient.get('/houses/tags');
+    if (result is ApiSuccess<Response<dynamic>>) {
+      final body = result.data.data;
+      if (body is Map<String, dynamic>) {
+        final code = body['code'] as int? ?? -1;
+        if (code != 0 && code != 200) {
+          throw ApiException(
+            type: ApiExceptionType.server,
+            message: body['message']?.toString() ?? '获取标签失败',
+          );
+        }
+        final data = body['data'];
+        if (data is List) {
+          return data
+              .map((e) => HouseTag.fromJson(e as Map<String, dynamic>))
+              .toList();
+        }
+      }
+    }
+    if (result is ApiFailure<Response<dynamic>>) {
+      throw result.error ??
+          ApiException(type: ApiExceptionType.unknown, message: result.message);
+    }
     return const [];
   }
 
@@ -107,71 +136,5 @@ class HouseService {
     }
 
     return ApiFailure(message: '获取房源详情失败');
-  }
-
-  Future<ApiResult<ImmersiveTourAvailability>> getImmersiveTourAvailability(
-    String houseId,
-  ) async {
-    final result = await apiClient.get(
-      '/houses/$houseId/immersive-tour/availability',
-    );
-
-    if (result is ApiSuccess<Response<dynamic>>) {
-      final responseData = result.data.data;
-
-      if (responseData is! Map<String, dynamic>) {
-        return const ApiFailure(message: '沉浸式看房状态数据格式错误');
-      }
-
-      if (responseData['code'] != 200) {
-        return ApiFailure(
-          message: responseData['message'] as String? ?? '获取沉浸式看房状态失败',
-        );
-      }
-
-      final data = responseData['data'];
-      if (data is! Map<String, dynamic>) {
-        return const ApiFailure(message: '沉浸式看房状态数据为空');
-      }
-
-      return ApiSuccess(ImmersiveTourAvailability.fromJson(data));
-    }
-
-    if (result is ApiFailure<Response<dynamic>>) {
-      return ApiFailure(message: result.message, error: result.error);
-    }
-
-    return const ApiFailure(message: '获取沉浸式看房状态失败');
-  }
-
-  Future<ApiResult<ImmersiveTour>> getImmersiveTour(String houseId) async {
-    final result = await apiClient.get('/houses/$houseId/immersive-tour');
-
-    if (result is ApiSuccess<Response<dynamic>>) {
-      final responseData = result.data.data;
-
-      if (responseData is! Map<String, dynamic>) {
-        return const ApiFailure(message: '沉浸式看房数据格式错误');
-      }
-
-      if (responseData['code'] != 200) {
-        return ApiFailure(
-          message: responseData['message'] as String? ?? '获取沉浸式看房数据失败',
-        );
-      }
-
-      final data = responseData['data'];
-      if (data is! Map<String, dynamic>) {
-        return const ApiFailure(message: '沉浸式看房数据为空');
-      }
-
-      return ApiSuccess(ImmersiveTour.fromJson(data));
-    }
-
-    if (result is ApiFailure<Response<dynamic>>) {
-      return ApiFailure(message: result.message, error: result.error);
-    }
-
-    return const ApiFailure(message: '获取沉浸式看房数据失败');
   }
 }

@@ -68,10 +68,9 @@ void main() {
     final before = await service.getMyLeases();
     expect(before.where((lease) => lease.isCurrent), hasLength(1));
 
-    final application = await service.applyTermination(
-      'lease-2026-001',
-      {'reason': '个人原因'},
-    );
+    final application = await service.applyTermination('lease-2026-001', {
+      'reason': '个人原因',
+    });
     expect(application.applicationNo, isNotEmpty);
     expect(application.status, 'pending_review');
   });
@@ -198,7 +197,7 @@ class _FakeTenantLockRepository implements TenantLockRepositoryContract {
       leaseId: leaseId,
       smartLockId: 'smart-lock-001',
       houseName: '3栋2单元1201',
-      roomName: '1201',
+      room: '1201',
       lockName: '住享智能门锁',
       lockMac: '58:6F:C7:93:B6:E7',
       lockData: 'tenant-lock-data',
@@ -207,6 +206,22 @@ class _FakeTenantLockRepository implements TenantLockRepositoryContract {
       endTime: '2027-02-28T23:59:59',
       permissionStatus: 'ACTIVE',
     );
+  }
+
+  @override
+  Future<TenantPasscode> getPasscode(String leaseId) async {
+    return TenantPasscode.fromJson(const {
+      'passcode': '123456',
+      'status': 'ACTIVE',
+    });
+  }
+
+  @override
+  Future<TenantPasscode> retryPasscode(String leaseId) async {
+    return TenantPasscode.fromJson(const {
+      'passcode': '654321',
+      'status': 'ACTIVE',
+    });
   }
 }
 
