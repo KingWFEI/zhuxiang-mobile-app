@@ -137,4 +137,70 @@ class HouseService {
 
     return ApiFailure(message: '获取房源详情失败');
   }
+
+  /// 添加收藏。
+  Future<void> addFavorite(String houseId) async {
+    final result = await apiClient.post('/houses/$houseId/favorite');
+    _checkResult(result, '收藏失败');
+  }
+
+  /// 取消收藏。
+  Future<void> removeFavorite(String houseId) async {
+    final result = await apiClient.delete('/houses/$houseId/favorite');
+    _checkResult(result, '取消收藏失败');
+  }
+
+  void _checkResult(ApiResult<Response<dynamic>> result, String fallbackMsg) {
+    if (result is ApiSuccess<Response<dynamic>>) {
+      final body = result.data.data;
+      if (body is Map<String, dynamic>) {
+        final code = body['code'] as int? ?? -1;
+        if (code == 200 || code == 0) return;
+        throw ApiException(
+            type: ApiExceptionType.server,
+            message: body['message']?.toString() ?? fallbackMsg);
+      }
+    }
+    if (result is ApiFailure<Response<dynamic>>) {
+      throw result.error ??
+          ApiException(type: ApiExceptionType.unknown, message: result.message);
+    }
+    throw ApiException(type: ApiExceptionType.unknown, message: fallbackMsg);
+  }
+
+  /// 获取我的收藏列表。
+  Future<PageResult<House>> getFavoriteHouses({int page = 1, int pageSize = 20}) async {
+    final result = await apiClient.get(
+      '/profile/favorite-houses',
+      queryParameters: {'page': page, 'pageSize': pageSize},
+    );
+    if (result is ApiSuccess<Response<dynamic>>) {
+      final body = result.data.data;
+      if (body is Map<String, dynamic>) {
+        final code = body['code'] as int? ?? -1;
+        if (code != 200) {
+          throw ApiException(
+              type: ApiExceptionType.server,
+              message: body['message']?.toString() ?? '获取收藏列表失败');
+        }
+        final data = body['data'] as Map<String, dynamic>?;
+        if (data != null) {
+          final records = (data['records'] as List<dynamic>?)
+                  ?.map((e) => House.fromJson(e as Map<String, dynamic>))
+                  .toList() ??
+              [];
+          return PageResult(
+            items: records,
+            page: (data['page'] as int?) ?? 1,
+            pageSize: pageSize,
+            total: (data['total'] as int?) ?? 0,
+            hasMore: ((data['page'] as int?) ?? 1) <
+                ((data['totalPages'] as int?) ?? 1),
+          );
+        }
+      }
+    }
+    throw const ApiException(
+        type: ApiExceptionType.unknown, message: '获取收藏列表失败');
+  }
 }
