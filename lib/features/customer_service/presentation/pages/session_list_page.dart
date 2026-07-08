@@ -28,7 +28,12 @@ class _SessionListPageState extends ConsumerState<SessionListPage> {
   void initState() {
     super.initState();
     _scrollCtrl.addListener(_onScroll);
-    ref.read(sessionListProvider.notifier).loadInitial();
+    // 推迟到首帧渲染完成后加载，避免在页面转场动画期间触发 rebuild 导致 ANR
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(sessionListProvider.notifier).loadInitial();
+      }
+    });
   }
 
   @override
