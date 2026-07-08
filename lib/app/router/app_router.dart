@@ -15,6 +15,7 @@ import '../../features/house/presentation/pages/house_detail_page.dart';
 import '../../features/house/presentation/pages/house_filter_page.dart';
 import '../../features/house/presentation/pages/house_search_page.dart';
 import '../../features/house/presentation/pages/house_search_result_page.dart';
+import '../../features/house/presentation/pages/immersive_tour_page.dart';
 import '../../features/lease/presentation/pages/lease_contract_view_page.dart';
 import '../../features/lease/presentation/pages/lease_detail_page.dart';
 import '../../features/lease/presentation/pages/lease_termination_apply_page.dart';
@@ -365,6 +366,14 @@ class AppRouter {
         builder: (context, state) {
           final houseId = state.pathParameters['houseId'] ?? 'unknown';
           return HouseDetailPage(houseId: houseId);
+        },
+      ),
+      GoRoute(
+        name: RouteNames.immersiveTour,
+        path: RoutePaths.immersiveTour,
+        builder: (context, state) {
+          final houseId = state.pathParameters['houseId'] ?? 'unknown';
+          return ImmersiveTourPage(houseId: houseId);
         },
       ),
 

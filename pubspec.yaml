@@ -76,6 +76,9 @@ flutter:
     - assets/lock_style.png
     - assets/zhuxiang_logo.png
     - assets/app_load_back.png
+    - assets/immersive_tour_viewer.html
+    - assets/pannellum/pannellum.css
+    - assets/pannellum/pannellum.js
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
