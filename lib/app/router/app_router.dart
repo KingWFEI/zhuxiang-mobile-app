@@ -14,6 +14,7 @@ import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/house/presentation/pages/find_house_page.dart';
 import '../../features/house/presentation/pages/house_detail_page.dart';
 import '../../features/house/presentation/pages/house_filter_page.dart';
+import '../../features/house/presentation/pages/house_map_page.dart';
 import '../../features/house/presentation/pages/house_search_page.dart';
 import '../../features/house/presentation/pages/house_search_result_page.dart';
 import '../../features/house/presentation/pages/immersive_tour_page.dart';
@@ -371,6 +372,19 @@ class AppRouter {
         builder: (context, state) {
           final houseId = state.pathParameters['houseId'] ?? 'unknown';
           return HouseDetailPage(houseId: houseId);
+        },
+      ),
+      GoRoute(
+        name: RouteNames.houseMap,
+        path: RoutePaths.houseMap,
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? const {};
+          return HouseMapPage(
+            latitude: (extra['latitude'] as num).toDouble(),
+            longitude: (extra['longitude'] as num).toDouble(),
+            houseTitle: extra['houseTitle'] as String? ?? '',
+            houseAddress: extra['houseAddress'] as String? ?? '',
+          );
         },
       ),
       GoRoute(

@@ -107,6 +107,7 @@ class RoleNavigationConfig {
       RouteNames.houseSearchResult,
       RouteNames.houseFilter,
       RouteNames.houseDetail,
+      RouteNames.houseMap,
       RouteNames.immersiveTour,
       // 预约 & 实名
       RouteNames.appointment,

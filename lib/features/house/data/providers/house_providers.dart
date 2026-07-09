@@ -25,9 +25,9 @@ final locallyRentedHouseIdsProvider = StateProvider<Set<String>>((ref) {
   return const <String>{};
 });
 
-/// 获取房源详情信息
+/// 获取房源详情信息（autoDispose 确保每次进入详情页都重新请求）
 final houseDetailProvider =
-    FutureProvider.family<ApiResult<HouseDetail>, String>((ref, houseId) async {
+    FutureProvider.autoDispose.family<ApiResult<HouseDetail>, String>((ref, houseId) async {
       final service = ref.watch(houseServiceProvider);
       return service.getHouseDetail(houseId);
     });
