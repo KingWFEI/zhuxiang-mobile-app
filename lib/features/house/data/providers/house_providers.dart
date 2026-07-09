@@ -38,17 +38,14 @@ final houseTagsProvider = FutureProvider<List<HouseTag>>((ref) async {
   return service.fetchTags();
 });
 
-final immersiveTourAvailabilityProvider =
-    FutureProvider.family<ApiResult<ImmersiveTourAvailability>, String>((
-      ref,
-      houseId,
-    ) async {
+final immersiveTourAvailabilityProvider = FutureProvider.autoDispose
+    .family<ApiResult<ImmersiveTourAvailability>, String>((ref, houseId) async {
       final service = ref.watch(houseServiceProvider);
       return service.getImmersiveTourAvailability(houseId);
     });
 
-final immersiveTourProvider =
-    FutureProvider.family<ApiResult<ImmersiveTour>, String>((ref, houseId) {
+final immersiveTourProvider = FutureProvider.autoDispose
+    .family<ApiResult<ImmersiveTour>, String>((ref, houseId) {
       final service = ref.watch(houseServiceProvider);
       return service.getImmersiveTour(houseId);
     });
