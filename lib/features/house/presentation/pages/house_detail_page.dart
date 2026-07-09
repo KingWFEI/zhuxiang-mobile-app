@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -165,7 +167,8 @@ class _DetailAppBar extends ConsumerWidget {
                 }
                 ref.invalidate(houseDetailProvider(house.id));
               } on Object {
-                if (context.mounted) AppToast.show(context, '操作失败', type: AppToastType.error);
+                if (context.mounted)
+                  AppToast.show(context, '操作失败', type: AppToastType.error);
               }
             },
             icon: house.isFavorite
@@ -611,15 +614,48 @@ class _FacilitiesCard extends StatelessWidget {
   }
 }
 
-class _ImmersiveTourEntryCard extends ConsumerWidget {
+class _ImmersiveTourEntryCard extends ConsumerStatefulWidget {
   const _ImmersiveTourEntryCard({required this.house});
 
   final HouseDetail house;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ImmersiveTourEntryCard> createState() =>
+      _ImmersiveTourEntryCardState();
+}
+
+class _ImmersiveTourEntryCardState
+    extends ConsumerState<_ImmersiveTourEntryCard>
+    with WidgetsBindingObserver {
+  Timer? _availabilityTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _availabilityTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      ref.invalidate(immersiveTourAvailabilityProvider(widget.house.id));
+    });
+  }
+
+  @override
+  void dispose() {
+    _availabilityTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.invalidate(immersiveTourAvailabilityProvider(widget.house.id));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final availabilityAsync = ref.watch(
-      immersiveTourAvailabilityProvider(house.id),
+      immersiveTourAvailabilityProvider(widget.house.id),
     );
 
     return availabilityAsync.when(
@@ -633,18 +669,13 @@ class _ImmersiveTourEntryCard extends ConsumerWidget {
 
         final coverUrl = availability.coverImageUrl.isNotEmpty
             ? availability.coverImageUrl
-            : house.coverImage;
+            : widget.house.coverImage;
 
         return Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
           child: InkWell(
             borderRadius: BorderRadius.circular(AppRadius.xl),
-            onTap: () {
-              context.pushNamed(
-                RouteNames.immersiveTour,
-                pathParameters: {'houseId': house.id},
-              );
-            },
+            onTap: _openImmersiveTour,
             child: Container(
               height: 112,
               clipBehavior: Clip.antiAlias,
@@ -761,6 +792,26 @@ class _ImmersiveTourEntryCard extends ConsumerWidget {
       loading: () => const SizedBox.shrink(),
     );
   }
+
+  Future<void> _openImmersiveTour() async {
+    final provider = immersiveTourAvailabilityProvider(widget.house.id);
+    ref.invalidate(provider);
+    final result = await ref.read(provider.future);
+    if (!mounted ||
+        result is! ApiSuccess<ImmersiveTourAvailability> ||
+        !result.data.available) {
+      return;
+    }
+
+    ref.invalidate(immersiveTourProvider(widget.house.id));
+    await context.pushNamed(
+      RouteNames.immersiveTour,
+      pathParameters: {'houseId': widget.house.id},
+    );
+    if (mounted) {
+      ref.invalidate(provider);
+    }
+  }
 }
 
 class _LandlordCard extends StatelessWidget {
@@ -807,7 +858,11 @@ class _LandlordCard extends StatelessWidget {
                       const SizedBox(width: AppSpacing.sm),
                       const Text(
                         '已实名',
-                        style: TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ],

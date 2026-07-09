@@ -18,14 +18,13 @@ class FavoriteHousesPage extends ConsumerStatefulWidget {
   const FavoriteHousesPage({super.key});
 
   @override
-  ConsumerState<FavoriteHousesPage> createState() =>
-      _FavoriteHousesPageState();
+  ConsumerState<FavoriteHousesPage> createState() => _FavoriteHousesPageState();
 }
 
 class _FavoriteHousesPageState extends ConsumerState<FavoriteHousesPage> {
   final ScrollController _scrollController = ScrollController();
   List<House> _houses = [];
-  bool _isLoading = true;
+  bool _isLoading = false;
   bool _hasMore = true;
   int _page = 1;
   String? _error;
@@ -48,7 +47,9 @@ class _FavoriteHousesPageState extends ConsumerState<FavoriteHousesPage> {
 
   void _loadMore() {
     if (!_scrollController.hasClients) return;
-    if (_scrollController.position.extentAfter < 200 && _hasMore && !_isLoading) {
+    if (_scrollController.position.extentAfter < 200 &&
+        _hasMore &&
+        !_isLoading) {
       _load();
     }
   }
@@ -66,9 +67,11 @@ class _FavoriteHousesPageState extends ConsumerState<FavoriteHousesPage> {
           .getFavoriteHouses(page: _page, pageSize: 20);
       if (!mounted) return;
       setState(() {
-        _page = result.page;
+        _page = result.page + 1;
         _hasMore = result.hasMore;
-        _houses = _page == 1 ? result.items : [..._houses, ...result.items];
+        _houses = result.page == 1
+            ? result.items
+            : [..._houses, ...result.items];
         _isLoading = false;
       });
     } on Object catch (e) {
