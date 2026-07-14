@@ -93,7 +93,9 @@ class RoleNavigationConfig {
       RouteNames.profile,
       // 租约
       RouteNames.lease,
+      RouteNames.leaseHistory,
       RouteNames.leaseDetail,
+      RouteNames.depositDetail,
       RouteNames.leaseContractView,
       RouteNames.leaseTerminationApply,
       RouteNames.rentOrders,
@@ -107,6 +109,7 @@ class RoleNavigationConfig {
       RouteNames.houseSearchResult,
       RouteNames.houseFilter,
       RouteNames.houseDetail,
+      RouteNames.houseMap,
       RouteNames.immersiveTour,
       // 预约 & 实名
       RouteNames.appointment,

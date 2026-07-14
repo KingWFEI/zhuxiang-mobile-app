@@ -6,11 +6,14 @@ import '../../../../core/network/api_result.dart';
 import '../../domain/entities/lease.dart';
 import '../../domain/entities/lease_contract_document.dart';
 import '../../domain/entities/lease_termination.dart';
+import '../../domain/entities/deposit.dart';
+import '../models/deposit_model.dart';
 import '../models/lease_model.dart';
 
 abstract class LeaseServiceContract {
   Future<List<Lease>> getMyLeases();
   Future<Lease> getLeaseDetail(String leaseId);
+  Future<DepositInfo?> getDeposit(String leaseId);
   Future<LeaseContractDocument> getLeaseContract(String leaseId);
   Future<void> renew(String leaseId);
   Future<LeaseTerminationAttachment> uploadTerminationAttachment({
@@ -47,6 +50,11 @@ class LeaseService implements LeaseServiceContract {
       () => _fetchLeaseDetail(leaseId),
       () => _fallback.getLeaseDetail(leaseId),
     );
+  }
+
+  @override
+  Future<DepositInfo?> getDeposit(String leaseId) {
+    return _fetchDeposit(leaseId);
   }
 
   @override
@@ -102,6 +110,21 @@ class LeaseService implements LeaseServiceContract {
     final payload = _payload(response.data);
     final items = _listPayload(payload);
     return items.map((json) => LeaseModel(json).toEntity()).toList();
+  }
+
+  Future<DepositInfo?> _fetchDeposit(String leaseId) async {
+    final response = await _request(
+      () => _apiClient.get('/deposits/my/$leaseId'),
+    );
+    final payload = _payload(response.data);
+    if (payload == null) return null;
+    if (payload is! Map<String, dynamic>) {
+      throw const ApiException(
+        type: ApiExceptionType.server,
+        message: '押金数据格式错误',
+      );
+    }
+    return DepositModel(payload).toEntity();
   }
 
   Future<Lease> _fetchLeaseDetail(String leaseId) async {
@@ -465,6 +488,12 @@ class MockLeaseService implements LeaseServiceContract {
   Future<Lease> getLeaseDetail(String leaseId) async {
     await Future<void>.delayed(const Duration(milliseconds: 180));
     return _leases.firstWhere((lease) => lease.id == leaseId);
+  }
+
+  @override
+  Future<DepositInfo?> getDeposit(String leaseId) async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    return null;
   }
 
   @override

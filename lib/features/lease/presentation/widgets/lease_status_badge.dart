@@ -4,16 +4,26 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../domain/entities/lease.dart';
 
 class LeaseStatusBadge extends StatelessWidget {
   const LeaseStatusBadge({
     required this.label,
     super.key,
-    this.color = AppColors.primary,
+    this.color,
   });
 
+  factory LeaseStatusBadge.forStatus(LeaseStatus status) {
+    return LeaseStatusBadge(
+      label: status.label,
+      color: status.color,
+    );
+  }
+
   final String label;
-  final Color color;
+  final Color? color;
+
+  Color get _effectiveColor => color ?? AppColors.primary;
 
   @override
   Widget build(BuildContext context) {
@@ -23,13 +33,13 @@ class LeaseStatusBadge extends StatelessWidget {
         vertical: AppSpacing.xs,
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: _effectiveColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: Text(
         label,
         style: AppTextStyles.bodySmall.copyWith(
-          color: color,
+          color: _effectiveColor,
           fontWeight: FontWeight.w700,
         ),
       ),

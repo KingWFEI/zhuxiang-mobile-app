@@ -7,6 +7,8 @@ class PaymentInfo {
     required this.serviceFee,
     required this.paymentMethods,
     this.selectedPaymentMethod,
+    this.payType,
+    this.paymentUrl,
   });
 
   final String orderId;
@@ -16,6 +18,8 @@ class PaymentInfo {
   final int serviceFee;
   final List<String> paymentMethods;
   final String? selectedPaymentMethod;
+  final String? payType;
+  final String? paymentUrl;
 
   PaymentInfo copyWith({String? selectedPaymentMethod}) {
     return PaymentInfo(
@@ -27,6 +31,8 @@ class PaymentInfo {
       paymentMethods: paymentMethods,
       selectedPaymentMethod:
           selectedPaymentMethod ?? this.selectedPaymentMethod,
+      payType: payType,
+      paymentUrl: paymentUrl,
     );
   }
 }

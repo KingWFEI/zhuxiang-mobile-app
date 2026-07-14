@@ -33,6 +33,8 @@ class HouseDetail {
     this.rentAvailability = '',
     this.activeOrderId = '',
     this.activeOrderBelongsToMe = false,
+    this.longitude,
+    this.latitude,
   });
 
   final String id;
@@ -68,6 +70,8 @@ class HouseDetail {
   final String rentAvailability;
   final String activeOrderId;
   final bool activeOrderBelongsToMe;
+  final double? longitude;
+  final double? latitude;
 
   bool get isRentLocked =>
       !isRented &&
@@ -120,8 +124,16 @@ class HouseDetail {
       activeOrderId:
           '${json['activeOrderId'] ?? json['active_order_id'] ?? ''}',
       activeOrderBelongsToMe: _parseActiveOrderBelongsToMe(json),
+      longitude: _parseBigDecimal(json['longitude']),
+      latitude: _parseBigDecimal(json['latitude']),
     );
   }
+}
+
+double? _parseBigDecimal(dynamic value) {
+  if (value == null) return null;
+  if (value is num) return value.toDouble();
+  return double.tryParse(value.toString());
 }
 
 bool _parseRented(Map<String, dynamic> json) {

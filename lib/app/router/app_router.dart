@@ -14,16 +14,22 @@ import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/house/presentation/pages/find_house_page.dart';
 import '../../features/house/presentation/pages/house_detail_page.dart';
 import '../../features/house/presentation/pages/house_filter_page.dart';
+import '../../features/house/presentation/pages/house_map_page.dart';
 import '../../features/house/presentation/pages/house_search_page.dart';
 import '../../features/house/presentation/pages/house_search_result_page.dart';
 import '../../features/house/presentation/pages/immersive_tour_page.dart';
+import '../../features/lease/presentation/pages/deposit_detail_page.dart';
 import '../../features/lease/presentation/pages/lease_contract_view_page.dart';
 import '../../features/lease/presentation/pages/lease_detail_page.dart';
+import '../../features/lease/presentation/pages/lease_history_page.dart';
 import '../../features/lease/presentation/pages/lease_termination_apply_page.dart';
 import '../../features/lease/presentation/pages/my_leases_page.dart';
 import '../../features/lock/presentation/pages/unlock_records_page.dart';
 import '../../features/lock/presentation/pages/tenant_lock_unlock_page.dart';
+import '../../features/message/domain/entities/app_message.dart';
+import '../../features/message/presentation/pages/message_detail_page.dart';
 import '../../features/message/presentation/pages/message_page.dart';
+import '../../features/bill/presentation/pages/bill_list_page.dart';
 import '../../features/payment/presentation/pages/payment_detail_page.dart';
 import '../../features/payment/presentation/pages/payment_records_page.dart';
 import '../../features/profile/presentation/pages/favorite_houses_page.dart';
@@ -289,10 +295,24 @@ class AppRouter {
             const MyLeasesPage(enforceAuthentication: false),
         routes: [
           GoRoute(
+            name: RouteNames.leaseHistory,
+            path: RoutePaths.leaseHistory,
+            builder: (context, state) => const LeaseHistoryPage(),
+          ),
+          GoRoute(
             name: RouteNames.leaseDetail,
             path: RoutePaths.leaseDetail,
             builder: (context, state) =>
                 LeaseDetailPage(leaseId: state.pathParameters['leaseId'] ?? ''),
+            routes: [
+              GoRoute(
+                name: RouteNames.depositDetail,
+                path: RoutePaths.depositDetail,
+                builder: (context, state) => DepositDetailPage(
+                  leaseId: state.pathParameters['leaseId'] ?? '',
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -374,6 +394,19 @@ class AppRouter {
         },
       ),
       GoRoute(
+        name: RouteNames.houseMap,
+        path: RoutePaths.houseMap,
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? const {};
+          return HouseMapPage(
+            latitude: (extra['latitude'] as num).toDouble(),
+            longitude: (extra['longitude'] as num).toDouble(),
+            houseTitle: extra['houseTitle'] as String? ?? '',
+            houseAddress: extra['houseAddress'] as String? ?? '',
+          );
+        },
+      ),
+      GoRoute(
         name: RouteNames.immersiveTour,
         path: RoutePaths.immersiveTour,
         builder: (context, state) {
@@ -394,11 +427,11 @@ class AppRouter {
         builder: (context, state) => const AppPlaceholderPage(title: '实名认证'),
       ),
 
-      // ── 账单 & 门锁（占位页面，待开发）──
+      // ── 账单 ──
       GoRoute(
         name: RouteNames.bill,
         path: RoutePaths.bill,
-        builder: (context, state) => const AppPlaceholderPage(title: '账单'),
+        builder: (context, state) => const BillListPage(),
       ),
       GoRoute(
         name: RouteNames.lock,
@@ -465,6 +498,16 @@ class AppRouter {
         ),
       ),
 
+      // ── 消息详情（挂到根 Navigator，不显示底部 Tab）──
+      GoRoute(
+        name: RouteNames.messageDetail,
+        path: RoutePaths.messageDetail,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final message = state.extra as AppMessage;
+          return MessageDetailPage(message: message);
+        },
+      ),
       // ── 收藏 ──
       GoRoute(
         name: RouteNames.favoriteHouses,

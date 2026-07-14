@@ -16,9 +16,21 @@ class HouseService {
 
   final ApiClient apiClient;
 
-  /// 返回搜索页热门小区。
-  List<HotCommunity> getHotCommunities() {
-    return const [];
+  /// 返回搜索页热门小区（GET /houses/hot-communities）。
+  Future<List<HotCommunity>> getHotCommunities() async {
+    final result = await apiClient.get('/houses/hot-communities');
+    if (result is ApiSuccess<Response<dynamic>>) {
+      final body = result.data.data;
+      if (body is Map<String, dynamic> && body['code'] == 200) {
+        final data = body['data'];
+        if (data is List) {
+          return data
+              .map((e) => HotCommunity.fromJson(e as Map<String, dynamic>))
+              .toList();
+        }
+      }
+    }
+    return [];
   }
 
   /// 获取房源快捷筛选标签列表。
@@ -245,7 +257,7 @@ class HouseService {
         final data = body['data'] as Map<String, dynamic>?;
         if (data != null) {
           final records =
-              (data['records'] as List<dynamic>?)
+              (data['items'] as List<dynamic>?)
                   ?.map((e) => House.fromJson(e as Map<String, dynamic>))
                   .toList() ??
               [];

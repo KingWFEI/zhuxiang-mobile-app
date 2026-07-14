@@ -54,6 +54,8 @@ dependencies:
   geolocator: ^14.0.3
   flutter_markdown: ^0.7.7
   webview_flutter: ^4.10.0
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -78,6 +80,7 @@ flutter:
     - assets/lock_style.png
     - assets/zhuxiang_logo.png
     - assets/app_load_back.png
+    - assets/message_bk.png
     - assets/immersive_tour_viewer.html
     - assets/pannellum/pannellum.css
     - assets/pannellum/pannellum.js

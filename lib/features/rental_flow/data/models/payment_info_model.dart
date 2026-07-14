@@ -9,6 +9,8 @@ class PaymentInfoModel extends PaymentInfo {
     required super.serviceFee,
     required super.paymentMethods,
     super.selectedPaymentMethod,
+    super.payType,
+    super.paymentUrl,
   });
 
   factory PaymentInfoModel.fromJson(Map<String, dynamic> json) {
@@ -31,6 +33,9 @@ class PaymentInfoModel extends PaymentInfo {
       selectedPaymentMethod:
           json['selectedPaymentMethod'] as String? ??
           json['selected_payment_method'] as String?,
+      payType: json['payType'] as String? ?? json['pay_type'] as String?,
+      paymentUrl:
+          json['paymentUrl'] as String? ?? json['payment_url'] as String?,
     );
   }
 }

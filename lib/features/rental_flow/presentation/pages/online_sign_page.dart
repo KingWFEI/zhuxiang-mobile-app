@@ -171,6 +171,7 @@ class _OnlineSignPageState extends ConsumerState<OnlineSignPage> {
     ref.invalidate(houseSearchProvider);
     ref.invalidate(leaseControllerProvider);
     ref.invalidate(currentHomeProvider);
+    ref.invalidate(myRentOrdersProvider);
     final leaseId = await _findCurrentLeaseId(houseId: houseId);
     if (!mounted) return;
     // 先回到首页（清空租房流程栈），再 push 租约详情，确保侧滑返回时回到首页而非退出 app

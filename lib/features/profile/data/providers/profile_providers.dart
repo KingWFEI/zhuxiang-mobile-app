@@ -9,12 +9,17 @@ final profileServiceProvider = Provider<ProfileService>((ref) {
   return ProfileService(apiClient);
 });
 
-/// 当前租约 + 门锁信息
+/// 当前所有租约 + 门锁信息
 final currentHomeProvider =
-    FutureProvider<({CurrentHome? home, LockInfo? lock})?>((ref) async {
+    FutureProvider<({List<CurrentHome> homes, LockInfo? lock})?>((ref) async {
       final service = ref.watch(profileServiceProvider);
-      final result = await service.getCurrentHomeWithLock();
-      // 都为空时返回 null 表示无数据
-      if (result.home == null && result.lock == null) return null;
-      return result;
+      final homes = await service.getCurrentHomes();
+      LockInfo? lock;
+      try {
+        lock = await service.getLockInfo();
+      } on Object {
+        // 忽略单个接口错误
+      }
+      if (homes.isEmpty && lock == null) return null;
+      return (homes: homes, lock: lock);
     });

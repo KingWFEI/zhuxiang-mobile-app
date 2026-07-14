@@ -9,12 +9,28 @@ class ProfileService {
 
   final ApiClient apiClient;
 
-  /// 获取当前租约房源信息，无租约时返回 null。
-  Future<CurrentHome?> getCurrentHome() async {
+  /// 获取当前所有生效租约的房源信息，无租约时返回空列表。
+  Future<List<CurrentHome>> getCurrentHomes() async {
     final result = await apiClient.get('/profile/current-home');
 
     return result.when(
-      success: (response) => _extractData(response, CurrentHome.fromJson),
+      success: (response) {
+        final body = response.data;
+        if (body is Map<String, dynamic>) {
+          final data = body['data'];
+          if (data is List) {
+            return data
+                .whereType<Map<String, dynamic>>()
+                .map(CurrentHome.fromJson)
+                .toList();
+          }
+          // 兼容旧格式：单个对象
+          if (data is Map<String, dynamic>) {
+            return [CurrentHome.fromJson(data)];
+          }
+        }
+        return [];
+      },
       failure: (message, error) {
         throw error is ApiException
             ? error
@@ -25,6 +41,13 @@ class ProfileService {
               );
       },
     );
+  }
+
+  /// 获取当前租约房源信息，取第一套，无租约时返回 null。
+  /// 保留此方法以兼容旧调用方。
+  Future<CurrentHome?> getCurrentHome() async {
+    final homes = await getCurrentHomes();
+    return homes.isNotEmpty ? homes.first : null;
   }
 
   /// 获取门锁展示信息，无门锁时返回 null。

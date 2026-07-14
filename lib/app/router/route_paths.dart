@@ -15,6 +15,7 @@ class RoutePaths {
   static const houseSearchResult = '/house-search-result';
   static const houseFilter = '/house-filter';
   static const houseDetail = '/houses/:houseId';
+  static const houseMap = '/houses/:houseId/map';
   static const immersiveTour = '/houses/:houseId/immersive-tour';
   static const appointment = '/appointment';
   static const realNameAuth = '/real-name-auth';
@@ -22,6 +23,8 @@ class RoutePaths {
   static const profileEdit = '/profile/edit';
   static const settings = '/profile/settings';
   static const lease = '/leases';
+  static const leaseHistory = 'history';
+  static const depositDetail = 'deposit';
   static const leaseDetail = ':leaseId';
   static const leaseContractView = '/leases/:leaseId/contract';
   static const leaseTerminationApply = '/leases/:leaseId/termination/apply';
@@ -38,6 +41,7 @@ class RoutePaths {
   static const repairDetail = '/repairs/:repairId';
   static const repairRecords = '/repairs/records';
   static const messageCenter = '/messages';
+  static const messageDetail = '/messages/:messageId';
   static const customerService = '/customer-service';
   static const customerServiceEnter = '/customer-service-chat';
   static const customerServiceChat = '/customer-service-chat/:sessionId';
