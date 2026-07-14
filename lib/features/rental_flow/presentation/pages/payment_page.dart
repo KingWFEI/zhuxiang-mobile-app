@@ -12,6 +12,7 @@ import '../../domain/entities/rental_flow_step.dart';
 import '../widgets/rent_fee_detail_card.dart';
 import '../widgets/rental_flow_bottom_bar.dart';
 import '../widgets/rental_flow_page_shell.dart';
+import 'alipay_webview_page.dart';
 
 class PaymentPage extends ConsumerStatefulWidget {
   const PaymentPage({required this.orderId, super.key});
@@ -108,14 +109,48 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
       AppToast.show(context, '请选择支付方式', type: AppToastType.error);
       return;
     }
-    final ok = await ref
+
+    final channel = _channelForMethod(selected);
+    final result = await ref
         .read(rentalFlowControllerProvider.notifier)
-        .submitPayment(widget.orderId, selected);
-    if (!mounted || !ok) return;
+        .submitPayment(widget.orderId, selected, channel);
+    if (!mounted || result == null) return;
+
+    // 支付宝 H5 支付 → 打开 WebView
+    if (result.needWebView) {
+      final paid = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AlipayWebViewPage(
+            paymentUrl: result.paymentUrl!,
+            orderId: widget.orderId,
+            paymentNo: result.paymentNo,
+          ),
+        ),
+      );
+      if (!mounted) return;
+      if (paid == true) {
+        context.pushReplacementNamed(
+          RouteNames.onlineSign,
+          pathParameters: {'orderId': widget.orderId},
+        );
+      }
+      return;
+    }
+
+    // mock 支付 → 直接跳转签约
+    ref.invalidate(myRentOrdersProvider);
     context.pushReplacementNamed(
       RouteNames.onlineSign,
       pathParameters: {'orderId': widget.orderId},
     );
+  }
+
+  /// 支付方式显示名 → 后端渠道名
+  String _channelForMethod(String method) {
+    if (method.contains('支付宝') || method == 'alipay') return 'alipay';
+    if (method.contains('微信') || method == 'wechat') return 'wechat';
+    return 'mock';
   }
 }
 

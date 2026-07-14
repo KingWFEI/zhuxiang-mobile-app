@@ -256,22 +256,41 @@ class _GuestCard extends StatelessWidget {
   }
 }
 
-class _DashboardCard extends ConsumerWidget {
+class _DashboardCard extends ConsumerStatefulWidget {
   const _DashboardCard();
+
+  @override
+  ConsumerState<_DashboardCard> createState() => _DashboardCardState();
+}
+
+class _DashboardCardState extends ConsumerState<_DashboardCard> {
+  PageController? _pageController;
 
   static const _menuItems = [
     (Icons.description, '我的租约', AppColors.primary),
     (Icons.receipt_long, '我的订单', AppColors.primary),
     (Icons.payments, '支付记录', AppColors.secondary),
     (Icons.lock_clock, '开门记录', AppColors.secondary),
-    (Icons.account_balance_wallet, '押金账单', AppColors.warning),
+    (Icons.account_balance_wallet, '我的账单', AppColors.warning),
     (Icons.build, '报修服务', AppColors.warning),
     (Icons.badge, '实名认证', AppColors.primary),
     (Icons.star, '我的收藏', Color(0xFF7667F8)),
   ];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final result = ref.watch(currentHomeProvider);
 
     return result.when(
@@ -282,30 +301,15 @@ class _DashboardCard extends ConsumerWidget {
   }
 
   Widget _buildContent(
-    BuildContext context,
-    ({CurrentHome? home, LockInfo? lock})? data,
+    BuildContext ctx,
+    ({List<CurrentHome> homes, LockInfo? lock})? data,
   ) {
-    final home = data?.home;
+    final homes = data?.homes ?? const [];
     final lock = data?.lock;
-
-    final lockInvalid =
-        lock?.isLeaseInvalidForLock == true ||
-        (home?.leaseStatus.isNotEmpty == true &&
-            const [
-              'TERMINATED',
-              'EXPIRED',
-              'CHECKED_OUT',
-              'CANCELLED',
-            ].contains(home!.leaseStatus.toUpperCase()));
-
-    final leaseId = lockInvalid
-        ? ''
-        : home?.leaseId.isNotEmpty == true
-        ? home!.leaseId
-        : lock?.leaseId ?? '';
-
-    final hasHomeData =
-        data != null && (home?.addressLabel.isNotEmpty == true || lock != null);
+    final hasHomeData = homes.isNotEmpty || data?.lock != null;
+    final showCarousel = homes.length > 1;
+    final currentPageNotifier =
+        showCarousel ? (ValueNotifier<int>(0)) : null;
 
     return Container(
       decoration: BoxDecoration(
@@ -316,94 +320,50 @@ class _DashboardCard extends ConsumerWidget {
           stops: [0.0, 0.5],
         ),
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        // boxShadow: AppShadows.card,
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // ── 门锁区域 ──
-          if (hasHomeData)
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Positioned(
-                  top: 0,
-                  right: 96,
-                  child: Image.asset(
-                    'assets/lock_style.png',
-                    width: 80,
-                    fit: BoxFit.fitWidth,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    AppSpacing.lg,
-                    AppSpacing.lg,
-                    AppSpacing.lg,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('当前居住', style: AppTextStyles.bodySmall),
-                            const SizedBox(height: AppSpacing.xs),
-                            Text(
-                              home?.addressLabel ?? '--',
-                              style: AppTextStyles.bodyLarge.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            _LockStatusChip(
-                              lock: lock,
-                              leaseInvalid: lockInvalid,
-                            ),
-                            // if (home?.address.isNotEmpty == true) ...[
-                            //   const SizedBox(height: AppSpacing.lg),
-                            //   Text(
-                            //     home!.address,
-                            //     style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
-                            //   ),
-                            // ],
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      SizedBox(
-                        width: 84,
-                        child: OutlinedButton(
-                          onPressed: leaseId.isEmpty
-                              ? null
-                              : () => context.pushNamed(
+          if (hasHomeData) ...[
+            SizedBox(
+              height: 120,
+              child: homes.isNotEmpty
+                  ? _buildHomePageView(
+                      homes: homes,
+                      lock: lock,
+                      currentPageNotifier: currentPageNotifier,
+                    )
+                  : (() {
+                      final lkLeaseId = lock?.isLeaseInvalidForLock == true
+                          ? ''
+                          : (lock?.leaseId ?? '');
+                      return _LockCardContent(
+                        address: null,
+                        lock: lock,
+                        lockInvalid: lock?.isLeaseInvalidForLock ?? false,
+                        onViewLock: lkLeaseId.isEmpty
+                            ? null
+                            : () => ctx.pushNamed(
                                   RouteNames.tenantLockUnlock,
-                                  pathParameters: {'leaseId': leaseId},
+                                  pathParameters: {'leaseId': lkLeaseId},
                                 ),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size(0, 34),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.xs,
-                            ),
-                            textStyle: AppTextStyles.bodySmall.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                            backgroundColor: Colors.white.withValues(
-                              alpha: 0.8,
-                            ),
-                          ),
-                          child: const Text('查看门锁'),
-                        ),
-                      ),
-                    ],
+                      );
+                    })(),
+            ),
+            if (showCarousel && currentPageNotifier != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: ValueListenableBuilder<int>(
+                  valueListenable: currentPageNotifier,
+                  builder: (_, page, _) => _PageDots(
+                    count: homes.length,
+                    current: page,
                   ),
                 ),
-              ],
-            ),
-          // ── 菜单网格 ──
+              ),
+          ],
           Padding(
             padding: const EdgeInsets.all(AppSpacing.sm),
             child: GridView.builder(
@@ -416,11 +376,11 @@ class _DashboardCard extends ConsumerWidget {
                 mainAxisSpacing: AppSpacing.xs,
                 crossAxisSpacing: AppSpacing.xs,
               ),
-              itemBuilder: (ctx, index) {
+              itemBuilder: (itemCtx, index) {
                 final item = _menuItems[index];
                 return InkWell(
                   borderRadius: BorderRadius.circular(AppRadius.md),
-                  onTap: () => _onMenuItemTap(context, index),
+                  onTap: () => _onMenuItemTap(itemCtx, index),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -447,6 +407,34 @@ class _DashboardCard extends ConsumerWidget {
     );
   }
 
+  Widget _buildHomePageView({
+    required List<CurrentHome> homes,
+    required LockInfo? lock,
+    required ValueNotifier<int>? currentPageNotifier,
+  }) {
+    final children = homes.map((home) {
+      final matchedLock =
+          lock != null && lock.leaseId == home.leaseId ? lock : null;
+      return _HomeLockCard(
+        home: home,
+        lock: matchedLock,
+      );
+    }).toList();
+
+    if (_pageController != null) {
+      return PageView.builder(
+        controller: _pageController,
+        itemCount: children.length,
+        onPageChanged: (page) {
+          currentPageNotifier?.value = page;
+        },
+        itemBuilder: (_, i) => children[i],
+      );
+    }
+
+    return children.first;
+  }
+
   Widget _buildMenuOnly(BuildContext context) {
     return _buildContent(context, null);
   }
@@ -461,11 +449,249 @@ class _DashboardCard extends ConsumerWidget {
         context.pushNamed(RouteNames.paymentRecords);
       case 3:
         context.pushNamed(RouteNames.unlockRecords);
+      case 4:
+        context.pushNamed(RouteNames.bill);
       case 5:
         context.pushNamed(RouteNames.repairs);
       case 7:
         context.pushNamed(RouteNames.favoriteHouses);
     }
+  }
+}
+
+// ── 多房源滑动卡片 ──
+
+class _HomeLockCard extends StatelessWidget {
+  const _HomeLockCard({
+    required this.home,
+    this.lock,
+  });
+
+  final CurrentHome home;
+  final LockInfo? lock;
+
+  static const _invalidStatuses = [
+    'TERMINATED',
+    'EXPIRED',
+    'CHECKED_OUT',
+    'CANCELLED',
+  ];
+
+  bool get _isLeaseInvalid =>
+      _invalidStatuses.contains(home.leaseStatus.toUpperCase());
+
+  bool get _hasLock =>
+      home.lockId != null &&
+      home.lockId!.isNotEmpty &&
+      home.lockStatus.toUpperCase() != 'UNBOUND' &&
+      !_isLeaseInvalid;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_hasLock) {
+      return _LockCardContent(
+        address: home.addressLabel.isNotEmpty ? home.addressLabel : home.address,
+        lock: lock,
+        lockInvalid: _isLeaseInvalid,
+        onViewLock: () => context.pushNamed(
+          RouteNames.tenantLockUnlock,
+          pathParameters: {'leaseId': home.leaseId},
+        ),
+      );
+    }
+    return _NoLockCard(
+      address: home.addressLabel.isNotEmpty ? home.addressLabel : home.address,
+      leaseInvalid: _isLeaseInvalid,
+      coverImage: home.coverImage,
+    );
+  }
+}
+
+class _NoLockCard extends StatelessWidget {
+  _NoLockCard({this.address, this.leaseInvalid = false, this.coverImage = ''});
+
+  final String? address;
+  final bool leaseInvalid;
+  final String coverImage;
+
+  @override
+  Widget build(BuildContext context) {
+    final showAddress = address?.isNotEmpty == true;
+    final hasCover = coverImage.isNotEmpty;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.md,
+        AppSpacing.lg,
+        AppSpacing.md,
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: SizedBox(
+              width: 72,
+              height: 72,
+              child: hasCover
+                  ? Image.network(coverImage, fit: BoxFit.cover)
+                  : Container(
+                      color: const Color(0xFFF0F0F0),
+                      child: Icon(
+                        leaseInvalid ? Icons.home_outlined : Icons.home_work_outlined,
+                        color: AppColors.textMuted,
+                        size: 28,
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('当前居住', style: AppTextStyles.bodySmall),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  showAddress ? address! : '--',
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Chip(
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  avatar: Icon(
+                    leaseInvalid ? Icons.info_outline : Icons.lock_open,
+                    size: 14,
+                    color: AppColors.textMuted,
+                  ),
+                  label: Text(
+                    leaseInvalid ? '租约已失效' : '暂未绑定门锁',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textMuted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  backgroundColor: const Color(0xFFF5F5F5),
+                  side: BorderSide.none,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LockCardContent extends StatelessWidget {
+  const _LockCardContent({
+    this.address,
+    this.lock,
+    this.lockInvalid = false,
+    this.onViewLock,
+  });
+
+  final String? address;
+  final LockInfo? lock;
+  final bool lockInvalid;
+  final VoidCallback? onViewLock;
+
+  @override
+  Widget build(BuildContext context) {
+    final showAddress = address?.isNotEmpty == true;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned(
+          top: 0,
+          right: 96,
+          child: Image.asset(
+            'assets/lock_style.png',
+            width: 80,
+            fit: BoxFit.fitWidth,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.lg,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('当前居住', style: AppTextStyles.bodySmall),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      showAddress ? address! : '--',
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    _LockStatusChip(
+                      lock: lock,
+                      leaseInvalid: lockInvalid,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              SizedBox(
+                width: 84,
+                child: OutlinedButton(
+                  onPressed: onViewLock,
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 34),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.xs),
+                    textStyle: AppTextStyles.bodySmall.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    backgroundColor:
+                        Colors.white.withValues(alpha: 0.8),
+                  ),
+                  child: const Text('查看门锁'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PageDots extends StatelessWidget {
+  const _PageDots({required this.count, required this.current});
+
+  final int count;
+  final int current;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(count, (i) {
+        final active = i == current;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          width: active ? 16 : 6,
+          height: 6,
+          decoration: BoxDecoration(
+            color: active ? AppColors.primary : AppColors.primarySoft,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        );
+      }),
+    );
   }
 }
 

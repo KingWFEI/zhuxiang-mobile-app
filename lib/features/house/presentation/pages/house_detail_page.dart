@@ -291,7 +291,12 @@ class _DetailContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.pageHorizontal,
+        AppSpacing.lg,
+        AppSpacing.pageHorizontal,
+        0,
+      ),
       decoration: const BoxDecoration(color: Colors.white),
       margin: const EdgeInsets.only(bottom: 40),
       child: Column(
@@ -1005,9 +1010,9 @@ class _BottomActionBar extends ConsumerWidget {
       top: false,
       child: Container(
         padding: const EdgeInsets.fromLTRB(
-          AppSpacing.xl,
+          AppSpacing.pageHorizontal,
           AppSpacing.md,
-          AppSpacing.xl,
+          AppSpacing.pageHorizontal,
           AppSpacing.md,
         ),
         decoration: const BoxDecoration(
@@ -1186,10 +1191,10 @@ class _DetailSkeleton extends StatelessWidget {
                 offset: const Offset(0, -26),
                 child: Container(
                   padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.xl,
-                    AppSpacing.xl,
-                    AppSpacing.xl,
-                    AppSpacing.xl,
+                    AppSpacing.pageHorizontal,
+                    AppSpacing.lg,
+                    AppSpacing.pageHorizontal,
+                    0,
                   ),
                   margin: const EdgeInsets.only(bottom: 40),
                   decoration: const BoxDecoration(
@@ -1369,9 +1374,9 @@ class _DetailSkeleton extends StatelessWidget {
             top: false,
             child: Container(
               padding: const EdgeInsets.fromLTRB(
-                AppSpacing.xl,
+                AppSpacing.pageHorizontal,
                 AppSpacing.md,
-                AppSpacing.xl,
+                AppSpacing.pageHorizontal,
                 AppSpacing.md,
               ),
               decoration: BoxDecoration(

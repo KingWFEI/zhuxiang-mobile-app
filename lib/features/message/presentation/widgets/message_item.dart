@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
-import '../../../../app/theme/app_text_styles.dart';
 import '../../domain/entities/app_message.dart';
 
 class MessageItem extends StatelessWidget {
@@ -12,6 +10,7 @@ class MessageItem extends StatelessWidget {
     required this.onTap,
     required this.onDelete,
     required this.onDeleted,
+    this.showDivider = false,
     super.key,
   });
 
@@ -19,6 +18,7 @@ class MessageItem extends StatelessWidget {
   final VoidCallback onTap;
   final Future<bool> Function() onDelete;
   final VoidCallback onDeleted;
+  final bool showDivider;
 
   @override
   Widget build(BuildContext context) {
@@ -30,10 +30,7 @@ class MessageItem extends StatelessWidget {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: AppSpacing.xl),
-        decoration: BoxDecoration(
-          color: AppColors.error,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-        ),
+        color: AppColors.error,
         child: const Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -44,76 +41,82 @@ class MessageItem extends StatelessWidget {
         ),
       ),
       child: Material(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+        color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          child: Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(
-                color: message.isRead
-                    ? AppColors.border
-                    : AppColors.primary.withValues(alpha: 0.18),
-              ),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x0A000000),
-                  blurRadius: 12,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 15, 14, 0),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _MessageIcon(message: message),
-                const SizedBox(width: AppSpacing.md),
+                const SizedBox(width: 14),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          if (!message.isRead) ...[
-                            const CircleAvatar(
-                              radius: 4,
-                              backgroundColor: AppColors.error,
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                          ],
-                          Expanded(
-                            child: Text(
-                              message.title.isEmpty ? '消息通知' : message.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTextStyles.titleMedium.copyWith(
-                                fontSize: 15,
-                                fontWeight: message.isRead
-                                    ? FontWeight.w500
-                                    : FontWeight.w700,
+                  child: Container(
+                    height: 65,
+                    padding: const EdgeInsets.only(bottom: 14),
+                    decoration: BoxDecoration(
+                      border: showDivider
+                          ? const Border(
+                              bottom: BorderSide(color: Color(0xFFF0F2F5)),
+                            )
+                          : null,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                message.title.isEmpty ? '消息通知' : message.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Color(0xFF172236),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.2,
+                                ),
                               ),
-                            ),
+                              const SizedBox(height: 12),
+                              Text(
+                                message.content.isEmpty
+                                    ? '暂无消息内容'
+                                    : message.content,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Color(0xFF8A94A5),
+                                  fontSize: 13,
+                                  height: 1.2,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Text(
-                            _formatTime(message.createdAt),
-                            style: AppTextStyles.bodySmall.copyWith(
-                              fontSize: 11,
-                            ),
+                        ),
+                        const SizedBox(width: 10),
+                        SizedBox(
+                          width: 48,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                _formatTime(message.createdAt),
+                                maxLines: 1,
+                                style: const TextStyle(
+                                  color: Color(0xFFA0A8B5),
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const Spacer(),
+                              if (!message.isRead) const _UnreadDot(),
+                            ],
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        message.content.isEmpty ? '暂无消息内容' : message.content,
-                        style: AppTextStyles.bodySmall.copyWith(height: 1.45),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -132,11 +135,65 @@ class _MessageIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _categoryColor(message.category);
-    return CircleAvatar(
-      radius: 20,
-      backgroundColor: color.withValues(alpha: 0.12),
-      child: Icon(_messageIcon(message), color: color, size: 20),
+    final colors = _categoryGradient(message.category);
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: colors,
+        ),
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Center(
+            child: Icon(_messageIcon(message), color: Colors.white, size: 26),
+          ),
+          if (!message.isRead)
+            Positioned(
+              right: -1,
+              top: -1,
+              child: Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF5B55),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UnreadDot extends StatelessWidget {
+  const _UnreadDot();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 22,
+      height: 22,
+      alignment: Alignment.center,
+      decoration: const BoxDecoration(
+        color: Color(0xFF2478ED),
+        shape: BoxShape.circle,
+      ),
+      child: const Text(
+        '1',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
     );
   }
 }
@@ -145,39 +202,40 @@ IconData _messageIcon(AppMessage message) {
   final iconKey = message.iconKey?.toLowerCase();
   if (iconKey != null) {
     if (iconKey.contains('contract') || iconKey.contains('lease')) {
-      return Icons.description_outlined;
+      return Icons.event_available_rounded;
     }
     if (iconKey.contains('bill') || iconKey.contains('wallet')) {
-      return Icons.account_balance_wallet_outlined;
+      return Icons.receipt_long_rounded;
     }
     if (iconKey.contains('lock') || iconKey.contains('door')) {
-      return Icons.lock_open_outlined;
+      return Icons.shield_rounded;
     }
     if (iconKey.contains('repair') || iconKey.contains('build')) {
-      return Icons.build_outlined;
+      return Icons.handyman_rounded;
     }
     if (iconKey.contains('appointment') || iconKey.contains('event')) {
-      return Icons.event_available_outlined;
+      return Icons.campaign_rounded;
     }
   }
   return switch (message.category) {
-    MessageCategory.appointment => Icons.event_available_outlined,
-    MessageCategory.lease => Icons.description_outlined,
-    MessageCategory.bill => Icons.account_balance_wallet_outlined,
-    MessageCategory.repair => Icons.build_outlined,
-    MessageCategory.lock => Icons.lock_open_outlined,
-    MessageCategory.system || null => Icons.notifications_none_rounded,
+    MessageCategory.appointment => Icons.campaign_rounded,
+    MessageCategory.lease => Icons.event_available_rounded,
+    MessageCategory.bill => Icons.receipt_long_rounded,
+    MessageCategory.repair => Icons.handyman_rounded,
+    MessageCategory.lock => Icons.shield_rounded,
+    MessageCategory.system || null => Icons.home_rounded,
   };
 }
 
-Color _categoryColor(MessageCategory? category) {
+List<Color> _categoryGradient(MessageCategory? category) {
   return switch (category) {
-    MessageCategory.appointment => AppColors.secondary,
-    MessageCategory.lease => AppColors.primary,
-    MessageCategory.bill => AppColors.warning,
-    MessageCategory.repair => const Color(0xFF7C4DFF),
-    MessageCategory.lock => const Color(0xFF00A3A3),
-    MessageCategory.system || null => AppColors.primaryDark,
+    MessageCategory.appointment => const [Color(0xFF9E7BFF), Color(0xFF7454EF)],
+    MessageCategory.lease => const [Color(0xFF5FD276), Color(0xFF33AE54)],
+    MessageCategory.bill => const [Color(0xFFFFBE5C), Color(0xFFFF9D32)],
+    MessageCategory.repair => const [Color(0xFF9B7CFA), Color(0xFF7458EC)],
+    MessageCategory.lock => const [Color(0xFF5BB8FF), Color(0xFF318CEB)],
+    MessageCategory.system ||
+    null => const [Color(0xFF5CB4FF), Color(0xFF338CEB)],
   };
 }
 
@@ -188,7 +246,7 @@ String _formatTime(DateTime? time) {
   final date = DateTime(time.year, time.month, time.day);
   final clock =
       '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-  if (date == today) return '今天 $clock';
-  if (date == today.subtract(const Duration(days: 1))) return '昨天 $clock';
-  return '${time.month.toString().padLeft(2, '0')}-${time.day.toString().padLeft(2, '0')} $clock';
+  if (date == today) return clock;
+  if (date == today.subtract(const Duration(days: 1))) return '昨天';
+  return '${time.month.toString().padLeft(2, '0')}/${time.day.toString().padLeft(2, '0')}';
 }

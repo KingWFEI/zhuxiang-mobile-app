@@ -9,6 +9,7 @@ import '../../../../core/constants/storage_keys.dart';
 import '../../../../core/network/api_client_provider.dart';
 import '../../../../core/storage/local_storage.dart';
 import '../../../../core/storage/storage_service.dart';
+import '../models/hot_community.dart';
 import '../models/house_tag.dart';
 import '../services/house_service.dart';
 
@@ -53,6 +54,12 @@ final immersiveTourProvider = FutureProvider.autoDispose
 /// 热门搜索关键词
 final hotKeywordsProvider = Provider<List<String>>((ref) {
   return const ['近地铁', '整租', '两居室', '可月付', '智能门锁'];
+});
+
+/// 热门小区列表（GET /houses/hot-communities）
+final hotCommunitiesProvider = FutureProvider<List<HotCommunity>>((ref) async {
+  final service = ref.watch(houseServiceProvider);
+  return service.getHotCommunities();
 });
 
 /// 搜索历史管理

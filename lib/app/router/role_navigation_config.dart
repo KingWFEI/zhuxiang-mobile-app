@@ -93,7 +93,9 @@ class RoleNavigationConfig {
       RouteNames.profile,
       // 租约
       RouteNames.lease,
+      RouteNames.leaseHistory,
       RouteNames.leaseDetail,
+      RouteNames.depositDetail,
       RouteNames.leaseContractView,
       RouteNames.leaseTerminationApply,
       RouteNames.rentOrders,

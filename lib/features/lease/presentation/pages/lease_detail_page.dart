@@ -17,7 +17,6 @@ import '../../data/providers/lease_providers.dart';
 import '../../domain/entities/lease.dart';
 import '../../domain/entities/lease_termination.dart';
 import '../widgets/current_lease_card.dart';
-import '../widgets/keeper_service_card.dart';
 import '../widgets/lease_action_grid.dart';
 import '../widgets/lease_status_badge.dart';
 import '../widgets/rent_bill_card.dart';
@@ -155,10 +154,20 @@ class _LeaseDetailContent extends ConsumerWidget {
         108,
       ),
       children: [
-        CurrentLeaseCard(lease: lease, onTap: () {}),
+        CurrentLeaseCard(
+          lease: lease,
+          onDetailTap: () {},
+          onContractTap: () => _openContract(context, lease),
+        ),
+        if (lease.status == LeaseStatus.pending) ...[
+          const SizedBox(height: AppSpacing.md),
+          _PendingNoticeCard(effectiveDate: lease.startDate),
+        ],
         if (lease.canOperate) ...[
           const SizedBox(height: AppSpacing.md),
           _SmartLockPermissionCard(leaseId: lease.id),
+          const SizedBox(height: AppSpacing.md),
+          _DepositEntry(leaseId: lease.id),
           const SizedBox(height: AppSpacing.md),
           LeaseActionGrid(
             isContractSigned:
@@ -167,12 +176,6 @@ class _LeaseDetailContent extends ConsumerWidget {
             onBillTap: () => context.pushNamed(RouteNames.bill),
             onRenewTap: onRenew,
             onCheckoutTap: onTerminate,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          KeeperServiceCard(
-            keeperName: lease.keeperName,
-            onPhoneTap: () => context.pushNamed(RouteNames.customerService),
-            onChatTap: () => context.pushNamed(RouteNames.customerService),
           ),
           if (lease.pendingBillTitle.isNotEmpty ||
               lease.pendingBillAmount > 0) ...[
@@ -201,7 +204,7 @@ class _LeaseDetailContent extends ConsumerWidget {
                       style: AppTextStyles.titleMedium,
                     ),
                   ),
-                  LeaseStatusBadge(label: lease.status.label),
+                  LeaseStatusBadge.forStatus(lease.status),
                 ],
               ),
               const SizedBox(height: AppSpacing.sm),
@@ -273,6 +276,94 @@ class _LeaseDetailContent extends ConsumerWidget {
     context.pushNamed(
       RouteNames.leaseContractView,
       pathParameters: {'leaseId': lease.id},
+    );
+  }
+}
+
+class _PendingNoticeCard extends StatelessWidget {
+  const _PendingNoticeCard({required this.effectiveDate});
+
+  final DateTime effectiveDate;
+
+  @override
+  Widget build(BuildContext context) {
+    final month = effectiveDate.month;
+    final day = effectiveDate.day;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppRadius.card),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.access_time_rounded, color: AppColors.warning),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Text(
+              '预计 $month月$day日 生效',
+              style: AppTextStyles.bodyLarge.copyWith(
+                color: AppColors.warning,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DepositEntry extends StatelessWidget {
+  const _DepositEntry({required this.leaseId});
+
+  final String leaseId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        onTap: () => context.pushNamed(
+          RouteNames.depositDetail,
+          pathParameters: {'leaseId': leaseId},
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            boxShadow: AppShadows.card,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                ),
+                child: const Icon(
+                  Icons.account_balance_wallet_outlined,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Text(
+                  '查看押金',
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: AppColors.textMuted),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

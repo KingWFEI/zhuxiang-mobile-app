@@ -21,6 +21,8 @@ class RouteNames {
   static const profileEdit = 'profileEdit';
   static const settings = 'settings';
   static const lease = 'lease';
+  static const leaseHistory = 'leaseHistory';
+  static const depositDetail = 'depositDetail';
   static const leaseDetail = 'leaseDetail';
   static const leaseContractView = 'leaseContractView';
   static const leaseTerminationApply = 'leaseTerminationApply';
@@ -37,6 +39,7 @@ class RouteNames {
   static const repairRecords = 'repairRecords';
   static const repairDetail = 'repairDetail';
   static const messageCenter = 'messageCenter';
+  static const messageDetail = 'messageDetail';
   static const customerService = 'customerService';
   static const customerServiceEnter = 'customerServiceEnter';
   static const customerServiceChat = 'customerServiceChat';

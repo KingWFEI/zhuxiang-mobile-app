@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:zhuxiang_app/features/house/data/providers/house_providers_mock.dart';
-
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../application/house_search_notifier.dart';
+import '../../data/providers/house_providers.dart';
 import '../widgets/search_discovery_widgets.dart';
 
 /// 房源搜索发现页
@@ -30,9 +29,8 @@ class _HouseSearchPageState extends ConsumerState<HouseSearchPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(houseSearchProvider);
-    final communities = ref
-        .watch(houseMockServiceProvider)
-        .getMockHotCommunities();
+    final communitiesAsync = ref.watch(hotCommunitiesProvider);
+    final communities = communitiesAsync.valueOrNull ?? [];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F9FF),
