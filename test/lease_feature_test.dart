@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:zhuxiang_app/features/lease/data/models/lease_model.dart';
 import 'package:zhuxiang_app/features/lease/data/providers/lease_providers.dart';
 import 'package:zhuxiang_app/features/lease/data/services/lease_service.dart';
+import 'package:zhuxiang_app/features/lease/domain/entities/deposit.dart';
 import 'package:zhuxiang_app/features/lease/domain/entities/lease.dart';
 import 'package:zhuxiang_app/features/lease/domain/entities/lease_contract_document.dart';
 import 'package:zhuxiang_app/features/lease/domain/entities/lease_termination.dart';
@@ -137,7 +138,7 @@ void main() {
     expect(find.text('3栋2单元1201'), findsWidgets);
     expect(find.text('智能门锁已经生效'), findsOneWidget);
     expect(find.text('续租申请'), findsOneWidget);
-    expect(find.text('专属管家'), findsOneWidget);
+    expect(find.text('专属管家'), findsNothing);
     expect(find.text('3月租金待支付'), findsOneWidget);
     expect(find.text('租客信息'), findsOneWidget);
     await tester.scrollUntilVisible(
@@ -241,6 +242,19 @@ class _FakeLeaseService implements LeaseServiceContract {
   @override
   Future<Lease> getLeaseDetail(String leaseId) async {
     return _leases.firstWhere((lease) => lease.id == leaseId);
+  }
+
+  @override
+  Future<DepositInfo?> getDeposit(String leaseId) async {
+    return DepositInfo(
+      id: 'deposit-$leaseId',
+      leaseId: leaseId,
+      amount: 0,
+      withheldAmount: 0,
+      refundedAmount: 0,
+      status: 'held',
+      deductions: const [],
+    );
   }
 
   @override

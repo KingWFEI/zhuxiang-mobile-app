@@ -1,12 +1,15 @@
-enum LeaseStatus {
-  active('履约中'),
-  pending('待生效'),
-  expired('已到期'),
-  checkedOut('已退租'),
-  cancelled('已取消');
+import 'package:flutter/material.dart';
 
-  const LeaseStatus(this.label);
+enum LeaseStatus {
+  active('履约中', Color(0xFF2E7D32)),
+  pending('待生效', Color(0xFFF59E0B)),
+  expired('已到期', Color(0xFF9CA3AF)),
+  checkedOut('已退租', Color(0xFF7B8190)),
+  cancelled('已取消', Color(0xFFD32F2F));
+
+  const LeaseStatus(this.label, this.color);
   final String label;
+  final Color color;
 }
 
 enum LeaseContractStatus {

@@ -291,7 +291,12 @@ class _DetailContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.pageHorizontal,
+        AppSpacing.lg,
+        AppSpacing.pageHorizontal,
+        0,
+      ),
       decoration: const BoxDecoration(color: Colors.white),
       margin: const EdgeInsets.only(bottom: 40),
       child: Column(
@@ -335,39 +340,39 @@ class _DetailContent extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      Positioned(
-                        top: 10,
-                        right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.sm,
-                            vertical: AppSpacing.xs,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryLight,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.verified_user,
-                                size: 10,
-                                color: AppColors.primary,
-                              ),
-                              SizedBox(width: AppSpacing.xs),
-                              Text(
-                                '平台验真',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                      // Positioned(
+                      //   top: 10,
+                      //   right: 0,
+                      //   child: Container(
+                      //     padding: const EdgeInsets.symmetric(
+                      //       horizontal: AppSpacing.sm,
+                      //       vertical: AppSpacing.xs,
+                      //     ),
+                      //     decoration: BoxDecoration(
+                      //       color: AppColors.primaryLight,
+                      //       borderRadius: BorderRadius.circular(8),
+                      //     ),
+                      //     child: const Row(
+                      //       mainAxisSize: MainAxisSize.min,
+                      //       children: [
+                      //         Icon(
+                      //           Icons.verified_user,
+                      //           size: 10,
+                      //           color: AppColors.primary,
+                      //         ),
+                      //         SizedBox(width: AppSpacing.xs),
+                      //         Text(
+                      //           '平台验真',
+                      //           style: TextStyle(
+                      //             fontSize: 10,
+                      //             fontWeight: FontWeight.w600,
+                      //             color: AppColors.primary,
+                      //           ),
+                      //         ),
+                      //       ],
+                      //     ),
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),
@@ -375,29 +380,56 @@ class _DetailContent extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.xs),
-          Row(
-            children: [
-              const Icon(
-                Icons.location_on,
-                color: AppColors.iconMuted,
-                size: 14,
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              Expanded(
-                child: Text(
-                  '${house.location} · ${house.community}',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: AppColors.textSecondary,
+          InkWell(
+            onTap: (house.longitude != null && house.latitude != null)
+                ? () {
+                    context.pushNamed(
+                      RouteNames.houseMap,
+                      pathParameters: {'houseId': house.id},
+                      extra: {
+                        'latitude': house.latitude,
+                        'longitude': house.longitude,
+                        'houseTitle': house.title,
+                        'houseAddress': '${house.location} · ${house.community}',
+                      },
+                    );
+                  }
+                : null,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.location_on,
+                    color: AppColors.iconMuted,
+                    size: 14,
                   ),
-                ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      '${house.location} · ${house.community}',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  if (house.longitude != null && house.latitude != null)
+                    const Icon(
+                      Icons.chevron_right,
+                      color: AppColors.primary,
+                      size: 16,
+                    )
+                  else
+                    const Icon(
+                      Icons.chevron_right,
+                      color: AppColors.iconMuted,
+                      size: 16,
+                    ),
+                ],
               ),
-              const Icon(
-                Icons.chevron_right,
-                color: AppColors.iconMuted,
-                size: 16,
-              ),
-            ],
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Wrap(
@@ -542,15 +574,15 @@ class _FacilitiesCard extends StatelessWidget {
             children: [
               Text('房屋设施', style: AppTextStyles.housedetailtoolTitle),
               const Spacer(),
-              Text(
-                '查看全部',
-                style: TextStyle(color: AppColors.primary, fontSize: 8),
-              ),
-              const Icon(
-                Icons.chevron_right,
-                color: AppColors.iconMuted,
-                size: 14,
-              ),
+              // Text(
+              //   '查看全部',
+              //   style: TextStyle(color: AppColors.primary, fontSize: 8),
+              // ),
+              // const Icon(
+              //   Icons.chevron_right,
+              //   color: AppColors.iconMuted,
+              //   size: 14,
+              // ),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -972,9 +1004,9 @@ class _BottomActionBar extends ConsumerWidget {
       top: false,
       child: Container(
         padding: const EdgeInsets.fromLTRB(
-          AppSpacing.xl,
+          AppSpacing.pageHorizontal,
           AppSpacing.md,
-          AppSpacing.xl,
+          AppSpacing.pageHorizontal,
           AppSpacing.md,
         ),
         decoration: const BoxDecoration(
@@ -1182,10 +1214,10 @@ class _DetailSkeleton extends StatelessWidget {
                 offset: const Offset(0, -26),
                 child: Container(
                   padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.xl,
-                    AppSpacing.xl,
-                    AppSpacing.xl,
-                    AppSpacing.xl,
+                    AppSpacing.pageHorizontal,
+                    AppSpacing.lg,
+                    AppSpacing.pageHorizontal,
+                    0,
                   ),
                   margin: const EdgeInsets.only(bottom: 40),
                   decoration: const BoxDecoration(
@@ -1365,9 +1397,9 @@ class _DetailSkeleton extends StatelessWidget {
             top: false,
             child: Container(
               padding: const EdgeInsets.fromLTRB(
-                AppSpacing.xl,
+                AppSpacing.pageHorizontal,
                 AppSpacing.md,
-                AppSpacing.xl,
+                AppSpacing.pageHorizontal,
                 AppSpacing.md,
               ),
               decoration: BoxDecoration(

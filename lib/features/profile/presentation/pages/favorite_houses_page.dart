@@ -56,6 +56,7 @@ class _FavoriteHousesPageState extends ConsumerState<FavoriteHousesPage> {
 
   Future<void> _load() async {
     if (_isLoading) return;
+    final page = _page;
     setState(() {
       _isLoading = true;
       _error = null;
@@ -64,14 +65,12 @@ class _FavoriteHousesPageState extends ConsumerState<FavoriteHousesPage> {
     try {
       final result = await ref
           .read(houseServiceProvider)
-          .getFavoriteHouses(page: _page, pageSize: 20);
+          .getFavoriteHouses(page: page, pageSize: 20);
       if (!mounted) return;
       setState(() {
-        _page = result.page + 1;
         _hasMore = result.hasMore;
-        _houses = result.page == 1
-            ? result.items
-            : [..._houses, ...result.items];
+        _page = page + 1;
+        _houses = page == 1 ? result.items : [..._houses, ...result.items];
         _isLoading = false;
       });
     } on Object catch (e) {

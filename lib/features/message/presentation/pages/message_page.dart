@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../app/router/route_paths.dart';
-import '../../../../app/theme/app_colors.dart';
+import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_spacing.dart';
-import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_empty_view.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
@@ -24,14 +22,37 @@ class MessagePage extends ConsumerStatefulWidget {
 }
 
 class _MessagePageState extends ConsumerState<MessagePage> {
-  static const _categories = <MessageCategory?>[
-    null,
-    MessageCategory.appointment,
-    MessageCategory.lease,
-    MessageCategory.bill,
-    MessageCategory.repair,
-    MessageCategory.lock,
-    MessageCategory.system,
+  static const _categoryItems = <_CategoryItem>[
+    _CategoryItem(
+      category: MessageCategory.system,
+      label: '系统通知',
+      icon: Icons.notifications_rounded,
+      color: Color(0xFF4B9CF6),
+    ),
+    _CategoryItem(
+      category: MessageCategory.appointment,
+      label: '活动公告',
+      icon: Icons.campaign_rounded,
+      color: Color(0xFFFFA53D),
+    ),
+    _CategoryItem(
+      category: MessageCategory.lease,
+      label: '租约提醒',
+      icon: Icons.article_rounded,
+      color: Color(0xFF13B96D),
+    ),
+    _CategoryItem(
+      category: MessageCategory.repair,
+      label: '服务通知',
+      icon: Icons.handyman_rounded,
+      color: Color(0xFF8B6DF6),
+    ),
+    _CategoryItem(
+      category: null,
+      label: '全部消息',
+      icon: Icons.forum_rounded,
+      color: Color(0xFF2478ED),
+    ),
   ];
 
   final ScrollController _scrollController = ScrollController();
@@ -60,90 +81,145 @@ class _MessagePageState extends ConsumerState<MessagePage> {
   Widget build(BuildContext context) {
     final state = ref.watch(messageControllerProvider);
     final controller = ref.read(messageControllerProvider.notifier);
+    final announcement = _latestAnnouncement(state.messages);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       body: SafeArea(
+        bottom: false,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.pageHorizontal,
                 AppSpacing.lg,
                 AppSpacing.pageHorizontal,
-                AppSpacing.md,
+                0,
               ),
-              child: const AppLogo(),
+              child: _buildHeader(state, controller),
             ),
-            SizedBox(height: 15),
-            SizedBox(
-              height: 34,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ListView.separated(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.pageHorizontal,
-                      ),
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _categories.length,
-                      separatorBuilder: (_, _) =>
-                          const SizedBox(width: AppSpacing.sm),
-                      itemBuilder: (_, index) {
-                        final category = _categories[index];
-                        final active = category == state.category;
-                        final unread = state.unreadCounts.forCategory(category);
-                        return _CategoryChip(
-                          label: category?.label ?? '全部',
-                          unreadCount: unread,
-                          active: active,
-                          onTap: () => controller.selectCategory(category),
-                        );
-                      },
-                    ),
-                  ),
-                  PopupMenuButton<_MessageMenuAction>(
-                    tooltip: '更多',
-                    enabled: !state.isMutating,
-                    onSelected: (action) {
-                      switch (action) {
-                        case _MessageMenuAction.markAllRead:
-                          _markAllRead(controller);
-                        case _MessageMenuAction.clearRead:
-                          _clearReadMessages(controller);
-                      }
-                    },
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(
-                        value: _MessageMenuAction.markAllRead,
-                        child: Row(
-                          children: [
-                            Icon(Icons.done_all, size: 20),
-                            SizedBox(width: AppSpacing.sm),
-                            Text('全部已读'),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: _MessageMenuAction.clearRead,
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete_sweep_outlined, size: 20),
-                            SizedBox(width: AppSpacing.sm),
-                            Text('清空已读'),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+            _buildCategoryGrid(state, controller),
+            if (announcement != null)
+              _AnnouncementBanner(
+                message: announcement,
+                onTap: () => _openMessage(announcement, controller),
               ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
             Expanded(child: _buildContent(state, controller)),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(MessageState state, MessageController controller) {
+    return SizedBox(
+      height: 46,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            top: -18,
+            right: -40,
+            child: Image.asset(
+              'assets/home_bk.png',
+              width: 300,
+              fit: BoxFit.fitWidth,
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const AppLogo(),
+                  const Spacer(),
+                  GestureDetector(
+                    onTapDown: (_) => _showMessageMenu(controller),
+                    child: const Icon(Icons.tune_rounded, size: 20),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showMessageMenu(MessageController controller) {
+    final overlay = Overlay.of(context);
+    late OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (_) => GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => entry.remove(),
+        child: Stack(
+          children: [
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 46,
+              right: AppSpacing.pageHorizontal,
+              child: Material(
+                borderRadius: BorderRadius.circular(14),
+                elevation: 8,
+                child: SizedBox(
+                  width: 160,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _MenuOption(
+                        icon: Icons.done_all_rounded,
+                        label: '全部已读',
+                        onTap: () {
+                          entry.remove();
+                          _markAllRead(controller);
+                        },
+                      ),
+                      const Divider(height: 0),
+                      _MenuOption(
+                        icon: Icons.delete_sweep_outlined,
+                        label: '清空已读',
+                        onTap: () {
+                          entry.remove();
+                          _clearReadMessages(controller);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    overlay.insert(entry);
+  }
+
+  Widget _buildCategoryGrid(MessageState state, MessageController controller) {
+    return SizedBox(
+      height: 72,
+      child: Row(
+        children: [
+          for (var index = 0; index < _categoryItems.length; index++) ...[
+            if (index == 0) const SizedBox(width: 16),
+            Expanded(
+              child: _CategoryTile(
+                item: _categoryItems[index],
+                unreadCount: state.unreadCounts.forCategory(
+                  _categoryItems[index].category,
+                ),
+                active: state.category == _categoryItems[index].category,
+                onTap: () =>
+                    controller.selectCategory(_categoryItems[index].category),
+              ),
+            ),
+            if (index < _categoryItems.length - 1)
+              const SizedBox(width: 8)
+            else
+              const SizedBox(width: 16),
+          ],
+        ],
       ),
     );
   }
@@ -161,7 +237,9 @@ class _MessagePageState extends ConsumerState<MessagePage> {
         ),
       );
     }
-    if (state.messages.isEmpty) {
+
+    final messages = state.messages;
+    if (messages.isEmpty) {
       return _RefreshableStateView(
         onRefresh: controller.refresh,
         child: const AppEmptyView(message: '暂无消息'),
@@ -170,19 +248,13 @@ class _MessagePageState extends ConsumerState<MessagePage> {
 
     return RefreshIndicator(
       onRefresh: controller.refresh,
-      child: ListView.separated(
+      child: ListView.builder(
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.pageHorizontal,
-          AppSpacing.sm,
-          AppSpacing.pageHorizontal,
-          120,
-        ),
-        itemCount: state.messages.length + (state.isLoadingMore ? 1 : 0),
-        separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.md),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 96),
+        itemCount: messages.length + (state.isLoadingMore ? 1 : 0),
         itemBuilder: (_, index) {
-          if (index == state.messages.length) {
+          if (index == messages.length) {
             return const Padding(
               padding: EdgeInsets.all(AppSpacing.md),
               child: Center(
@@ -194,16 +266,44 @@ class _MessagePageState extends ConsumerState<MessagePage> {
               ),
             );
           }
-          final message = state.messages[index];
-          return MessageItem(
-            message: message,
-            onTap: () => _openMessage(message, controller),
-            onDelete: () => _deleteMessage(message, controller),
-            onDeleted: () => controller.handleDeletedMessage(message.id),
+          final message = messages[index];
+          return DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(
+                top: index == 0 ? const Radius.circular(22) : Radius.zero,
+                bottom: index == messages.length - 1
+                    ? const Radius.circular(22)
+                    : Radius.zero,
+              ),
+              boxShadow: index == 0
+                  ? const [
+                      BoxShadow(
+                        color: Color(0x0D5D7A9B),
+                        blurRadius: 24,
+                        offset: Offset(0, 8),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: MessageItem(
+              message: message,
+              showDivider: index < messages.length - 1,
+              onTap: () => _openMessage(message, controller),
+              onDelete: () => _deleteMessage(message, controller),
+              onDeleted: () => controller.handleDeletedMessage(message.id),
+            ),
           );
         },
       ),
     );
+  }
+
+  AppMessage? _latestAnnouncement(List<AppMessage> messages) {
+    for (final message in messages) {
+      if (message.category == MessageCategory.system) return message;
+    }
+    return null;
   }
 
   Future<void> _openMessage(
@@ -217,64 +317,11 @@ class _MessagePageState extends ConsumerState<MessagePage> {
       }
     }
     if (!mounted) return;
-    final target = _resolveTarget(message);
-    if (target == null) {
-      AppToast.show(context, '该消息暂无可跳转页面');
-      return;
-    }
-    try {
-      context.push(target);
-    } on Object {
-      AppToast.show(context, '消息目标页面暂不可用', type: AppToastType.error);
-    }
-  }
-
-  String? _resolveTarget(AppMessage message) {
-    final target = message.actionTarget?.trim();
-    if (target != null && target.startsWith('/')) {
-      return _isSupportedMessagePath(target) ? target : null;
-    }
-
-    final targetKey = target?.toLowerCase();
-    final aliasedTarget = switch (targetKey) {
-      'lease' || 'leases' => RoutePaths.lease,
-      'bill' || 'bills' => RoutePaths.bill,
-      'repair' || 'repairs' => RoutePaths.repairs,
-      'appointment' || 'appointments' => RoutePaths.appointment,
-      'lock' || 'locks' => RoutePaths.unlockRecords,
-      _ => null,
-    };
-    if (aliasedTarget != null) return aliasedTarget;
-
-    final type = message.actionType?.toLowerCase().trim() ?? '';
-    final businessType = type.isNotEmpty
-        ? type
-        : message.category?.apiValue ?? '';
-    if (businessType.contains('lease')) {
-      return target == null ? RoutePaths.lease : '${RoutePaths.lease}/$target';
-    }
-    if (businessType.contains('repair')) {
-      return target == null
-          ? RoutePaths.repairs
-          : '${RoutePaths.repairs}/$target';
-    }
-    if (businessType.contains('appointment')) return RoutePaths.appointment;
-    if (businessType.contains('bill')) return RoutePaths.bill;
-    if (businessType.contains('lock')) return RoutePaths.unlockRecords;
-    return null;
-  }
-
-  bool _isSupportedMessagePath(String path) {
-    return path == RoutePaths.lease ||
-        path.startsWith('${RoutePaths.lease}/') ||
-        path == RoutePaths.bill ||
-        path == RoutePaths.repairs ||
-        path.startsWith('${RoutePaths.repairs}/') ||
-        path == RoutePaths.appointment ||
-        path == RoutePaths.unlockRecords ||
-        path == RoutePaths.search ||
-        path.startsWith('${RoutePaths.search}/') ||
-        path.startsWith('/rental-flow/');
+    context.pushNamed(
+      RouteNames.messageDetail,
+      pathParameters: {'messageId': message.id},
+      extra: message,
+    );
   }
 
   Future<void> _markAllRead(MessageController controller) async {
@@ -327,50 +374,28 @@ class _MessagePageState extends ConsumerState<MessagePage> {
   }
 }
 
-enum _MessageMenuAction { markAllRead, clearRead }
-
-class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({
+class _MenuOption extends StatelessWidget {
+  const _MenuOption({
+    required this.icon,
     required this.label,
-    required this.unreadCount,
-    required this.active,
     required this.onTap,
   });
 
+  final IconData icon;
   final String label;
-  final int unreadCount;
-  final bool active;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(100),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-        decoration: BoxDecoration(
-          color: active ? AppColors.primary : AppColors.surface,
-          borderRadius: BorderRadius.circular(100),
-          border: Border.all(
-            color: active ? AppColors.primary : AppColors.border,
-          ),
-        ),
-        alignment: Alignment.center,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              label,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: active ? Colors.white : AppColors.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            if (unreadCount > 0) ...[
-              const SizedBox(width: AppSpacing.xs),
-              _UnreadBadge(count: unreadCount, active: active),
-            ],
+            Icon(icon, size: 20),
+            const SizedBox(width: AppSpacing.sm),
+            Text(label),
           ],
         ),
       ),
@@ -378,42 +403,180 @@ class _CategoryChip extends StatelessWidget {
   }
 }
 
-class _UnreadBadge extends StatelessWidget {
-  const _UnreadBadge({required this.count, required this.active});
+class _CategoryItem {
+  const _CategoryItem({
+    required this.category,
+    required this.label,
+    required this.icon,
+    required this.color,
+  });
 
-  final int count;
+  final MessageCategory? category;
+  final String label;
+  final IconData icon;
+  final Color color;
+}
+
+class _CategoryTile extends StatelessWidget {
+  const _CategoryTile({
+    required this.item,
+    required this.unreadCount,
+    required this.active,
+    required this.onTap,
+  });
+
+  final _CategoryItem item;
+  final int unreadCount;
   final bool active;
-
-  double get _size {
-    if (count < 10) return 18;
-    if (count < 100) return 22;
-    return 26;
-  }
-
-  double get _fontSize {
-    if (count < 10) return 10;
-    if (count < 100) return 10;
-    return 9;
-  }
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final size = _size;
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: active
+                  ? item.color.withValues(alpha: 0.36)
+                  : Colors.transparent,
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0A456A94),
+                blurRadius: 18,
+                offset: Offset(0, 6),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.fromLTRB(2, 10, 2, 4),
+          child: Column(
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(item.icon, color: item.color, size: 25),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: -10,
+                      top: -9,
+                      child: _UnreadBadge(count: unreadCount),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                item.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFF2D3543),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _UnreadBadge extends StatelessWidget {
+  const _UnreadBadge({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      width: size,
-      height: size,
+      constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
+      padding: const EdgeInsets.symmetric(horizontal: 5),
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: active ? Colors.white : AppColors.error,
-        shape: BoxShape.circle,
+        color: const Color(0xFFFF5B55),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white, width: 2),
       ),
       child: Text(
         count > 99 ? '99+' : '$count',
-        style: TextStyle(
-          color: active ? AppColors.primary : Colors.white,
-          fontSize: _fontSize,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 11,
           fontWeight: FontWeight.w700,
-          height: 1.0,
+          height: 1,
+        ),
+      ),
+    );
+  }
+}
+
+class _AnnouncementBanner extends StatelessWidget {
+  const _AnnouncementBanner({required this.message, required this.onTap});
+
+  final AppMessage message;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+      child: Material(
+        color: const Color(0xFFE9F3FF),
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: SizedBox(
+            height: 48,
+            child: Row(
+              children: [
+                const SizedBox(width: 14),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD5E9FF),
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                  child: const Text(
+                    '公告',
+                    style: TextStyle(
+                      color: Color(0xFF2478ED),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    message.title.isEmpty ? message.content : message.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF253143),
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: Color(0xFF8B97A8),
+                ),
+                const SizedBox(width: 10),
+              ],
+            ),
+          ),
         ),
       ),
     );

@@ -3,10 +3,12 @@ import 'package:dio/dio.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_result.dart';
 import '../../domain/entities/contract_preview.dart';
+import '../../domain/entities/pay_result.dart';
 import '../../domain/entities/contract_signing.dart';
 import '../../domain/entities/payment_info.dart';
 import '../../domain/entities/rent_order.dart';
 import '../models/contract_preview_model.dart';
+import '../models/pay_result_model.dart';
 import '../models/contract_signing_model.dart';
 import '../models/payment_info_model.dart';
 import '../models/real_name_model.dart';
@@ -146,13 +148,23 @@ class RentalFlowService {
     return await result.unwrapData(PaymentInfoModel.fromJson);
   }
 
-  Future<RentOrder> submitPayment(String orderId, String paymentMethod) async {
+  Future<PayResult> submitPayment(
+    String orderId,
+    String paymentMethod,
+    String paymentChannel,
+  ) async {
     final result = await _apiClient.post(
       '/rent-orders/$orderId/pay',
-      data: {'paymentMethod': paymentMethod, 'paymentChannel': 'mock'},
+      data: {'paymentMethod': paymentMethod, 'paymentChannel': paymentChannel},
     );
-    await result.unwrapValue((_) => null);
-    return loadRentOrder(orderId);
+    return result.unwrapData(PayResultModel.fromJson);
+  }
+
+  /// 主动查询支付宝订单状态并确认支付。
+  /// 返回 true 表示支付已确认，false 表示暂未查到。
+  Future<bool> confirmAlipayPayment(String paymentNo) async {
+    final result = await _apiClient.post('/payments/alipay/$paymentNo/confirm');
+    return await result.unwrapValue((data) => data == true);
   }
 
   Future<ContractSignEntry> getContractSignEntry(String orderId) async {

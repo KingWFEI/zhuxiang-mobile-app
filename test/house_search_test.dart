@@ -394,7 +394,7 @@ class _RecordingHouseService extends HouseService {
   int callCount = 0;
 
   @override
-  List<HotCommunity> getHotCommunities() => const [];
+  Future<List<HotCommunity>> getHotCommunities() async => const [];
 
   @override
   Future<PageResult<House>> fetchHouses(Map<String, dynamic> query) async {
@@ -421,7 +421,7 @@ class _PaginationHouseService extends HouseService {
   int callCount = 0;
 
   @override
-  List<HotCommunity> getHotCommunities() => const [];
+  Future<List<HotCommunity>> getHotCommunities() async => const [];
 
   @override
   Future<PageResult<House>> fetchHouses(Map<String, dynamic> query) async {
@@ -455,7 +455,7 @@ class _FakeHouseService extends HouseService {
   _FakeHouseService() : super(ApiClient());
 
   @override
-  List<HotCommunity> getHotCommunities() => const [];
+  Future<List<HotCommunity>> getHotCommunities() async => const [];
 
   @override
   Future<PageResult<House>> fetchHouses(Map<String, dynamic> query) async {

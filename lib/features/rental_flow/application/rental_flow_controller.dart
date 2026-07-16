@@ -4,6 +4,7 @@ import '../../../core/network/api_exception.dart';
 import '../data/models/real_name_model.dart';
 import '../data/services/rental_flow_service.dart';
 import '../domain/entities/contract_preview.dart';
+import '../domain/entities/pay_result.dart';
 import '../domain/entities/contract_signing.dart';
 import '../domain/entities/payment_info.dart';
 import '../domain/entities/rent_order.dart';
@@ -13,6 +14,7 @@ class RentalFlowState {
     this.order,
     this.contractPreview,
     this.paymentInfo,
+    this.payResult,
     this.signingStatus,
     this.isLoading = false,
     this.isSubmitting = false,
@@ -22,6 +24,7 @@ class RentalFlowState {
   final RentOrder? order;
   final ContractPreview? contractPreview;
   final PaymentInfo? paymentInfo;
+  final PayResult? payResult;
   final ContractSigningStatus? signingStatus;
   final bool isLoading;
   final bool isSubmitting;
@@ -31,16 +34,19 @@ class RentalFlowState {
     RentOrder? order,
     ContractPreview? contractPreview,
     PaymentInfo? paymentInfo,
+    PayResult? payResult,
     ContractSigningStatus? signingStatus,
     bool? isLoading,
     bool? isSubmitting,
     String? errorMessage,
     bool clearError = false,
+    bool clearPayResult = false,
   }) {
     return RentalFlowState(
       order: order ?? this.order,
       contractPreview: contractPreview ?? this.contractPreview,
       paymentInfo: paymentInfo ?? this.paymentInfo,
+      payResult: clearPayResult ? null : (payResult ?? this.payResult),
       signingStatus: signingStatus ?? this.signingStatus,
       isLoading: isLoading ?? this.isLoading,
       isSubmitting: isSubmitting ?? this.isSubmitting,
@@ -69,16 +75,18 @@ class RentalFlowController extends StateNotifier<RentalFlowState> {
     }
   }
 
-  Future<void> loadRentOrder(String orderId) async {
+  Future<RentOrder?> loadRentOrder(String orderId) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final order = await _service.loadRentOrder(orderId);
       state = state.copyWith(order: order, isLoading: false);
+      return order;
     } on Object catch (error) {
       state = state.copyWith(
         isLoading: false,
         errorMessage: _messageFromError(error),
       );
+      return null;
     }
   }
 
@@ -177,11 +185,27 @@ class RentalFlowController extends StateNotifier<RentalFlowState> {
     );
   }
 
-  Future<bool> submitPayment(String orderId, String paymentMethod) async {
-    return _submit(() async {
-      final order = await _service.submitPayment(orderId, paymentMethod);
-      state = state.copyWith(order: order);
-    });
+  Future<PayResult?> submitPayment(
+    String orderId,
+    String paymentMethod,
+    String paymentChannel,
+  ) async {
+    state = state.copyWith(isSubmitting: true, clearError: true);
+    try {
+      final result = await _service.submitPayment(
+        orderId,
+        paymentMethod,
+        paymentChannel,
+      );
+      state = state.copyWith(payResult: result, isSubmitting: false);
+      return result;
+    } on Object catch (error) {
+      state = state.copyWith(
+        isSubmitting: false,
+        errorMessage: _messageFromError(error),
+      );
+      return null;
+    }
   }
 
   Future<ContractSignEntry?> getContractSignEntry(String orderId) async {

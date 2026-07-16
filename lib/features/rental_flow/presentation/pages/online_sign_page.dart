@@ -193,6 +193,7 @@ class _OnlineSignPageState extends ConsumerState<OnlineSignPage>
     ref.invalidate(houseSearchProvider);
     ref.invalidate(leaseControllerProvider);
     ref.invalidate(currentHomeProvider);
+    ref.invalidate(myRentOrdersProvider);
     final leaseId = await _findCurrentLeaseId(houseId: houseId);
     if (!mounted) return;
     final router = GoRouter.of(context);

@@ -11,6 +11,7 @@ class CurrentHome {
     this.lockId,
     required this.lockStatus,
     this.address = '',
+    this.coverImage = '',
   });
 
   factory CurrentHome.fromJson(Map<String, dynamic> json) {
@@ -25,6 +26,7 @@ class CurrentHome {
       lockId: json['lockId'] as String?,
       lockStatus: json['lockStatus'] as String? ?? 'unknown',
       address: json['address'] as String? ?? '',
+      coverImage: json['coverImage']?.toString() ?? '',
     );
   }
 
@@ -38,6 +40,7 @@ class CurrentHome {
   final String? lockId;
   final String lockStatus;
   final String address;
+  final String coverImage;
 
   String get addressLabel => [
     if (building.isNotEmpty) '${building}栋',
