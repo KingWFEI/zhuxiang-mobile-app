@@ -95,6 +95,7 @@ class RentOrderModel extends RentOrder {
   };
 
   static RentOrderStatus _parseStatus(String? value) {
+    if (value == 'pendingEsign') return RentOrderStatus.pendingSign;
     return RentOrderStatus.values.firstWhere(
       (item) => item.name == value,
       orElse: () => RentOrderStatus.created,

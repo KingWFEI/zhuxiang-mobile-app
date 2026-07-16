@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,6 +15,8 @@ import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../auth/presentation/auth_controller.dart';
+import '../../../real_name_auth/data/models/real_name_auth_models.dart';
+import '../../../real_name_auth/data/providers/real_name_auth_providers.dart';
 import '../../../rental_flow/presentation/widgets/confirm_rent_sheet.dart';
 
 class HouseDetailPage extends ConsumerWidget {
@@ -632,20 +632,14 @@ class _ImmersiveTourEntryCard extends ConsumerStatefulWidget {
 class _ImmersiveTourEntryCardState
     extends ConsumerState<_ImmersiveTourEntryCard>
     with WidgetsBindingObserver {
-  Timer? _availabilityTimer;
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _availabilityTimer = Timer.periodic(const Duration(seconds: 15), (_) {
-      ref.invalidate(immersiveTourAvailabilityProvider(widget.house.id));
-    });
   }
 
   @override
   void dispose() {
-    _availabilityTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -1075,7 +1069,7 @@ class _BottomActionBar extends ConsumerWidget {
     );
   }
 
-  void _openApplication(BuildContext context, WidgetRef ref) {
+  Future<void> _openApplication(BuildContext context, WidgetRef ref) async {
     if (house.isRented) {
       _showRentedDialog(context);
       return;
@@ -1098,6 +1092,35 @@ class _BottomActionBar extends ConsumerWidget {
       return;
     }
 
+    final authStatus = await _getRealNameStatus(context, ref);
+    if (!context.mounted) return;
+    if (authStatus == null) return;
+    if (authStatus.authStatus != RealNameAuthStatus.verified) {
+      final verified = await context.pushNamed<bool>(
+        RouteNames.realNameAuth,
+        queryParameters: {'houseId': house.id},
+      );
+      if (!context.mounted || verified != true) return;
+    }
+    if (!context.mounted) return;
+    _showRentSheet(context);
+  }
+
+  Future<RealNameAuthStatusResponse?> _getRealNameStatus(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    try {
+      return await ref.read(realNameAuthApiProvider).getStatus();
+    } catch (_) {
+      if (context.mounted) {
+        AppToast.show(context, '认证状态获取失败，请稍后重试', type: AppToastType.error);
+      }
+      return null;
+    }
+  }
+
+  void _showRentSheet(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,

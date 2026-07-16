@@ -4,10 +4,12 @@ import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_result.dart';
 import '../../domain/entities/contract_preview.dart';
 import '../../domain/entities/pay_result.dart';
+import '../../domain/entities/contract_signing.dart';
 import '../../domain/entities/payment_info.dart';
 import '../../domain/entities/rent_order.dart';
 import '../models/contract_preview_model.dart';
 import '../models/pay_result_model.dart';
+import '../models/contract_signing_model.dart';
 import '../models/payment_info_model.dart';
 import '../models/real_name_model.dart';
 import '../models/rent_order_model.dart';
@@ -153,10 +155,7 @@ class RentalFlowService {
   ) async {
     final result = await _apiClient.post(
       '/rent-orders/$orderId/pay',
-      data: {
-        'paymentMethod': paymentMethod,
-        'paymentChannel': paymentChannel,
-      },
+      data: {'paymentMethod': paymentMethod, 'paymentChannel': paymentChannel},
     );
     return result.unwrapData(PayResultModel.fromJson);
   }
@@ -168,11 +167,23 @@ class RentalFlowService {
     return await result.unwrapValue((data) => data == true);
   }
 
-  Future<RentOrder> submitOnlineSign(String orderId) async {
+  Future<ContractSignEntry> getContractSignEntry(String orderId) async {
     final result = await _apiClient.post('/rent-orders/$orderId/sign');
-    final order = await result.unwrapData(RentOrderModel.fromJson);
-    _orders[order.id] = order;
-    return order;
+    return result.unwrapData(ContractSignEntryModel.fromJson);
+  }
+
+  Future<ContractSigningStatus> refreshContractSigning(String orderId) async {
+    final result = await _apiClient.post(
+      '/rent-orders/$orderId/contract-refresh',
+    );
+    return result.unwrapData(ContractSigningStatusModel.fromJson);
+  }
+
+  Future<ContractDownload> getContractDownload(String orderId) async {
+    final result = await _apiClient.get(
+      '/rent-orders/$orderId/contract-download-url',
+    );
+    return result.unwrapData(ContractDownloadModel.fromJson);
   }
 }
 

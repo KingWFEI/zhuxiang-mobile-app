@@ -113,8 +113,12 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       HouseLocationHeader(
-                        city: location.hasSelection ? location.city : (location.error != null ? '重新定位' : '选择城市'),
-                        district: location.hasSelection ? location.district : '',
+                        city: location.hasSelection
+                            ? location.city
+                            : (location.error != null ? '重新定位' : '选择城市'),
+                        district: location.hasSelection
+                            ? location.district
+                            : '',
                         onMapTap: () => CitySelectionSheet.show(context),
                       ),
                       SizedBox(
@@ -215,7 +219,13 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
                         house: house,
                         isFavorite: house.isFavorite,
                         onFavoriteTap: () => _toggleFavorite(house),
-                        onTap: () => _openDetail(house),
+                        onTap:
+                            house.activeOrderBelongsToMe ||
+                                (house.status.toLowerCase() != 'reserved' &&
+                                    house.rentAvailability.toLowerCase() !=
+                                        'reserved')
+                            ? () => _openDetail(house)
+                            : null,
                       );
                     },
                   ),
@@ -242,7 +252,10 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
 
   /// 区域选择 BottomSheet。
   Future<void> _showRegionSheet() async {
-    final selected = await showRegionSheet(context, selectedValue: ref.read(houseSearchProvider).region);
+    final selected = await showRegionSheet(
+      context,
+      selectedValue: ref.read(houseSearchProvider).region,
+    );
     if (selected == null || !mounted) return;
     ref.read(houseSearchProvider.notifier).updateRegion(selected);
   }
@@ -250,28 +263,45 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
   /// 租金范围 BottomSheet。
   Future<void> _showRentSheet() async {
     final state = ref.read(houseSearchProvider);
-    final result = await showRentSheet(context, minPrice: state.minPrice, maxPrice: state.maxPrice);
+    final result = await showRentSheet(
+      context,
+      minPrice: state.minPrice,
+      maxPrice: state.maxPrice,
+    );
     if (result == null || !mounted) return;
-    ref.read(houseSearchProvider.notifier).updatePriceRange(result.start.round(), result.end >= 1000000 ? 0 : result.end.round());
+    ref
+        .read(houseSearchProvider.notifier)
+        .updatePriceRange(
+          result.start.round(),
+          result.end >= 1000000 ? 0 : result.end.round(),
+        );
   }
 
   /// 户型选择 BottomSheet。
   Future<void> _showRoomSheet() async {
-    final selected = await showRoomSheet(context, selectedValue: ref.read(houseSearchProvider).roomType);
+    final selected = await showRoomSheet(
+      context,
+      selectedValue: ref.read(houseSearchProvider).roomType,
+    );
     if (selected == null || !mounted) return;
     ref.read(houseSearchProvider.notifier).updateRoomType(selected);
   }
 
   /// 打开全屏筛选页并同步有效筛选字段。
   Future<void> _showSortSheet() async {
-    final selected = await showHouseSortSheet(context, selectedValue: ref.read(houseSearchProvider).sort);
+    final selected = await showHouseSortSheet(
+      context,
+      selectedValue: ref.read(houseSearchProvider).sort,
+    );
     if (selected == null || !mounted) return;
     final current = ref.read(houseSearchProvider);
-    ref.read(houseSearchProvider.notifier).updateExtraFilters(
-      sort: selected,
-      decoration: current.decoration,
-      orientation: current.orientation,
-    );
+    ref
+        .read(houseSearchProvider.notifier)
+        .updateExtraFilters(
+          sort: selected,
+          decoration: current.decoration,
+          orientation: current.orientation,
+        );
   }
 
   /// 更多筛选条件 BottomSheet。
@@ -284,11 +314,13 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
       orientation: state.orientation,
     );
     if (result == null || !mounted) return;
-    ref.read(houseSearchProvider.notifier).updateExtraFilters(
-      sort: result.sort,
-      decoration: result.decoration,
-      orientation: result.orientation,
-    );
+    ref
+        .read(houseSearchProvider.notifier)
+        .updateExtraFilters(
+          sort: result.sort,
+          decoration: result.decoration,
+          orientation: result.orientation,
+        );
   }
 
   /// 从接口获取标签并组装成快捷标签组件。
@@ -310,7 +342,13 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
       },
       loading: () => const SizedBox(
         height: 26,
-        child: Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))),
+        child: Center(
+          child: SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
       ),
       error: (error, stackTrace) => const SizedBox.shrink(),
     );
@@ -336,7 +374,8 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
       // 刷新列表以更新 isFavorite 状态
       ref.invalidate(houseSearchProvider);
     } on Object {
-      if (mounted) AppToast.show(context, '操作失败，请稍后重试', type: AppToastType.error);
+      if (mounted)
+        AppToast.show(context, '操作失败，请稍后重试', type: AppToastType.error);
     }
   }
 
@@ -347,7 +386,6 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
       pathParameters: {'houseId': house.id},
     );
   }
-
 }
 
 class _PaginationFooter extends StatelessWidget {

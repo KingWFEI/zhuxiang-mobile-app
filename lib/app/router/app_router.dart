@@ -36,6 +36,7 @@ import '../../features/profile/presentation/pages/favorite_houses_page.dart';
 import '../../features/profile/presentation/pages/profile_edit_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/settings_page.dart';
+import '../../features/real_name_auth/presentation/pages/real_name_auth_page.dart';
 import '../../features/repair/domain/entities/repair_order.dart';
 import '../../features/repair/presentation/pages/create_repair_page.dart';
 import '../../features/repair/presentation/pages/repair_detail_page.dart';
@@ -46,7 +47,6 @@ import '../../features/rental_flow/presentation/pages/move_in_complete_page.dart
 import '../../features/rental_flow/presentation/pages/my_rent_orders_page.dart';
 import '../../features/rental_flow/presentation/pages/online_sign_page.dart';
 import '../../features/rental_flow/presentation/pages/payment_page.dart';
-import '../../features/rental_flow/presentation/pages/real_name_verify_page.dart';
 import '../../features/rental_flow/presentation/pages/rental_application_page.dart';
 import '../../features/rental_flow/presentation/pages/viewing_appointment_page.dart';
 import '../../features/rental_flow/presentation/pages/viewing_detail_page.dart';
@@ -424,7 +424,10 @@ class AppRouter {
       GoRoute(
         name: RouteNames.realNameAuth,
         path: RoutePaths.realNameAuth,
-        builder: (context, state) => const AppPlaceholderPage(title: '实名认证'),
+        builder: (context, state) => RealNameAuthPage(
+          continueHouseId: state.uri.queryParameters['houseId'],
+          continueOrderId: state.uri.queryParameters['orderId'],
+        ),
       ),
 
       // ── 账单 ──
@@ -525,9 +528,8 @@ class AppRouter {
         name: RouteNames.customerServiceChat,
         path: RoutePaths.customerServiceChat,
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => ChatPage(
-          sessionId: state.pathParameters['sessionId'],
-        ),
+        builder: (context, state) =>
+            ChatPage(sessionId: state.pathParameters['sessionId']),
       ),
       GoRoute(
         name: RouteNames.customerService,
@@ -563,14 +565,6 @@ class AppRouter {
         builder: (context, state) {
           final houseId = state.pathParameters['houseId'] ?? '';
           return RentalApplicationPage(houseId: houseId);
-        },
-      ),
-      GoRoute(
-        name: RouteNames.realNameVerify,
-        path: RoutePaths.realNameVerify,
-        builder: (context, state) {
-          final orderId = state.pathParameters['orderId'] ?? '';
-          return RealNameVerifyPage(orderId: orderId);
         },
       ),
       GoRoute(

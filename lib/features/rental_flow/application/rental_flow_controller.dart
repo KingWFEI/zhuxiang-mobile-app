@@ -5,6 +5,7 @@ import '../data/models/real_name_model.dart';
 import '../data/services/rental_flow_service.dart';
 import '../domain/entities/contract_preview.dart';
 import '../domain/entities/pay_result.dart';
+import '../domain/entities/contract_signing.dart';
 import '../domain/entities/payment_info.dart';
 import '../domain/entities/rent_order.dart';
 
@@ -14,6 +15,7 @@ class RentalFlowState {
     this.contractPreview,
     this.paymentInfo,
     this.payResult,
+    this.signingStatus,
     this.isLoading = false,
     this.isSubmitting = false,
     this.errorMessage,
@@ -23,6 +25,7 @@ class RentalFlowState {
   final ContractPreview? contractPreview;
   final PaymentInfo? paymentInfo;
   final PayResult? payResult;
+  final ContractSigningStatus? signingStatus;
   final bool isLoading;
   final bool isSubmitting;
   final String? errorMessage;
@@ -32,6 +35,7 @@ class RentalFlowState {
     ContractPreview? contractPreview,
     PaymentInfo? paymentInfo,
     PayResult? payResult,
+    ContractSigningStatus? signingStatus,
     bool? isLoading,
     bool? isSubmitting,
     String? errorMessage,
@@ -43,6 +47,7 @@ class RentalFlowState {
       contractPreview: contractPreview ?? this.contractPreview,
       paymentInfo: paymentInfo ?? this.paymentInfo,
       payResult: clearPayResult ? null : (payResult ?? this.payResult),
+      signingStatus: signingStatus ?? this.signingStatus,
       isLoading: isLoading ?? this.isLoading,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
@@ -203,11 +208,34 @@ class RentalFlowController extends StateNotifier<RentalFlowState> {
     }
   }
 
-  Future<bool> submitOnlineSign(String orderId) async {
-    return _submit(() async {
-      final order = await _service.submitOnlineSign(orderId);
-      state = state.copyWith(order: order);
-    });
+  Future<ContractSignEntry?> getContractSignEntry(String orderId) async {
+    state = state.copyWith(isSubmitting: true, clearError: true);
+    try {
+      final entry = await _service.getContractSignEntry(orderId);
+      state = state.copyWith(isSubmitting: false);
+      return entry;
+    } on Object catch (error) {
+      state = state.copyWith(
+        isSubmitting: false,
+        errorMessage: _messageFromError(error),
+      );
+      return null;
+    }
+  }
+
+  Future<ContractSigningStatus?> refreshContractSigning(String orderId) async {
+    state = state.copyWith(isSubmitting: true, clearError: true);
+    try {
+      final status = await _service.refreshContractSigning(orderId);
+      state = state.copyWith(signingStatus: status, isSubmitting: false);
+      return status;
+    } on Object catch (error) {
+      state = state.copyWith(
+        isSubmitting: false,
+        errorMessage: _messageFromError(error),
+      );
+      return null;
+    }
   }
 
   Future<bool> _submit(Future<void> Function() action) async {

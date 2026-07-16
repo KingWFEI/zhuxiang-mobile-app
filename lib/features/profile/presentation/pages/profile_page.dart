@@ -38,23 +38,23 @@ class ProfilePage extends ConsumerWidget {
               96,
             ),
             children: [
-            const _ProfileHeader(),
-            const SizedBox(height: AppSpacing.lg),
-            if (user == null)
-              _GuestCard(onLogin: () => context.goNamed(RouteNames.login))
-            else
-              _UserCard(
-                nickname: user.nickname,
-                phone: user.maskedPhone,
-                avatarUrl: user.avatarUrl,
-                isVerified: user.isVerified,
-                onTap: () => context.pushNamed(RouteNames.settings),
-              ),
-            const SizedBox(height: AppSpacing.lg),
-            if (user != null) const _DashboardCard(),
-          ],
+              const _ProfileHeader(),
+              const SizedBox(height: AppSpacing.lg),
+              if (user == null)
+                _GuestCard(onLogin: () => context.goNamed(RouteNames.login))
+              else
+                _UserCard(
+                  nickname: user.nickname,
+                  phone: user.maskedPhone,
+                  avatarUrl: user.avatarUrl,
+                  isVerified: user.isVerified,
+                  onTap: () => context.pushNamed(RouteNames.settings),
+                ),
+              const SizedBox(height: AppSpacing.lg),
+              if (user != null) const _DashboardCard(),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -453,6 +453,8 @@ class _DashboardCardState extends ConsumerState<_DashboardCard> {
         context.pushNamed(RouteNames.bill);
       case 5:
         context.pushNamed(RouteNames.repairs);
+      case 6:
+        context.pushNamed(RouteNames.realNameAuth);
       case 7:
         context.pushNamed(RouteNames.favoriteHouses);
     }
