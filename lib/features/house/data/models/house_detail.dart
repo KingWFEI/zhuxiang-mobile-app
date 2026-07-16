@@ -141,12 +141,6 @@ double? _parseBigDecimal(dynamic value) {
   return double.tryParse(value.toString());
 }
 
-double? _parseBigDecimal(dynamic value) {
-  if (value == null) return null;
-  if (value is num) return value.toDouble();
-  return double.tryParse(value.toString());
-}
-
 bool _parseRented(Map<String, dynamic> json) {
   final direct = json['isRented'] ?? json['rented'] ?? json['leased'];
   if (direct is bool) return direct;
