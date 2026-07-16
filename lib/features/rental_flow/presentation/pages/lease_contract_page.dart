@@ -53,6 +53,20 @@ class _LeaseContractPageState extends ConsumerState<LeaseContractPage> {
       children: [
         if (order != null) RentOrderHouseCard(order: order),
         if (order != null) const SizedBox(height: AppSpacing.lg),
+        if (contract != null)
+          FlowCard(
+            child: Column(
+              children: [
+                InfoRow(label: '甲方姓名', value: contract.landlordName),
+                if (contract.landlordPhone.isNotEmpty)
+                  InfoRow(label: '甲方手机号', value: contract.landlordPhone),
+                if (contract.landlordIdCard.isNotEmpty)
+                  InfoRow(label: '甲方身份证', value: contract.landlordIdCard),
+                InfoRow(label: '乙方姓名', value: contract.tenantName),
+              ],
+            ),
+          ),
+        if (contract != null) const SizedBox(height: AppSpacing.lg),
         if (order != null)
           FlowCard(
             child: Column(

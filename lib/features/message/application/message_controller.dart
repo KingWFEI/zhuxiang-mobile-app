@@ -67,6 +67,7 @@ class MessageController extends StateNotifier<MessageState> {
 
   static const pageSize = 20;
   final MessageServiceContract _service;
+  bool _isRefreshingUnread = false;
 
   Future<void> loadInitial() async {
     if (state.isInitialLoading) return;
@@ -241,9 +242,15 @@ class MessageController extends StateNotifier<MessageState> {
   }
 
   Future<void> refreshUnreadCounts() async {
-    final result = await _service.fetchUnreadCounts();
-    if (result is ApiSuccess<MessageUnreadCounts>) {
-      state = state.copyWith(unreadCounts: result.data);
+    if (_isRefreshingUnread) return;
+    _isRefreshingUnread = true;
+    try {
+      final result = await _service.fetchUnreadCounts();
+      if (result is ApiSuccess<MessageUnreadCounts>) {
+        state = state.copyWith(unreadCounts: result.data);
+      }
+    } finally {
+      _isRefreshingUnread = false;
     }
   }
 

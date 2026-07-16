@@ -44,7 +44,6 @@ class RoutePaths {
   static const viewingAppointment = '/rental-flow/:houseId/viewing-appointment';
   static const viewingDetail = '/rental-flow/:houseId/viewing-detail';
   static const rentalApplication = '/rental-flow/:houseId/rental-application';
-  static const realNameVerify = '/rental-flow/:orderId/real-name';
   static const leaseContract = '/rental-flow/:orderId/contract';
   static const rentalPayment = '/rental-flow/:orderId/payment';
   static const onlineSign = '/rental-flow/:orderId/sign';

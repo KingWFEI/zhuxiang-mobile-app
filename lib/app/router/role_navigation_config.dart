@@ -135,7 +135,6 @@ class RoleNavigationConfig {
       RouteNames.viewingAppointment,
       RouteNames.viewingDetail,
       RouteNames.rentalApplication,
-      RouteNames.realNameVerify,
       RouteNames.leaseContract,
       RouteNames.rentalPayment,
       RouteNames.onlineSign,

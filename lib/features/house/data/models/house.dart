@@ -34,6 +34,7 @@ class House {
     this.rentAvailability = '',
     this.activeOrderId = '',
     this.activeOrderBelongsToMe = false,
+    this.status = '',
   });
 
   final String id;
@@ -69,10 +70,13 @@ class House {
   final String rentAvailability;
   final String activeOrderId;
   final bool activeOrderBelongsToMe;
+  final String status;
 
   bool get isRentLocked =>
       !isRented &&
-      (rentAvailability.toLowerCase() == 'locked' || activeOrderId.isNotEmpty);
+      (rentAvailability.toLowerCase() == 'locked' ||
+          rentAvailability.toLowerCase() == 'reserved' ||
+          activeOrderId.isNotEmpty);
 
   factory House.fromJson(Map<String, dynamic> json) {
     return House(
@@ -117,10 +121,11 @@ class House {
       responseDescription: json['responseDescription'] as String? ?? '',
       isRented: _parseRented(json),
       rentAvailability:
-          '${json['rentAvailability'] ?? json['rent_availability'] ?? ''}',
+          '${json['rentAvailability'] ?? json['rent_availability'] ?? json['status'] ?? ''}',
       activeOrderId:
           '${json['activeOrderId'] ?? json['active_order_id'] ?? ''}',
       activeOrderBelongsToMe: _parseActiveOrderBelongsToMe(json),
+      status: '${json['status'] ?? ''}',
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -14,8 +15,8 @@ import '../../../lease/data/providers/lease_providers.dart';
 import '../../../lease/domain/entities/lease.dart';
 import '../../../profile/data/providers/profile_providers.dart';
 import '../../data/providers/rental_flow_providers.dart';
+import '../../domain/entities/contract_signing.dart';
 import '../../domain/entities/rental_flow_step.dart';
-import '../widgets/agreement_checkbox.dart';
 import '../widgets/rental_flow_bottom_bar.dart';
 import '../widgets/rental_flow_page_shell.dart';
 
@@ -28,14 +29,30 @@ class OnlineSignPage extends ConsumerStatefulWidget {
   ConsumerState<OnlineSignPage> createState() => _OnlineSignPageState();
 }
 
-class _OnlineSignPageState extends ConsumerState<OnlineSignPage> {
-  bool _agreed = false;
-  bool _signed = false;
+class _OnlineSignPageState extends ConsumerState<OnlineSignPage>
+    with WidgetsBindingObserver {
+  bool _waitingForBrowserReturn = false;
+  bool _handlingCompletion = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _waitingForBrowserReturn) {
+      _waitingForBrowserReturn = false;
+      _refreshStatus(showPendingMessage: false);
+    }
   }
 
   @override
@@ -43,6 +60,7 @@ class _OnlineSignPageState extends ConsumerState<OnlineSignPage> {
     final state = ref.watch(rentalFlowControllerProvider);
     final order = state.order;
     final contract = state.contractPreview;
+    final signing = state.signingStatus;
     return RentalFlowPageShell(
       title: '在线签约',
       step: RentalFlowStep.onlineSign,
@@ -50,9 +68,11 @@ class _OnlineSignPageState extends ConsumerState<OnlineSignPage> {
       errorMessage: state.errorMessage,
       onRetry: _load,
       bottomNavigationBar: RentalFlowBottomBar(
-        primaryLabel: '完成签约',
+        primaryLabel: signing?.currentUserSigned == true ? '刷新签署状态' : '去签署',
         isLoading: state.isSubmitting,
-        onPrimary: _submit,
+        onPrimary: signing?.currentUserSigned == true
+            ? () => _refreshStatus(showPendingMessage: true)
+            : _openSigningPage,
       ),
       children: [
         FlowCard(
@@ -79,64 +99,28 @@ class _OnlineSignPageState extends ConsumerState<OnlineSignPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '电子签名',
+                '电子合同签署',
                 style: AppTextStyles.titleMedium.copyWith(fontSize: 16),
               ),
               const SizedBox(height: AppSpacing.md),
-              InkWell(
-                borderRadius: BorderRadius.circular(18),
-                onTap: () => setState(() => _signed = true),
-                child: Container(
-                  height: 150,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: _signed
-                        ? const Color(0xFFEAF8EF)
-                        : AppColors.primaryLight,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: _signed
-                          ? AppColors.success
-                          : AppColors.primarySoft,
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        _signed
-                            ? Icons.check_circle_outline
-                            : Icons.draw_outlined,
-                        color: _signed ? AppColors.success : AppColors.primary,
-                        size: 36,
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        _signed ? '已完成签名确认' : '点击此处确认签名',
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: _signed
-                              ? AppColors.success
-                              : AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        '本期为签名占位，后续可接电子签章服务',
-                        style: AppTextStyles.bodySmall,
-                      ),
-                    ],
-                  ),
+              _SignStatusRow(
+                label: '租户',
+                signed: signing?.tenantSigned == true,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              _SignStatusRow(
+                label: '房东',
+                signed: signing?.lessorSigned == true,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                _statusHint(signing),
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],
           ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        AgreementCheckbox(
-          value: _agreed,
-          text: '我确认本人已阅读并同意签署该租赁合同',
-          onChanged: (value) => setState(() => _agreed = value),
         ),
       ],
     );
@@ -148,19 +132,57 @@ class _OnlineSignPageState extends ConsumerState<OnlineSignPage> {
         .loadContractPreview(widget.orderId);
   }
 
-  Future<void> _submit() async {
-    if (!_signed) {
-      AppToast.show(context, '请先完成电子签名确认', type: AppToastType.error);
+  Future<void> _openSigningPage() async {
+    final controller = ref.read(rentalFlowControllerProvider.notifier);
+    final entry = await controller.getContractSignEntry(widget.orderId);
+    if (!mounted || entry == null) return;
+    if (entry.isCompleted) {
+      await _refreshStatus(showPendingMessage: false);
       return;
     }
-    if (!_agreed) {
-      AppToast.show(context, '请先确认签约协议', type: AppToastType.error);
+    if (entry.currentUserSigned) {
+      await _refreshStatus(showPendingMessage: true);
       return;
     }
-    final ok = await ref
+
+    final signUrl = entry.signUrl;
+    final uri = signUrl == null ? null : Uri.tryParse(signUrl);
+    if (uri == null || !uri.hasScheme) {
+      AppToast.show(context, '未获取到有效的签署页面', type: AppToastType.error);
+      return;
+    }
+
+    _waitingForBrowserReturn = true;
+    bool launched;
+    try {
+      launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } on Object {
+      launched = false;
+    }
+    if (!mounted) return;
+    if (!launched) {
+      _waitingForBrowserReturn = false;
+      AppToast.show(context, '签署页面打开失败', type: AppToastType.error);
+    }
+  }
+
+  Future<void> _refreshStatus({required bool showPendingMessage}) async {
+    final status = await ref
         .read(rentalFlowControllerProvider.notifier)
-        .submitOnlineSign(widget.orderId);
-    if (!mounted || !ok) return;
+        .refreshContractSigning(widget.orderId);
+    if (!mounted || status == null) return;
+    if (status.isCompleted) {
+      await _completeFlow();
+      return;
+    }
+    if (showPendingMessage) {
+      AppToast.show(context, _statusHint(status));
+    }
+  }
+
+  Future<void> _completeFlow() async {
+    if (_handlingCompletion) return;
+    _handlingCompletion = true;
     final houseId = ref.read(rentalFlowControllerProvider).order?.houseId;
     if (houseId != null && houseId.isNotEmpty) {
       ref
@@ -173,17 +195,11 @@ class _OnlineSignPageState extends ConsumerState<OnlineSignPage> {
     ref.invalidate(currentHomeProvider);
     final leaseId = await _findCurrentLeaseId(houseId: houseId);
     if (!mounted) return;
-    // 先回到首页（清空租房流程栈），再 push 租约详情，确保侧滑返回时回到首页而非退出 app
     final router = GoRouter.of(context);
-    if (leaseId == null) {
-      router.goNamed(RouteNames.home);
-      router.pushNamed(RouteNames.lease);
-      return;
-    }
     router.goNamed(RouteNames.home);
     router.pushNamed(
-      RouteNames.leaseDetail,
-      pathParameters: {'leaseId': leaseId},
+      leaseId == null ? RouteNames.lease : RouteNames.leaseDetail,
+      pathParameters: leaseId == null ? const {} : {'leaseId': leaseId},
     );
   }
 
@@ -211,6 +227,40 @@ class _OnlineSignPageState extends ConsumerState<OnlineSignPage> {
       return null;
     }
   }
+}
+
+class _SignStatusRow extends StatelessWidget {
+  const _SignStatusRow({required this.label, required this.signed});
+
+  final String label;
+  final bool signed;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = signed ? AppColors.success : AppColors.textSecondary;
+    return Row(
+      children: [
+        Icon(
+          signed ? Icons.check_circle_outline : Icons.schedule_outlined,
+          color: color,
+          size: 20,
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(child: Text(label, style: AppTextStyles.bodyMedium)),
+        Text(
+          signed ? '已签署' : '待签署',
+          style: AppTextStyles.bodyMedium.copyWith(color: color),
+        ),
+      ],
+    );
+  }
+}
+
+String _statusHint(ContractSigningStatus? status) {
+  if (status == null) return '点击“去签署”后将打开 e签宝官方签署页面。';
+  if (status.isCompleted) return '合同已完成签署。';
+  if (status.currentUserSigned) return '你已完成签署，正在等待另一方签署。';
+  return '合同尚未完成，请继续前往 e签宝签署。';
 }
 
 String _contractNo(String? value) {

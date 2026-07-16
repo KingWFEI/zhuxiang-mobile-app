@@ -31,9 +31,7 @@ class AppShell extends ConsumerWidget {
           )
         : 0;
 
-    final isTenantShell = tabs.any(
-      (tab) => tab.routeName == RouteNames.home,
-    );
+    final isTenantShell = tabs.any((tab) => tab.routeName == RouteNames.home);
 
     return Scaffold(
       body: navigationShell,
@@ -45,8 +43,11 @@ class AppShell extends ConsumerWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(28),
               ),
-              child: const Icon(Icons.headset_mic,
-                  color: Colors.white, size: 24),
+              child: const Icon(
+                Icons.headset_mic,
+                color: Colors.white,
+                size: 24,
+              ),
             )
           : null,
       bottomNavigationBar: _BottomTabBar(
@@ -54,6 +55,7 @@ class AppShell extends ConsumerWidget {
         tabs: tabs,
         unreadMessageCount: unreadMessageCount,
         onSelected: (index) {
+          if (index == navigationShell.currentIndex) return;
           if (tabs[index].routeName == RouteNames.messageCenter) {
             ref.read(messageControllerProvider.notifier).refreshUnreadCounts();
           }

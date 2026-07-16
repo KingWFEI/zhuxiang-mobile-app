@@ -7,6 +7,8 @@ class ContractPreviewModel extends ContractPreview {
     required super.houseName,
     required super.tenantName,
     required super.landlordName,
+    super.landlordPhone,
+    super.landlordIdCard,
     required super.startDate,
     required super.endDate,
     required super.monthlyRent,
@@ -17,60 +19,105 @@ class ContractPreviewModel extends ContractPreview {
   });
 
   factory ContractPreviewModel.fromJson(Map<String, dynamic> json) {
+    final source = _nestedContract(json);
+    final clauses = _stringList(
+      source['clauses'] ?? source['contractClauses'] ?? json['clauses'],
+    );
+    final content = _string(
+      source['content'] ??
+          source['contractContent'] ??
+          source['contract_content'] ??
+          source['text'] ??
+          json['content'],
+    );
+
     return ContractPreviewModel(
-      orderId: '${json['orderId'] ?? json['order_id'] ?? ''}',
-      contractNo:
-          json['contractNo'] as String? ?? json['contract_no'] as String? ?? '',
-      houseName:
-          json['houseName'] as String? ??
-          json['house_name'] as String? ??
-          '租住房源',
-      tenantName:
-          json['tenantName'] as String? ??
-          json['tenant_name'] as String? ??
-          '租客',
-      landlordName:
-          json['landlordName'] as String? ??
-          json['landlord_name'] as String? ??
-          '平台房东',
-      startDate:
-          DateTime.tryParse(
-            '${json['startDate'] ?? json['start_date'] ?? ''}',
-          ) ??
-          DateTime.now(),
-      endDate:
-          DateTime.tryParse('${json['endDate'] ?? json['end_date'] ?? ''}') ??
-          DateTime.now(),
-      monthlyRent: _centsToYuan(
-        json['monthlyRent'] as num? ?? json['monthly_rent'] as num? ?? 0,
+      orderId: _string(
+        source['orderId'] ?? source['order_id'] ?? json['orderId'],
       ),
-      deposit: _centsToYuan(json['deposit'] as num? ?? 0),
+      contractNo: _string(
+        source['contractNo'] ?? source['contract_no'] ?? json['contractNo'],
+      ),
+      houseName: _string(
+        source['houseName'] ?? source['house_name'],
+        fallback: 'Rental property',
+      ),
+      tenantName: _string(
+        source['tenantName'] ?? source['tenant_name'],
+        fallback: 'Tenant',
+      ),
+      landlordName: _string(
+        source['landlordName'] ?? source['landlord_name'],
+        fallback: 'Landlord',
+      ),
+      landlordPhone: _string(
+        source['landlordPhone'] ?? source['landlord_phone'],
+      ),
+      landlordIdCard: _string(
+        source['landlordIdCard'] ?? source['landlord_id_card'],
+      ),
+      startDate: _date(source['startDate'] ?? source['start_date']),
+      endDate: _date(source['endDate'] ?? source['end_date']),
+      monthlyRent: _amount(source['monthlyRent'] ?? source['monthly_rent']),
+      deposit: _amount(source['deposit'] ?? source['depositAmount']),
       paymentMethod: _paymentMethodLabel(
-        json['paymentMethod'] as String? ??
-            json['payment_method'] as String? ??
-            'monthly',
+        _string(
+          source['paymentMethod'] ?? source['payment_method'],
+          fallback: 'monthly',
+        ),
       ),
-      clauses: (json['clauses'] as List<dynamic>? ?? const [])
-          .map((item) => '$item')
-          .toList(),
-      content:
-          json['content'] as String? ??
-          json['contractContent'] as String? ??
-          json['contract_content'] as String? ??
-          json['text'] as String? ??
-          '',
+      clauses: clauses,
+      content: content.isNotEmpty ? content : clauses.join('\n\n'),
     );
   }
 }
 
-int _centsToYuan(num value) => (value / 100).round();
+Map<String, dynamic> _nestedContract(Map<String, dynamic> json) {
+  final nested =
+      json['contract'] ?? json['contractInfo'] ?? json['contract_info'];
+  return nested is Map<String, dynamic> ? {...json, ...nested} : json;
+}
+
+String _string(Object? value, {String fallback = ''}) {
+  final text = value?.toString().trim();
+  return text == null || text.isEmpty ? fallback : text;
+}
+
+DateTime _date(Object? value) =>
+    DateTime.tryParse(_string(value)) ?? DateTime.now();
+
+int _amount(Object? value) {
+  final number = switch (value) {
+    num numeric => numeric.toDouble(),
+    String text => double.tryParse(text.trim()) ?? 0,
+    _ => 0,
+  };
+  return (number / 100).round();
+}
+
+List<String> _stringList(Object? value) {
+  if (value is List) {
+    return value
+        .map((item) => _string(item))
+        .where((item) => item.isNotEmpty)
+        .toList(growable: false);
+  }
+  if (value is String && value.trim().isNotEmpty) {
+    return value
+        .split(RegExp(r'\r?\n|;'))
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList(growable: false);
+  }
+  return const <String>[];
+}
 
 String _paymentMethodLabel(String value) {
-  return switch (value) {
-    'monthly' || '押一付一' || '月付' => '月付',
-    'quarterly' || '押一付三' || '季付' => '季付',
-    'semi_annual' || '押一付六' || '半年付' => '半年付',
-    'annual' || '押一付十二' || '年付' => '年付',
+  return switch (value.toLowerCase()) {
+    'monthly' => '月付',
+    'quarterly' => '季付',
+    'semi_annual' => '半年付',
+    'annual' => '年付',
     _ => value,
   };
 }

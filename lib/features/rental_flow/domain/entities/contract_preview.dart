@@ -5,6 +5,8 @@ class ContractPreview {
     required this.houseName,
     required this.tenantName,
     required this.landlordName,
+    this.landlordPhone = '',
+    this.landlordIdCard = '',
     required this.startDate,
     required this.endDate,
     required this.monthlyRent,
@@ -19,6 +21,8 @@ class ContractPreview {
   final String houseName;
   final String tenantName;
   final String landlordName;
+  final String landlordPhone;
+  final String landlordIdCard;
   final DateTime startDate;
   final DateTime endDate;
   final int monthlyRent;
