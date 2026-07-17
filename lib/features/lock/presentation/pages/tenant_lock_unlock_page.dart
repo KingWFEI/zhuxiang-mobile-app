@@ -385,6 +385,8 @@ class _TenantLockUnlockPageState extends ConsumerState<TenantLockUnlockPage>
           onChanged: (enabled) => _toggleAutoUnlock(enabled),
         ),
         const SizedBox(height: AppSpacing.md),
+        _UnlockRecordsEntryCard(),
+        const SizedBox(height: AppSpacing.md),
         _PasscodeCard(data: data, state: state, ref: ref),
         const SizedBox(height: AppSpacing.md),
         _LockInfoCard(data: data),
@@ -1776,6 +1778,66 @@ class _TipIcon extends StatelessWidget {
         Icons.lightbulb_outline_rounded,
         color: _brandBlue,
         size: 23,
+      ),
+    );
+  }
+}
+
+class _UnlockRecordsEntryCard extends StatelessWidget {
+  const _UnlockRecordsEntryCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.pushNamed(RouteNames.unlockRecords),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0D0E4A9B),
+              blurRadius: 20,
+              offset: Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: const BoxDecoration(
+                color: _softBlue,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.lock_clock, color: _brandBlue, size: 22),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '开门记录',
+                    style: TextStyle(
+                      color: Color(0xFF202B3D),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 3),
+                  Text(
+                    '查看历史开门记录',
+                    style: TextStyle(color: _mutedText, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: _mutedText),
+          ],
+        ),
       ),
     );
   }

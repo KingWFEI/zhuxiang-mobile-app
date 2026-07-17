@@ -147,7 +147,6 @@ class RoleNavigationConfig {
   );
 
   // ─── 管理员端配置 ───────────────────────────────────────────
-
   static const staff = RoleNavigationConfig(
     entryLocation: RoutePaths.staff,
     entryRouteName: RouteNames.staffWorkbench,
@@ -181,23 +180,53 @@ class RoleNavigationConfig {
     },
   );
 
+  // ─── 房东端配置 ───────────────────────────────────────────
+  static const landlord = RoleNavigationConfig(
+    entryLocation: RoutePaths.landlordWorkbench,
+    entryRouteName: RouteNames.landlordWorkbench,
+    // 底部两个 Tab：工作台、个人中心
+    tabs: [
+      AppTabConfig(
+        routeName: RouteNames.landlordWorkbench,
+        label: '工作台',
+        icon: Icons.dashboard_outlined,
+        selectedIcon: Icons.dashboard,
+      ),
+      AppTabConfig(
+        routeName: RouteNames.landlordProfile,
+        label: '个人中心',
+        icon: Icons.person_outline,
+        selectedIcon: Icons.person,
+      ),
+    ],
+    // 房东可访问的路由
+    allowedRouteNames: {
+      RouteNames.landlordWorkbench,
+      RouteNames.landlordHouseCreate,
+      RouteNames.landlordHouseEdit,
+      RouteNames.landlordProfile,
+      RouteNames.landlordVerify,
+      RouteNames.settings,
+      RouteNames.userAgreement,
+      RouteNames.privacyPolicy,
+    },
+  );
+
   /// 根据角色获取对应的导航配置
   static RoleNavigationConfig forRole(UserRole role) {
     if (role.usesStaffShell) return staff;
+    if (role.usesLandlordShell) return landlord;
     return tenant;
   }
 
   /// 根据角色获取登录后的入口路径
   static String entryLocationForRole(UserRole role) {
-    // 房东账号需前往 Web 管理后台，移动端仅给提示页
-    if (role.requiresWebAdmin) return RoutePaths.webAdminRequired;
     return forRole(role).entryLocation;
   }
 
   /// 判断指定角色是否有权限访问某个路由
   static bool canAccess(UserRole role, String? routeName) {
     if (routeName == null) return true;
-    if (role.requiresWebAdmin) return routeName == RouteNames.webAdminRequired;
     return forRole(role).allowedRouteNames.contains(routeName);
   }
 }

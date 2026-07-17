@@ -55,7 +55,12 @@ class RouteNames {
   static const staffLockInit = 'staffLockInit';
   static const staffLockManage = 'staffLockManage';
   static const staffDebug = 'staffDebug';
+  static const landlordWorkbench = 'landlordWorkbench';
+  static const landlordHouseCreate = 'landlordHouseCreate';
+  static const landlordHouseEdit = 'landlordHouseEdit';
+  static const landlordProfile = 'landlordProfile';
   static const userAgreement = 'userAgreement';
   static const privacyPolicy = 'privacyPolicy';
   static const favoriteHouses = 'favoriteHouses';
+  static const landlordVerify = 'landlordVerify';
 }

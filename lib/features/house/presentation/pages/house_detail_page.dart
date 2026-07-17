@@ -479,7 +479,6 @@ class _DetailContent extends ConsumerWidget {
 }
 
 String _displayPrice(int price) {
-  if (price < 10000) return '$price';
   final value = price / 100;
   return value == value.roundToDouble()
       ? value.toInt().toString()

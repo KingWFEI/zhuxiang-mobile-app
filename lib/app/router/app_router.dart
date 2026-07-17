@@ -18,6 +18,8 @@ import '../../features/house/presentation/pages/house_map_page.dart';
 import '../../features/house/presentation/pages/house_search_page.dart';
 import '../../features/house/presentation/pages/house_search_result_page.dart';
 import '../../features/house/presentation/pages/immersive_tour_page.dart';
+import '../../features/landlord/presentation/pages/house_form_page.dart';
+import '../../features/landlord/presentation/pages/house_list_page.dart';
 import '../../features/lease/presentation/pages/deposit_detail_page.dart';
 import '../../features/lease/presentation/pages/lease_contract_view_page.dart';
 import '../../features/lease/presentation/pages/lease_detail_page.dart';
@@ -145,6 +147,8 @@ class AppRouter {
         _tenantShell(),
         // ── 管理员端底部 Tab 壳（工作台/门锁配置/系统调试）──
         _staffShell(),
+        // ── 房东端底部 Tab 壳（工作台/个人中心）──
+        _landlordShell(),
         // ── 租户端各业务独立页面（从 Tab 页 push 进入）──
         ..._tenantStandaloneRoutes(),
       ],
@@ -273,6 +277,62 @@ class AppRouter {
               builder: (context, state) => const AppPlaceholderPage(
                 title: '系统调试',
                 description: '用于内部排查接口、设备和运行状态。',
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // 房东端底部 Tab 结构（StatefulShellRoute.indexedStack）
+  // 两个 Tab 页面：工作台、个人中心
+  // ═══════════════════════════════════════════════════════════════════
+
+  static StatefulShellRoute _landlordShell() {
+    return StatefulShellRoute.indexedStack(
+      builder: (context, state, navigationShell) {
+        return AppShell(
+          navigationShell: navigationShell,
+          tabs: RoleNavigationConfig.landlord.tabs,
+        );
+      },
+      branches: [
+        // Tab 1：工作台（房源管理）
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              name: RouteNames.landlordWorkbench,
+              path: RoutePaths.landlordWorkbench,
+              builder: (context, state) => const LandlordHouseListPage(),
+              routes: [
+                GoRoute(
+                  name: RouteNames.landlordHouseCreate,
+                  path: RoutePaths.landlordHouseCreate,
+                  builder: (context, state) =>
+                      const LandlordHouseFormPage(),
+                ),
+                GoRoute(
+                  name: RouteNames.landlordHouseEdit,
+                  path: RoutePaths.landlordHouseEdit,
+                  builder: (context, state) => LandlordHouseFormPage(
+                    houseId: state.pathParameters['houseId'] ?? '',
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        // Tab 2：个人中心
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              name: RouteNames.landlordProfile,
+              path: RoutePaths.landlordProfile,
+              builder: (context, state) => const AppPlaceholderPage(
+                title: '个人中心',
+                description: '个人信息管理、设置等功能即将上线。',
               ),
             ),
           ],
@@ -468,6 +528,16 @@ class AppRouter {
         name: RouteNames.repair,
         path: RoutePaths.repair,
         redirect: (context, state) => RoutePaths.repairs,
+      ),
+
+      // ── 房东认证 ──
+      GoRoute(
+        name: RouteNames.landlordVerify,
+        path: RoutePaths.landlordVerify,
+        builder: (context, state) => const AppPlaceholderPage(
+          title: '房东认证',
+          description: '房东认证功能即将上线，敬请期待。',
+        ),
       ),
 
       // ── 个人信息 & 设置 ──
