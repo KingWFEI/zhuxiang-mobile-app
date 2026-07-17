@@ -270,7 +270,9 @@ class _ConfirmRentSheetState extends ConsumerState<ConfirmRentSheet> {
         AppToast.show(context, '该房源已完成租住，不能重复发起租约', type: AppToastType.error);
         return;
       }
-      if (currentOrder.status != RentOrderStatus.cancelled) {
+      if (currentOrder.status != RentOrderStatus.cancelled &&
+          currentOrder.status != RentOrderStatus.created &&
+          currentOrder.status != RentOrderStatus.pendingRealName) {
         Navigator.pop(context);
         _goNextStep(currentOrder);
         return;
@@ -302,7 +304,7 @@ class _ConfirmRentSheetState extends ConsumerState<ConfirmRentSheet> {
     if (!mounted || order == null) return;
     Navigator.pop(context);
     context.pushNamed(
-      RouteNames.realNameVerify,
+      RouteNames.leaseContract,
       pathParameters: {'orderId': order.id},
     );
   }
@@ -315,13 +317,17 @@ class _ConfirmRentSheetState extends ConsumerState<ConfirmRentSheet> {
 
     final routeName = switch (order.status) {
       RentOrderStatus.created ||
-      RentOrderStatus.pendingRealName => RouteNames.realNameVerify,
+      RentOrderStatus.pendingRealName => RouteNames.realNameAuth,
       RentOrderStatus.pendingContract => RouteNames.leaseContract,
       RentOrderStatus.pendingPayment => RouteNames.rentalPayment,
       RentOrderStatus.pendingSign => RouteNames.onlineSign,
       RentOrderStatus.completed => RouteNames.moveInComplete,
       RentOrderStatus.cancelled => RouteNames.rentOrders,
     };
+    if (routeName == RouteNames.realNameAuth) {
+      context.pushNamed(routeName, queryParameters: {'orderId': order.id});
+      return;
+    }
     context.pushNamed(routeName, pathParameters: {'orderId': order.id});
   }
 }

@@ -184,7 +184,13 @@ class _HouseSearchResultPageState extends ConsumerState<HouseSearchResultPage> {
                           house: house,
                           isFavorite: house.isFavorite,
                           onFavoriteTap: () => _toggleFavorite(house),
-                          onTap: () => _openDetail(house),
+                          onTap:
+                              house.activeOrderBelongsToMe ||
+                                  (house.status.toLowerCase() != 'reserved' &&
+                                      house.rentAvailability.toLowerCase() !=
+                                          'reserved')
+                              ? () => _openDetail(house)
+                              : null,
                         );
                       },
                     ),
@@ -268,7 +274,8 @@ class _HouseSearchResultPageState extends ConsumerState<HouseSearchResultPage> {
       }
       ref.invalidate(houseSearchProvider);
     } on Object {
-      if (mounted) AppToast.show(context, '操作失败，请稍后重试', type: AppToastType.error);
+      if (mounted)
+        AppToast.show(context, '操作失败，请稍后重试', type: AppToastType.error);
     }
   }
 

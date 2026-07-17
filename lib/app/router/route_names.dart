@@ -46,7 +46,6 @@ class RouteNames {
   static const viewingAppointment = 'viewingAppointment';
   static const viewingDetail = 'viewingDetail';
   static const rentalApplication = 'rentalApplication';
-  static const realNameVerify = 'realNameVerify';
   static const leaseContract = 'leaseContract';
   static const rentalPayment = 'rentalPayment';
   static const onlineSign = 'onlineSign';

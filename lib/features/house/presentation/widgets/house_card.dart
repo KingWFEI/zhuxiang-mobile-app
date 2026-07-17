@@ -10,7 +10,7 @@ import 'house_image_placeholder.dart';
 class HouseCard extends StatelessWidget {
   const HouseCard({
     required this.house,
-    required this.onTap,
+    this.onTap,
     super.key,
     this.compact = false,
     this.isFavorite,
@@ -18,7 +18,7 @@ class HouseCard extends StatelessWidget {
   });
 
   final House house;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final bool compact;
   final bool? isFavorite;
   final VoidCallback? onFavoriteTap;
@@ -199,6 +199,59 @@ class _ListContent extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+// ignore: unused_element
+class _HouseAction extends StatelessWidget {
+  const _HouseAction({required this.house, required this.onTap});
+
+  final House house;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final reserved =
+        house.status.toLowerCase() == 'reserved' ||
+        house.rentAvailability.toLowerCase() == 'reserved';
+    if (!reserved) {
+      return _ActionButton(label: '立即租用', onTap: onTap);
+    }
+    if (house.activeOrderBelongsToMe) {
+      return _ActionButton(
+        label: '继续办理',
+        onTap: onTap,
+        color: AppColors.success,
+      );
+    }
+    return const _ActionButton(label: '已被预定');
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({required this.label, this.onTap, this.color});
+
+  final String label;
+  final VoidCallback? onTap;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 26,
+      child: FilledButton(
+        onPressed: onTap,
+        style: FilledButton.styleFrom(
+          backgroundColor: color ?? AppColors.primary,
+          disabledBackgroundColor: AppColors.border,
+          padding: const EdgeInsets.symmetric(horizontal: 9),
+          minimumSize: const Size(0, 26),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
+        ),
+        child: Text(label, style: const TextStyle(fontSize: 10)),
+      ),
     );
   }
 }

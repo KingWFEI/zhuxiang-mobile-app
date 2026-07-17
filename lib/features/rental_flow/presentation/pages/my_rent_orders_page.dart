@@ -316,7 +316,7 @@ class _RentOrderCard extends StatelessWidget {
   void _continueOrder(BuildContext context, RentOrder order) {
     final routeName = switch (order.status) {
       RentOrderStatus.created ||
-      RentOrderStatus.pendingRealName => RouteNames.realNameVerify,
+      RentOrderStatus.pendingRealName => RouteNames.realNameAuth,
       RentOrderStatus.pendingContract => RouteNames.leaseContract,
       RentOrderStatus.pendingPayment => RouteNames.rentalPayment,
       RentOrderStatus.pendingSign => RouteNames.onlineSign,
@@ -325,6 +325,10 @@ class _RentOrderCard extends StatelessWidget {
     };
     if (routeName == RouteNames.lease || routeName == RouteNames.rentOrders) {
       context.pushNamed(routeName);
+      return;
+    }
+    if (routeName == RouteNames.realNameAuth) {
+      context.pushNamed(routeName, queryParameters: {'orderId': order.id});
       return;
     }
     context.pushNamed(routeName, pathParameters: {'orderId': order.id});

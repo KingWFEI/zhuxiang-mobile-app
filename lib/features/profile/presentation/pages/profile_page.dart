@@ -38,23 +38,23 @@ class ProfilePage extends ConsumerWidget {
               96,
             ),
             children: [
-            const _ProfileHeader(),
-            const SizedBox(height: AppSpacing.lg),
-            if (user == null)
-              _GuestCard(onLogin: () => context.goNamed(RouteNames.login))
-            else
-              _UserCard(
-                nickname: user.nickname,
-                phone: user.maskedPhone,
-                avatarUrl: user.avatarUrl,
-                isVerified: user.isVerified,
-                onTap: () => context.pushNamed(RouteNames.settings),
-              ),
-            const SizedBox(height: AppSpacing.lg),
-            if (user != null) const _DashboardCard(),
-          ],
+              const _ProfileHeader(),
+              const SizedBox(height: AppSpacing.lg),
+              if (user == null)
+                _GuestCard(onLogin: () => context.goNamed(RouteNames.login))
+              else
+                _UserCard(
+                  nickname: user.nickname,
+                  phone: user.maskedPhone,
+                  avatarUrl: user.avatarUrl,
+                  isVerified: user.isVerified,
+                  onTap: () => context.pushNamed(RouteNames.settings),
+                ),
+              const SizedBox(height: AppSpacing.lg),
+              if (user != null) const _DashboardCard(),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -273,6 +273,7 @@ class _DashboardCardState extends ConsumerState<_DashboardCard> {
     (Icons.account_balance_wallet, '我的账单', AppColors.warning),
     (Icons.build, '报修服务', AppColors.warning),
     (Icons.verified_user, '房东认证', Color(0xFF7667F8)),
+    (Icons.badge, '实名认证', AppColors.primary),
     (Icons.star, '我的收藏', Color(0xFF7667F8)),
   ];
 
@@ -453,6 +454,8 @@ class _DashboardCardState extends ConsumerState<_DashboardCard> {
       case 5:
         context.pushNamed(RouteNames.landlordVerify);
       case 6:
+        context.pushNamed(RouteNames.realNameAuth);
+      case 7:
         context.pushNamed(RouteNames.favoriteHouses);
     }
   }

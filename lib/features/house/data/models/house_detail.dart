@@ -35,6 +35,7 @@ class HouseDetail {
     this.activeOrderBelongsToMe = false,
     this.longitude,
     this.latitude,
+    this.status = '',
   });
 
   final String id;
@@ -72,10 +73,13 @@ class HouseDetail {
   final bool activeOrderBelongsToMe;
   final double? longitude;
   final double? latitude;
+  final String status;
 
   bool get isRentLocked =>
       !isRented &&
-      (rentAvailability.toLowerCase() == 'locked' || activeOrderId.isNotEmpty);
+      (rentAvailability.toLowerCase() == 'locked' ||
+          rentAvailability.toLowerCase() == 'reserved' ||
+          activeOrderId.isNotEmpty);
 
   factory HouseDetail.fromJson(Map<String, dynamic> json) {
     return HouseDetail(
@@ -120,12 +124,13 @@ class HouseDetail {
       responseDescription: json['responseDescription'] as String? ?? '',
       isRented: _parseRented(json),
       rentAvailability:
-          '${json['rentAvailability'] ?? json['rent_availability'] ?? ''}',
+          '${json['rentAvailability'] ?? json['rent_availability'] ?? json['status'] ?? ''}',
       activeOrderId:
           '${json['activeOrderId'] ?? json['active_order_id'] ?? ''}',
       activeOrderBelongsToMe: _parseActiveOrderBelongsToMe(json),
       longitude: _parseBigDecimal(json['longitude']),
       latitude: _parseBigDecimal(json['latitude']),
+      status: '${json['status'] ?? ''}',
     );
   }
 }
