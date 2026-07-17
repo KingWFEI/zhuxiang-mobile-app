@@ -40,9 +40,9 @@ class UnlockRecordsPage extends ConsumerWidget {
                   const SliverToBoxAdapter(child: _UnlockRecordsHeader()),
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.xl,
                       AppSpacing.lg,
-                      AppSpacing.xl,
+                      AppSpacing.lg,
+                      AppSpacing.lg,
                       108,
                     ),
                     sliver: SliverToBoxAdapter(
@@ -188,7 +188,7 @@ class _UnlockRecordsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 176,
+      height: 150,
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.xl,
         AppSpacing.lg,
@@ -232,54 +232,20 @@ class _UnlockRecordsHeader extends StatelessWidget {
               child: Image.asset('assets/home_bk.png', width: 300),
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const SizedBox(width: 48),
-                  const Icon(
-                    Icons.home_work,
-                    color: AppColors.primary,
-                    size: 24,
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Text(
-                    '住享',
-                    style: AppTextStyles.titleMedium.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const Spacer(),
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      const Icon(Icons.notifications_none_rounded, size: 26),
-                      Positioned(
-                        right: 1,
-                        top: 1,
-                        child: Container(
-                          width: 7,
-                          height: 7,
-                          decoration: const BoxDecoration(
-                            color: AppColors.error,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const Spacer(),
-              Text(
-                '开门记录',
-                style: AppTextStyles.titleLarge.copyWith(fontSize: 30),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text('每一次开门都有迹可循，守护居住安全', style: AppTextStyles.bodyMedium),
-            ],
+          Positioned.fill(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                const SizedBox(height: AppSpacing.lg),
+                Text(
+                  '开门记录',
+                  style: AppTextStyles.titleLarge.copyWith(fontSize: 28),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text('每一次开门都有迹可循，守护居住安全', style: AppTextStyles.bodyMedium),
+              ],
+            ),
           ),
         ],
       ),

@@ -67,9 +67,9 @@ class _MyRentOrdersPageState extends ConsumerState<MyRentOrdersPage> {
                   ),
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.xl,
                       AppSpacing.lg,
-                      AppSpacing.xl,
+                      AppSpacing.lg,
+                      AppSpacing.lg,
                       108,
                     ),
                     sliver: SliverToBoxAdapter(
@@ -398,7 +398,7 @@ class _OrdersHeaderV2 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 176,
+      height: 150,
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.xl,
         AppSpacing.lg,
@@ -436,48 +436,12 @@ class _OrdersHeaderV2 extends StatelessWidget {
           Positioned.fill(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Row(
-                  children: [
-                    const SizedBox(width: 48),
-                    const Icon(
-                      Icons.home_work,
-                      color: AppColors.primary,
-                      size: 24,
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Text(
-                      '住享',
-                      style: AppTextStyles.titleMedium.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const Spacer(),
-                    Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        const Icon(Icons.notifications_none_rounded, size: 26),
-                        Positioned(
-                          right: 1,
-                          top: 1,
-                          child: Container(
-                            width: 7,
-                            height: 7,
-                            decoration: const BoxDecoration(
-                              color: AppColors.error,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const Spacer(),
+                SizedBox(height: AppSpacing.lg),
                 Text(
                   '我的订单',
-                  style: AppTextStyles.titleLarge.copyWith(fontSize: 30),
+                  style: AppTextStyles.titleLarge.copyWith(fontSize: 28),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text('查看租房流程进度，继续未完成的订单', style: AppTextStyles.bodyMedium),
@@ -500,9 +464,9 @@ class _OrdersHeader extends StatelessWidget {
     return Container(
       height: 132,
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.xl,
         AppSpacing.lg,
-        AppSpacing.xl,
+        AppSpacing.lg,
+        AppSpacing.lg,
         AppSpacing.lg,
       ),
       decoration: const BoxDecoration(

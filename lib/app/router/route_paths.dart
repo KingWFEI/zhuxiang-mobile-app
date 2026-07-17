@@ -56,7 +56,13 @@ class RoutePaths {
   static const staffLockInit = '/staff/locks/init';
   static const staffLockManage = '/manage';
   static const staffDebug = '/staff/debug';
+  static const landlord = '/landlord';
+  static const landlordWorkbench = '/landlord/workbench';
+  static const landlordHouseCreate = 'create';
+  static const landlordHouseEdit = ':houseId';
+  static const landlordProfile = '/landlord/profile';
   static const userAgreement = '/profile/agreement';
   static const privacyPolicy = '/profile/privacy';
   static const favoriteHouses = '/profile/favorites';
+  static const landlordVerify = '/profile/landlord-verify';
 }

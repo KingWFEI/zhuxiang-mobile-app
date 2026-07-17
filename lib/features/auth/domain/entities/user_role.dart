@@ -24,5 +24,7 @@ enum UserRole {
   bool get usesStaffShell =>
       this == UserRole.housekeeper || this == UserRole.admin;
 
-  bool get requiresWebAdmin => this == UserRole.landlord;
+  bool get usesLandlordShell => this == UserRole.landlord;
+
+  bool get requiresWebAdmin => false;
 }

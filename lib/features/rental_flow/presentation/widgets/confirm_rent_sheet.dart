@@ -32,11 +32,11 @@ class _ConfirmRentSheetState extends ConsumerState<ConfirmRentSheet> {
   String _paymentMethod = '月付';
   int _tenantCount = 1;
 
-  int get _monthlyRent => _displayMoney(widget.house.price);
+  int get _monthlyRent => widget.house.price;
   int get _deposit => widget.house.deposit > 0
-      ? _displayMoney(widget.house.deposit)
-      : _displayMoney(widget.house.price);
-  int get _serviceFee => 200;
+      ? widget.house.deposit
+      : widget.house.price;
+  int get _serviceFee => 20000;
 
   @override
   void initState() {
@@ -541,7 +541,7 @@ class _FeeSummary extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                '￥$total',
+                '¥${_formatYuan(total)}',
                 style: AppTextStyles.titleLarge.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w800,
@@ -572,7 +572,7 @@ class _FeeRow extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        Text('￥$amount', style: AppTextStyles.bodyLarge),
+        Text('¥${_formatYuan(amount)}', style: AppTextStyles.bodyLarge),
       ],
     );
   }
@@ -655,9 +655,11 @@ String _formatDate(DateTime date) {
   return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 }
 
-int _displayMoney(int value) {
-  if (value < 10000) return value;
-  return (value / 100).round();
+String _formatYuan(int fen) {
+  final yuan = fen / 100;
+  return yuan == yuan.roundToDouble()
+      ? yuan.toInt().toString()
+      : yuan.toStringAsFixed(2);
 }
 
 int _paymentMonths(String paymentMethod) {

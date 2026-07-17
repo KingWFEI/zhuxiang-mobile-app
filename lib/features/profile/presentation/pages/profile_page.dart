@@ -86,7 +86,7 @@ class _ProfileHeader extends StatelessWidget {
                 children: [
                   AppLogo(),
                   Spacer(),
-                  Icon(Icons.notifications_none, size: 20),
+                  // Icon(Icons.notifications_none, size: 20),
                 ],
               ),
               const SizedBox(height: AppSpacing.sm),
@@ -270,9 +270,9 @@ class _DashboardCardState extends ConsumerState<_DashboardCard> {
     (Icons.description, '我的租约', AppColors.primary),
     (Icons.receipt_long, '我的订单', AppColors.primary),
     (Icons.payments, '支付记录', AppColors.secondary),
-    (Icons.lock_clock, '开门记录', AppColors.secondary),
     (Icons.account_balance_wallet, '我的账单', AppColors.warning),
     (Icons.build, '报修服务', AppColors.warning),
+    (Icons.verified_user, '房东认证', Color(0xFF7667F8)),
     (Icons.badge, '实名认证', AppColors.primary),
     (Icons.star, '我的收藏', Color(0xFF7667F8)),
   ];
@@ -448,11 +448,11 @@ class _DashboardCardState extends ConsumerState<_DashboardCard> {
       case 2:
         context.pushNamed(RouteNames.paymentRecords);
       case 3:
-        context.pushNamed(RouteNames.unlockRecords);
-      case 4:
         context.pushNamed(RouteNames.bill);
-      case 5:
+      case 4:
         context.pushNamed(RouteNames.repairs);
+      case 5:
+        context.pushNamed(RouteNames.landlordVerify);
       case 6:
         context.pushNamed(RouteNames.realNameAuth);
       case 7:
