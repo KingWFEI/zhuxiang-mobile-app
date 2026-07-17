@@ -13,7 +13,9 @@ import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
 import '../../../lock/data/models/tenant_lock_unlock_data.dart';
 import '../../../lock/data/providers/tenant_lock_providers.dart';
+import '../../data/providers/inspection_providers.dart';
 import '../../data/providers/lease_providers.dart';
+import '../../domain/entities/inspection.dart';
 import '../../domain/entities/lease.dart';
 import '../../domain/entities/lease_termination.dart';
 import '../widgets/current_lease_card.dart';
@@ -102,7 +104,29 @@ class LeaseDetailPage extends ConsumerWidget {
         .getCurrentTermination(lease.id);
     if (!context.mounted) return;
     if (current != null) {
-      await _showExistingTerminationDialog(context, current);
+      var shouldUploadInspection = false;
+      if (lease.contractId.isNotEmpty) {
+        try {
+          final inspection = await ref
+              .read(inspectionServiceProvider)
+              .getMoveOutInspection(lease.contractId);
+          shouldUploadInspection =
+              inspection.status == MoveOutInspectionStatus.draft;
+        } on Object {
+          // 验收记录查询失败时，保留原有的已提交提示，不误导用户进入上传页。
+        }
+      }
+      if (!context.mounted) return;
+      final goUpload = await _showExistingTerminationDialog(
+        context,
+        current,
+        canUploadInspection: shouldUploadInspection,
+      );
+      if (!context.mounted || !goUpload) return;
+      context.pushNamed(
+        RouteNames.moveOutInspection,
+        pathParameters: {'leaseId': lease.id},
+      );
       return;
     }
     context.pushNamed(
@@ -111,25 +135,34 @@ class LeaseDetailPage extends ConsumerWidget {
     );
   }
 
-  Future<void> _showExistingTerminationDialog(
+  Future<bool> _showExistingTerminationDialog(
     BuildContext context,
-    TerminationApplication application,
-  ) {
-    return showDialog<void>(
+    TerminationApplication application, {
+    required bool canUploadInspection,
+  }) async {
+    final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('已提交退租申请'),
+        title: Text(canUploadInspection ? '退租申请已提交' : '已有退租申请'),
         content: Text(
-          '当前租约已有退租申请（${application.applicationNo}），状态为${application.statusText}，请等待管家处理。',
+          canUploadInspection
+              ? '退租申请（${application.applicationNo}）已提交，请继续上传退租验房照片。'
+              : '当前租约已有退租申请（${application.applicationNo}），状态为${application.statusText}，请等待管家处理。',
         ),
         actions: [
+          if (canUploadInspection)
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('去上传'),
+            ),
           FilledButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('知道了'),
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(canUploadInspection ? '稍后上传' : '知道了'),
           ),
         ],
       ),
     );
+    return result ?? false;
   }
 }
 

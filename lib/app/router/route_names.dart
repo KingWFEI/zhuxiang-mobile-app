@@ -26,6 +26,7 @@ class RouteNames {
   static const leaseDetail = 'leaseDetail';
   static const leaseContractView = 'leaseContractView';
   static const leaseTerminationApply = 'leaseTerminationApply';
+  static const moveOutInspection = 'moveOutInspection';
   static const rentOrders = 'rentOrders';
   static const paymentRecords = 'paymentRecords';
   static const paymentDetail = 'paymentDetail';

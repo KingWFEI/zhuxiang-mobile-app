@@ -31,16 +31,34 @@ class TerminationCheck {
 
   factory TerminationCheck.fromJson(Map<String, dynamic> json) {
     final existing = json['existingApplication'];
+    final tips = json['tips'];
+    final tipMessage = tips is List
+        ? tips
+              .map((value) => value.toString().trim())
+              .where((value) => value.isNotEmpty)
+              .join('；')
+        : '';
+    final unpaidAmount = _number(json['unpaidAmount']);
     return TerminationCheck(
       canApply: json['canApply'] as bool? ?? false,
-      hasPendingApplication: json['hasPendingApplication'] as bool? ?? false,
-      hasUnpaidBills: json['hasUnpaidBills'] as bool? ?? false,
-      message: json['message'] as String? ?? '',
+      hasPendingApplication:
+          json['hasPendingApplication'] as bool? ??
+          json['hasProcessingApplication'] as bool? ??
+          false,
+      hasUnpaidBills: json['hasUnpaidBills'] as bool? ?? unpaidAmount > 0,
+      message: (json['message'] as String?)?.trim().isNotEmpty == true
+          ? (json['message'] as String).trim()
+          : tipMessage,
       existingApplication: existing is Map<String, dynamic>
           ? TerminationApplication.fromJson(existing)
           : null,
     );
   }
+}
+
+num _number(Object? value) {
+  if (value is num) return value;
+  return num.tryParse(value?.toString() ?? '') ?? 0;
 }
 
 class TerminationApplication {

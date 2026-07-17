@@ -25,6 +25,7 @@ import '../../features/lease/presentation/pages/lease_contract_view_page.dart';
 import '../../features/lease/presentation/pages/lease_detail_page.dart';
 import '../../features/lease/presentation/pages/lease_history_page.dart';
 import '../../features/lease/presentation/pages/lease_termination_apply_page.dart';
+import '../../features/lease/presentation/pages/move_out_inspection_page.dart';
 import '../../features/lease/presentation/pages/my_leases_page.dart';
 import '../../features/lock/presentation/pages/unlock_records_page.dart';
 import '../../features/lock/presentation/pages/tenant_lock_unlock_page.dart';
@@ -387,6 +388,13 @@ class AppRouter {
         name: RouteNames.leaseTerminationApply,
         path: RoutePaths.leaseTerminationApply,
         builder: (context, state) => LeaseTerminationApplyPage(
+          leaseId: state.pathParameters['leaseId'] ?? '',
+        ),
+      ),
+      GoRoute(
+        name: RouteNames.moveOutInspection,
+        path: RoutePaths.moveOutInspection,
+        builder: (context, state) => MoveOutInspectionPage(
           leaseId: state.pathParameters['leaseId'] ?? '',
         ),
       ),
