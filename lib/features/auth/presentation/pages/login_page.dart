@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/role_navigation_config.dart';
+import '../../../../app/router/app_mode_controller.dart';
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
@@ -177,7 +178,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   String _entryLocation() {
     final user = ref.read(authControllerProvider).user;
     if (user == null) return RoleNavigationConfig.tenant.entryLocation;
-    return RoleNavigationConfig.entryLocationForRole(user.role);
+    return RoleNavigationConfig.entryLocationForSession(
+      user.role,
+      ref.read(appModeProvider),
+    );
   }
 }
 

@@ -58,8 +58,14 @@ class RoutePaths {
   static const staffDebug = '/staff/debug';
   static const landlord = '/landlord';
   static const landlordWorkbench = '/landlord/workbench';
-  static const landlordHouseCreate = 'create';
-  static const landlordHouseEdit = ':houseId';
+  static const landlordHouses = '/landlord/houses';
+  static const landlordHouseCreate = '/landlord/houses/create';
+  static const landlordHouseEdit = '/landlord/houses/:houseId';
+  static const landlordContracts = '/landlord/contracts';
+  static const landlordContractDetail = '/landlord/contracts/:orderId';
+  static const landlordContractWebview = '/landlord/contracts/:orderId/sign';
+  static const landlordContractResult =
+      '/landlord/contracts/:orderId/sign-result';
   static const landlordProfile = '/landlord/profile';
   static const userAgreement = '/profile/agreement';
   static const privacyPolicy = '/profile/privacy';

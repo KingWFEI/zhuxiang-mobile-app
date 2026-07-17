@@ -4,6 +4,8 @@ class LandlordHouseItem {
     required this.title,
     required this.coverImage,
     required this.imageUrls,
+    required this.facilityIds,
+    required this.tagIds,
     required this.location,
     required this.communityId,
     required this.address,
@@ -21,10 +23,20 @@ class LandlordHouseItem {
     required this.description,
     required this.status,
     required this.isSmartLockSupported,
+    required this.isSelfViewingSupported,
     required this.viewCount,
     required this.favoriteCount,
     required this.createdAt,
     required this.updatedAt,
+    this.communityName = '',
+    this.building = '',
+    this.unit = '',
+    this.room = '',
+    this.longitude,
+    this.latitude,
+    this.province = '',
+    this.city = '',
+    this.district = '',
   });
 
   factory LandlordHouseItem.fromJson(Map<String, dynamic> json) {
@@ -32,19 +44,41 @@ class LandlordHouseItem {
       id: json['id']?.toString() ?? '',
       title: json['title']?.toString() ?? '',
       coverImage: json['coverImage']?.toString() ?? '',
-      imageUrls: (json['imageUrls'] as List<dynamic>?)
+      imageUrls:
+          (json['imageUrls'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           [],
+      facilityIds: _dictionaryReferences(
+        json['facilityIds'] ??
+            json['facilities'] ??
+            json['facilityList'] ??
+            json['houseFacilities'],
+        idKeys: const ['facilityId', 'id', 'value', 'code'],
+        nameKeys: const ['facilityName', 'name', 'label', 'title'],
+      ),
+      tagIds: _dictionaryReferences(
+        json['tagIds'] ?? json['tags'] ?? json['tagList'] ?? json['houseTags'],
+        idKeys: const ['tagId', 'id', 'value', 'code'],
+        nameKeys: const ['tagName', 'name', 'label', 'title'],
+      ),
       location: json['location']?.toString() ?? '',
       communityId: json['communityId']?.toString() ?? '',
+      communityName:
+          json['communityName']?.toString() ??
+          (json['community'] is Map
+              ? (json['community'] as Map)['name']?.toString() ?? ''
+              : ''),
       address: json['address']?.toString() ?? '',
+      building: json['building']?.toString() ?? '',
+      unit: json['unit']?.toString() ?? '',
+      room: json['room']?.toString() ?? '',
       price: _int(json['price']),
       deposit: _int(json['deposit']),
       paymentMethod: json['paymentMethod']?.toString() ?? '',
       rentType: json['rentType']?.toString() ?? '',
       roomType: json['roomType']?.toString() ?? '',
-      area: _int(json['area']),
+      area: _double(json['area']) ?? 0,
       floor: json['floor']?.toString() ?? '',
       orientation: json['orientation']?.toString() ?? '',
       decoration: json['decoration']?.toString() ?? '',
@@ -53,10 +87,16 @@ class LandlordHouseItem {
       description: json['description']?.toString() ?? '',
       status: json['status']?.toString() ?? '',
       isSmartLockSupported: json['isSmartLockSupported'] == true,
+      isSelfViewingSupported: json['isSelfViewingSupported'] == true,
       viewCount: _int(json['viewCount']),
       favoriteCount: _int(json['favoriteCount']),
       createdAt: json['createdAt']?.toString() ?? '',
       updatedAt: json['updatedAt']?.toString() ?? '',
+      longitude: _double(json['longitude']),
+      latitude: _double(json['latitude']),
+      province: json['province']?.toString() ?? '',
+      city: json['city']?.toString() ?? '',
+      district: json['district']?.toString() ?? '',
     );
   }
 
@@ -64,15 +104,26 @@ class LandlordHouseItem {
   final String title;
   final String coverImage;
   final List<String> imageUrls;
+  final List<String> facilityIds;
+  final List<String> tagIds;
   final String location;
   final String communityId;
+  final String communityName;
   final String address;
+  final String building;
+  final String unit;
+  final String room;
+  final double? longitude;
+  final double? latitude;
+  final String province;
+  final String city;
+  final String district;
   final int price;
   final int deposit;
   final String paymentMethod;
   final String rentType;
   final String roomType;
-  final int area;
+  final double area;
   final String floor;
   final String orientation;
   final String decoration;
@@ -81,6 +132,7 @@ class LandlordHouseItem {
   final String description;
   final String status;
   final bool isSmartLockSupported;
+  final bool isSelfViewingSupported;
   final int viewCount;
   final int favoriteCount;
   final String createdAt;
@@ -108,6 +160,66 @@ class LandlordHouseItem {
     if (v is num) return v.toInt();
     return int.tryParse(v?.toString() ?? '') ?? 0;
   }
+
+  static double? _double(dynamic v) {
+    if (v is num) return v.toDouble();
+    return double.tryParse(v?.toString() ?? '');
+  }
+
+  static List<String> _dictionaryReferences(
+    dynamic value, {
+    required List<String> idKeys,
+    required List<String> nameKeys,
+  }) {
+    if (value is! List) return const [];
+    return value
+        .map((item) {
+          if (item is Map) {
+            for (final key in [...idKeys, ...nameKeys]) {
+              final reference = item[key]?.toString() ?? '';
+              if (reference.isNotEmpty) return reference;
+            }
+            return '';
+          }
+          return item?.toString() ?? '';
+        })
+        .where((id) => id.isNotEmpty)
+        .toList();
+  }
+}
+
+class HouseDictionaryItem {
+  const HouseDictionaryItem({
+    required this.id,
+    required this.name,
+    this.icon = '',
+  });
+
+  factory HouseDictionaryItem.fromJson(Map<String, dynamic> json) {
+    return HouseDictionaryItem(
+      id:
+          (json['id'] ??
+                  json['facilityId'] ??
+                  json['tagId'] ??
+                  json['value'] ??
+                  json['code'])
+              ?.toString() ??
+          '',
+      name:
+          (json['name'] ??
+                  json['facilityName'] ??
+                  json['tagName'] ??
+                  json['label'] ??
+                  json['title'])
+              ?.toString() ??
+          '',
+      icon: json['icon']?.toString() ?? '',
+    );
+  }
+
+  final String id;
+  final String name;
+  final String icon;
 }
 
 class CreateHouseRequest {
@@ -117,6 +229,7 @@ class CreateHouseRequest {
     required this.imageUrls,
     required this.location,
     required this.communityId,
+    required this.landlordId,
     required this.price,
     required this.rentType,
     required this.facilityIds,
@@ -136,11 +249,7 @@ class CreateHouseRequest {
     this.metro,
     this.description,
     this.isSmartLockSupported,
-    this.longitude,
-    this.latitude,
-    this.province,
-    this.city,
-    this.district,
+    this.isSelfViewingSupported,
   });
 
   final String title;
@@ -148,6 +257,7 @@ class CreateHouseRequest {
   final List<String> imageUrls;
   final String location;
   final String communityId;
+  final String landlordId;
   final int price;
   final String rentType;
   final List<String> facilityIds;
@@ -159,7 +269,7 @@ class CreateHouseRequest {
   final int? deposit;
   final String? paymentMethod;
   final String? roomType;
-  final int? area;
+  final double? area;
   final String? floor;
   final String? orientation;
   final String? decoration;
@@ -167,11 +277,7 @@ class CreateHouseRequest {
   final String? metro;
   final String? description;
   final bool? isSmartLockSupported;
-  final double? longitude;
-  final double? latitude;
-  final String? province;
-  final String? city;
-  final String? district;
+  final bool? isSelfViewingSupported;
 
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{
@@ -180,6 +286,7 @@ class CreateHouseRequest {
       'imageUrls': imageUrls,
       'location': location,
       'communityId': communityId,
+      'landlordId': landlordId,
       'price': price,
       'rentType': rentType,
       'facilityIds': facilityIds,
@@ -200,11 +307,7 @@ class CreateHouseRequest {
     _put(map, 'metro', metro);
     _put(map, 'description', description);
     _put(map, 'isSmartLockSupported', isSmartLockSupported);
-    _put(map, 'longitude', longitude);
-    _put(map, 'latitude', latitude);
-    _put(map, 'province', province);
-    _put(map, 'city', city);
-    _put(map, 'district', district);
+    _put(map, 'isSelfViewingSupported', isSelfViewingSupported);
     return map;
   }
 
@@ -239,11 +342,7 @@ class UpdateHouseRequest {
     this.metro,
     this.description,
     this.isSmartLockSupported,
-    this.longitude,
-    this.latitude,
-    this.province,
-    this.city,
-    this.district,
+    this.isSelfViewingSupported,
   });
 
   final String? title;
@@ -262,7 +361,7 @@ class UpdateHouseRequest {
   final int? deposit;
   final String? paymentMethod;
   final String? roomType;
-  final int? area;
+  final double? area;
   final String? floor;
   final String? orientation;
   final String? decoration;
@@ -270,11 +369,7 @@ class UpdateHouseRequest {
   final String? metro;
   final String? description;
   final bool? isSmartLockSupported;
-  final double? longitude;
-  final double? latitude;
-  final String? province;
-  final String? city;
-  final String? district;
+  final bool? isSelfViewingSupported;
 
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{};
@@ -302,11 +397,7 @@ class UpdateHouseRequest {
     _put(map, 'metro', metro);
     _put(map, 'description', description);
     _put(map, 'isSmartLockSupported', isSmartLockSupported);
-    _put(map, 'longitude', longitude);
-    _put(map, 'latitude', latitude);
-    _put(map, 'province', province);
-    _put(map, 'city', city);
-    _put(map, 'district', district);
+    _put(map, 'isSelfViewingSupported', isSelfViewingSupported);
     return map;
   }
 

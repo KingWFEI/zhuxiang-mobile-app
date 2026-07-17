@@ -20,6 +20,12 @@ import '../../features/house/presentation/pages/house_search_result_page.dart';
 import '../../features/house/presentation/pages/immersive_tour_page.dart';
 import '../../features/landlord/presentation/pages/house_form_page.dart';
 import '../../features/landlord/presentation/pages/house_list_page.dart';
+import '../../features/landlord/presentation/pages/contract_detail_page.dart';
+import '../../features/landlord/presentation/pages/contract_list_page.dart';
+import '../../features/landlord/presentation/pages/contract_sign_result_page.dart';
+import '../../features/landlord/presentation/pages/contract_webview_page.dart';
+import '../../features/landlord/presentation/pages/landlord_workbench_page.dart';
+import '../../features/landlord/presentation/pages/landlord_profile_page.dart';
 import '../../features/lease/presentation/pages/deposit_detail_page.dart';
 import '../../features/lease/presentation/pages/lease_contract_view_page.dart';
 import '../../features/lease/presentation/pages/lease_detail_page.dart';
@@ -57,6 +63,7 @@ import '../../features/staff/lock_initial/presentation/lock_manage_page.dart';
 import '../../features/staff/workbench/presentation/workbench_page.dart';
 import '../launch/app_loading_page.dart';
 import 'app_shell.dart';
+import 'app_mode_controller.dart';
 import 'role_navigation_config.dart';
 import 'route_names.dart';
 import 'route_paths.dart';
@@ -67,11 +74,19 @@ import 'route_paths.dart';
 /// 驱动 GoRouter 的 [refreshListenable] 以实时响应登录/登出/角色切换。
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authStateListenable = ValueNotifier(ref.read(authControllerProvider));
+  final appModeListenable = ValueNotifier(ref.read(appModeProvider));
   ref.listen<AuthState>(authControllerProvider, (_, next) {
     authStateListenable.value = next;
   });
+  ref.listen<AppMode>(appModeProvider, (_, next) {
+    appModeListenable.value = next;
+  });
   ref.onDispose(authStateListenable.dispose);
-  return AppRouter.createRouter(authStateListenable: authStateListenable);
+  ref.onDispose(appModeListenable.dispose);
+  return AppRouter.createRouter(
+    authStateListenable: authStateListenable,
+    appModeListenable: appModeListenable,
+  );
 });
 
 /// 应用路由配置
@@ -95,13 +110,21 @@ class AppRouter {
   /// [authStateListenable] 用于在认证状态变化时刷新路由守卫。
   static GoRouter createRouter({
     ValueListenable<AuthState>? authStateListenable,
+    ValueListenable<AppMode>? appModeListenable,
   }) {
+    final refreshListenable =
+        authStateListenable == null && appModeListenable == null
+        ? null
+        : Listenable.merge([authStateListenable, appModeListenable]);
     return GoRouter(
       navigatorKey: rootNavigatorKey,
       initialLocation: RoutePaths.splash,
-      refreshListenable: authStateListenable,
-      redirect: (context, state) =>
-          _redirect(authStateListenable?.value, state),
+      refreshListenable: refreshListenable,
+      redirect: (context, state) => _redirect(
+        authStateListenable?.value,
+        appModeListenable?.value ?? AppMode.tenant,
+        state,
+      ),
       routes: [
         // ── 启动页 ──
         GoRoute(
@@ -134,14 +157,18 @@ class AppRouter {
         GoRoute(
           name: RouteNames.main,
           path: RoutePaths.main,
-          redirect: (context, state) =>
-              _entryLocation(authStateListenable?.value),
+          redirect: (context, state) => _entryLocation(
+            authStateListenable?.value,
+            appModeListenable?.value ?? AppMode.tenant,
+          ),
         ),
         // ── 旧版首页重定向（/home → 根据角色跳转到对应首页）──
         GoRoute(
           path: RoutePaths.legacyHome,
-          redirect: (context, state) =>
-              _entryLocation(authStateListenable?.value),
+          redirect: (context, state) => _entryLocation(
+            authStateListenable?.value,
+            appModeListenable?.value ?? AppMode.tenant,
+          ),
         ),
         // ── 租户端底部 Tab 壳（首页/找房/消息/我的）──
         _tenantShell(),
@@ -149,6 +176,8 @@ class AppRouter {
         _staffShell(),
         // ── 房东端底部 Tab 壳（工作台/个人中心）──
         _landlordShell(),
+        // ── 房东业务独立页面（不显示底部菜单）──
+        ..._landlordStandaloneRoutes(),
         // ── 租户端各业务独立页面（从 Tab 页 push 进入）──
         ..._tenantStandaloneRoutes(),
       ],
@@ -299,28 +328,13 @@ class AppRouter {
         );
       },
       branches: [
-        // Tab 1：工作台（房源管理）
+        // Tab 1：工作台
         StatefulShellBranch(
           routes: [
             GoRoute(
               name: RouteNames.landlordWorkbench,
               path: RoutePaths.landlordWorkbench,
-              builder: (context, state) => const LandlordHouseListPage(),
-              routes: [
-                GoRoute(
-                  name: RouteNames.landlordHouseCreate,
-                  path: RoutePaths.landlordHouseCreate,
-                  builder: (context, state) =>
-                      const LandlordHouseFormPage(),
-                ),
-                GoRoute(
-                  name: RouteNames.landlordHouseEdit,
-                  path: RoutePaths.landlordHouseEdit,
-                  builder: (context, state) => LandlordHouseFormPage(
-                    houseId: state.pathParameters['houseId'] ?? '',
-                  ),
-                ),
-              ],
+              builder: (context, state) => const LandlordWorkbenchPage(),
             ),
           ],
         ),
@@ -330,15 +344,60 @@ class AppRouter {
             GoRoute(
               name: RouteNames.landlordProfile,
               path: RoutePaths.landlordProfile,
-              builder: (context, state) => const AppPlaceholderPage(
-                title: '个人中心',
-                description: '个人信息管理、设置等功能即将上线。',
-              ),
+              builder: (context, state) => const LandlordProfilePage(),
             ),
           ],
         ),
       ],
     );
+  }
+
+  static List<RouteBase> _landlordStandaloneRoutes() {
+    return [
+      GoRoute(
+        name: RouteNames.landlordHouses,
+        path: RoutePaths.landlordHouses,
+        builder: (context, state) => const LandlordHouseListPage(),
+      ),
+      GoRoute(
+        name: RouteNames.landlordHouseCreate,
+        path: RoutePaths.landlordHouseCreate,
+        builder: (context, state) => const LandlordHouseFormPage(),
+      ),
+      GoRoute(
+        name: RouteNames.landlordHouseEdit,
+        path: RoutePaths.landlordHouseEdit,
+        builder: (context, state) => LandlordHouseFormPage(
+          houseId: state.pathParameters['houseId'] ?? '',
+        ),
+      ),
+      GoRoute(
+        name: RouteNames.landlordContracts,
+        path: RoutePaths.landlordContracts,
+        builder: (context, state) => const LandlordContractListPage(),
+      ),
+      GoRoute(
+        name: RouteNames.landlordContractDetail,
+        path: RoutePaths.landlordContractDetail,
+        builder: (context, state) => LandlordContractDetailPage(
+          orderId: state.pathParameters['orderId'] ?? '',
+          signImmediately: state.uri.queryParameters['sign'] == '1',
+        ),
+      ),
+      GoRoute(
+        name: RouteNames.landlordContractWebview,
+        path: RoutePaths.landlordContractWebview,
+        builder: (context, state) =>
+            LandlordContractWebviewPage(signUrl: state.extra as String? ?? ''),
+      ),
+      GoRoute(
+        name: RouteNames.landlordContractResult,
+        path: RoutePaths.landlordContractResult,
+        builder: (context, state) => LandlordContractSignResultPage(
+          completed: state.uri.queryParameters['result'] == 'completed',
+        ),
+      ),
+    ];
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -685,13 +744,17 @@ class AppRouter {
   //   4. 已登录 → 不能访问登录/注册页；按角色权限控制
   // ═══════════════════════════════════════════════════════════════════
 
-  static String? _redirect(AuthState? authState, GoRouterState state) {
+  static String? _redirect(
+    AuthState? authState,
+    AppMode appMode,
+    GoRouterState state,
+  ) {
     final routeName = state.name;
     final location = state.uri.path;
 
     // /main 路径直接分发到对应角色首页
     if (routeName == RouteNames.main || location == RoutePaths.main) {
-      return _entryLocation(authState);
+      return _entryLocation(authState, appMode);
     }
 
     // authState 为 null（初始状态）时暂不拦截
@@ -727,7 +790,10 @@ class AppRouter {
     if (user == null) return RoutePaths.login;
 
     // 登录/注册页对已登录用户不可见，重定向到角色首页
-    final entryLocation = RoleNavigationConfig.entryLocationForRole(user.role);
+    final entryLocation = RoleNavigationConfig.entryLocationForSession(
+      user.role,
+      appMode,
+    );
     if (_isAuthDestination(routeName, location)) return entryLocation;
 
     // 超出角色权限范围的页面重定向到角色首页
@@ -739,10 +805,10 @@ class AppRouter {
   }
 
   /// 根据认证状态返回对应的首页路径
-  static String _entryLocation(AuthState? authState) {
+  static String _entryLocation(AuthState? authState, AppMode appMode) {
     final user = authState?.user;
     if (user == null) return RoleNavigationConfig.tenant.entryLocation;
-    return RoleNavigationConfig.entryLocationForRole(user.role);
+    return RoleNavigationConfig.entryLocationForSession(user.role, appMode);
   }
 
   /// 判断是否为认证相关页面（登录/注册）

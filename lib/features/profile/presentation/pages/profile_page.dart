@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_names.dart';
+import '../../../../app/router/app_mode_controller.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
@@ -292,24 +293,30 @@ class _DashboardCardState extends ConsumerState<_DashboardCard> {
   @override
   Widget build(BuildContext context) {
     final result = ref.watch(currentHomeProvider);
+    final isLandlord = ref.watch(
+      authControllerProvider.select(
+        (state) => state.user?.role.usesLandlordShell ?? false,
+      ),
+    );
 
     return result.when(
-      data: (data) => _buildContent(context, data),
-      error: (error, stackTrace) => _buildMenuOnly(context),
-      loading: () => _buildMenuOnly(context),
+      data: (data) => _buildContent(context, data, isLandlord: isLandlord),
+      error: (error, stackTrace) =>
+          _buildMenuOnly(context, isLandlord: isLandlord),
+      loading: () => _buildMenuOnly(context, isLandlord: isLandlord),
     );
   }
 
   Widget _buildContent(
     BuildContext ctx,
-    ({List<CurrentHome> homes, LockInfo? lock})? data,
-  ) {
+    ({List<CurrentHome> homes, LockInfo? lock})? data, {
+    required bool isLandlord,
+  }) {
     final homes = data?.homes ?? const [];
     final lock = data?.lock;
     final hasHomeData = homes.isNotEmpty || data?.lock != null;
     final showCarousel = homes.length > 1;
-    final currentPageNotifier =
-        showCarousel ? (ValueNotifier<int>(0)) : null;
+    final currentPageNotifier = showCarousel ? (ValueNotifier<int>(0)) : null;
 
     return Container(
       decoration: BoxDecoration(
@@ -346,9 +353,9 @@ class _DashboardCardState extends ConsumerState<_DashboardCard> {
                         onViewLock: lkLeaseId.isEmpty
                             ? null
                             : () => ctx.pushNamed(
-                                  RouteNames.tenantLockUnlock,
-                                  pathParameters: {'leaseId': lkLeaseId},
-                                ),
+                                RouteNames.tenantLockUnlock,
+                                pathParameters: {'leaseId': lkLeaseId},
+                              ),
                       );
                     })(),
             ),
@@ -357,10 +364,8 @@ class _DashboardCardState extends ConsumerState<_DashboardCard> {
                 padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                 child: ValueListenableBuilder<int>(
                   valueListenable: currentPageNotifier,
-                  builder: (_, page, _) => _PageDots(
-                    count: homes.length,
-                    current: page,
-                  ),
+                  builder: (_, page, _) =>
+                      _PageDots(count: homes.length, current: page),
                 ),
               ),
           ],
@@ -377,7 +382,13 @@ class _DashboardCardState extends ConsumerState<_DashboardCard> {
                 crossAxisSpacing: AppSpacing.xs,
               ),
               itemBuilder: (itemCtx, index) {
-                final item = _menuItems[index];
+                final item = index == 5 && isLandlord
+                    ? (
+                        Icons.dashboard_customize_outlined,
+                        '房东工作台',
+                        const Color(0xFF7667F8),
+                      )
+                    : _menuItems[index];
                 return InkWell(
                   borderRadius: BorderRadius.circular(AppRadius.md),
                   onTap: () => _onMenuItemTap(itemCtx, index),
@@ -413,12 +424,10 @@ class _DashboardCardState extends ConsumerState<_DashboardCard> {
     required ValueNotifier<int>? currentPageNotifier,
   }) {
     final children = homes.map((home) {
-      final matchedLock =
-          lock != null && lock.leaseId == home.leaseId ? lock : null;
-      return _HomeLockCard(
-        home: home,
-        lock: matchedLock,
-      );
+      final matchedLock = lock != null && lock.leaseId == home.leaseId
+          ? lock
+          : null;
+      return _HomeLockCard(home: home, lock: matchedLock);
     }).toList();
 
     if (_pageController != null) {
@@ -435,11 +444,11 @@ class _DashboardCardState extends ConsumerState<_DashboardCard> {
     return children.first;
   }
 
-  Widget _buildMenuOnly(BuildContext context) {
-    return _buildContent(context, null);
+  Widget _buildMenuOnly(BuildContext context, {required bool isLandlord}) {
+    return _buildContent(context, null, isLandlord: isLandlord);
   }
 
-  void _onMenuItemTap(BuildContext context, int index) {
+  Future<void> _onMenuItemTap(BuildContext context, int index) async {
     switch (index) {
       case 0:
         context.pushNamed(RouteNames.lease);
@@ -452,7 +461,18 @@ class _DashboardCardState extends ConsumerState<_DashboardCard> {
       case 4:
         context.pushNamed(RouteNames.repairs);
       case 5:
-        context.pushNamed(RouteNames.landlordVerify);
+        final isLandlord =
+            ref.read(authControllerProvider).user?.role.usesLandlordShell ??
+            false;
+        if (!isLandlord) {
+          context.pushNamed(RouteNames.landlordVerify);
+          return;
+        }
+        await ref.read(appModeProvider.notifier).setMode(AppMode.landlord);
+        if (context.mounted) {
+          context.goNamed(RouteNames.landlordWorkbench);
+        }
+        return;
       case 6:
         context.pushNamed(RouteNames.realNameAuth);
       case 7:
@@ -464,10 +484,7 @@ class _DashboardCardState extends ConsumerState<_DashboardCard> {
 // ── 多房源滑动卡片 ──
 
 class _HomeLockCard extends StatelessWidget {
-  const _HomeLockCard({
-    required this.home,
-    this.lock,
-  });
+  const _HomeLockCard({required this.home, this.lock});
 
   final CurrentHome home;
   final LockInfo? lock;
@@ -492,7 +509,9 @@ class _HomeLockCard extends StatelessWidget {
   Widget build(BuildContext context) {
     if (_hasLock) {
       return _LockCardContent(
-        address: home.addressLabel.isNotEmpty ? home.addressLabel : home.address,
+        address: home.addressLabel.isNotEmpty
+            ? home.addressLabel
+            : home.address,
         lock: lock,
         lockInvalid: _isLeaseInvalid,
         onViewLock: () => context.pushNamed(
@@ -539,7 +558,9 @@ class _NoLockCard extends StatelessWidget {
                   : Container(
                       color: const Color(0xFFF0F0F0),
                       child: Icon(
-                        leaseInvalid ? Icons.home_outlined : Icons.home_work_outlined,
+                        leaseInvalid
+                            ? Icons.home_outlined
+                            : Icons.home_work_outlined,
                         color: AppColors.textMuted,
                         size: 28,
                       ),
@@ -637,10 +658,7 @@ class _LockCardContent extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    _LockStatusChip(
-                      lock: lock,
-                      leaseInvalid: lockInvalid,
-                    ),
+                    _LockStatusChip(lock: lock, leaseInvalid: lockInvalid),
                   ],
                 ),
               ),
@@ -652,12 +670,12 @@ class _LockCardContent extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size(0, 34),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.xs),
+                      horizontal: AppSpacing.xs,
+                    ),
                     textStyle: AppTextStyles.bodySmall.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
-                    backgroundColor:
-                        Colors.white.withValues(alpha: 0.8),
+                    backgroundColor: Colors.white.withValues(alpha: 0.8),
                   ),
                   child: const Text('查看门锁'),
                 ),
