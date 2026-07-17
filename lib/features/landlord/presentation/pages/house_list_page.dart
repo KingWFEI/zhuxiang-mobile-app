@@ -10,6 +10,7 @@ import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_empty_view.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../../data/models/landlord_house.dart';
 import '../../data/providers/landlord_providers.dart';
 
@@ -23,6 +24,7 @@ class LandlordHouseListPage extends ConsumerStatefulWidget {
 
 class _LandlordHouseListPageState extends ConsumerState<LandlordHouseListPage> {
   String? _statusFilter;
+  final _processingHouseIds = <String>{};
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +78,12 @@ class _LandlordHouseListPageState extends ConsumerState<LandlordHouseListPage> {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 for (final house in houses) ...[
-                  _HouseCard(house: house),
+                  _HouseCard(
+                    house: house,
+                    isProcessing: _processingHouseIds.contains(house.id),
+                    onPublish: () => _changeHouseStatus(house, publish: true),
+                    onOffline: () => _changeHouseStatus(house, publish: false),
+                  ),
                   const SizedBox(height: AppSpacing.md),
                 ],
               ],
@@ -85,6 +92,40 @@ class _LandlordHouseListPageState extends ConsumerState<LandlordHouseListPage> {
         },
       ),
     );
+  }
+
+  Future<void> _changeHouseStatus(
+    LandlordHouseItem house, {
+    required bool publish,
+  }) async {
+    if (_processingHouseIds.contains(house.id)) return;
+    setState(() => _processingHouseIds.add(house.id));
+    try {
+      final service = ref.read(landlordHouseServiceProvider);
+      if (publish) {
+        await service.publishHouse(house.id);
+      } else {
+        await service.offlineHouse(house.id);
+      }
+      if (!mounted) return;
+      AppToast.show(
+        context,
+        publish ? '房源上架成功' : '房源下架成功',
+        type: AppToastType.success,
+      );
+      ref.invalidate(landlordHousesProvider(_statusFilter));
+    } on Object catch (error) {
+      if (!mounted) return;
+      AppToast.show(
+        context,
+        '${publish ? '上架' : '下架'}失败：$error',
+        type: AppToastType.error,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _processingHouseIds.remove(house.id));
+      }
+    }
   }
 }
 
@@ -138,9 +179,17 @@ class _StatusFilterBar extends StatelessWidget {
 }
 
 class _HouseCard extends StatelessWidget {
-  const _HouseCard({required this.house});
+  const _HouseCard({
+    required this.house,
+    required this.isProcessing,
+    required this.onPublish,
+    required this.onOffline,
+  });
 
   final LandlordHouseItem house;
+  final bool isProcessing;
+  final VoidCallback onPublish;
+  final VoidCallback onOffline;
 
   @override
   Widget build(BuildContext context) {
@@ -230,7 +279,9 @@ class _HouseCard extends StatelessWidget {
                                 ),
                                 decoration: BoxDecoration(
                                   color: _statusColor.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.sm,
+                                  ),
                                 ),
                                 child: Text(
                                   house.statusLabel,
@@ -265,13 +316,15 @@ class _HouseCard extends StatelessWidget {
                       _quickAction(
                         icon: Icons.visibility_off_outlined,
                         label: '下架',
-                        onTap: () => _offlineHouse(context),
+                        loading: isProcessing,
+                        onTap: isProcessing ? null : onOffline,
                       ),
                     if (house.status == 'draft' || house.status == 'offline')
                       _quickAction(
                         icon: Icons.publish_outlined,
                         label: '上架',
-                        onTap: () => _publishHouse(context),
+                        loading: isProcessing,
+                        onTap: isProcessing ? null : onPublish,
                       ),
                     const SizedBox(width: AppSpacing.lg),
                     _quickAction(
@@ -300,21 +353,16 @@ class _HouseCard extends StatelessWidget {
     };
   }
 
-  void _publishHouse(BuildContext context) {
-    // TODO: call publish API and refresh
-  }
-
-  void _offlineHouse(BuildContext context) {
-    // TODO: call offline API and refresh
-  }
-
   Widget _quickAction({
     required IconData icon,
     required String label,
-    required VoidCallback onTap,
+    required VoidCallback? onTap,
     Color? color,
+    bool loading = false,
   }) {
-    final c = color ?? AppColors.textSecondary;
+    final c = onTap == null
+        ? AppColors.textMuted
+        : color ?? AppColors.textSecondary;
     return InkWell(
       borderRadius: BorderRadius.circular(AppRadius.sm),
       onTap: onTap,
@@ -323,11 +371,22 @@ class _HouseCard extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16, color: c),
+            if (loading)
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2, color: c),
+              )
+            else
+              Icon(icon, size: 16, color: c),
             const SizedBox(width: AppSpacing.xs),
             Text(
               label,
-              style: TextStyle(fontSize: 12, color: c, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                fontSize: 12,
+                color: c,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),

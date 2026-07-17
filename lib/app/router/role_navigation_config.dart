@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../features/auth/domain/entities/user_role.dart';
+import 'app_mode_controller.dart';
 import 'route_names.dart';
 import 'route_paths.dart';
 
@@ -201,8 +202,13 @@ class RoleNavigationConfig {
     // 房东可访问的路由
     allowedRouteNames: {
       RouteNames.landlordWorkbench,
+      RouteNames.landlordHouses,
       RouteNames.landlordHouseCreate,
       RouteNames.landlordHouseEdit,
+      RouteNames.landlordContracts,
+      RouteNames.landlordContractDetail,
+      RouteNames.landlordContractWebview,
+      RouteNames.landlordContractResult,
       RouteNames.landlordProfile,
       RouteNames.landlordVerify,
       RouteNames.settings,
@@ -223,9 +229,22 @@ class RoleNavigationConfig {
     return forRole(role).entryLocation;
   }
 
+  /// 当前工作模式只影响房东账号的默认入口，不改变账号本身的身份能力。
+  static String entryLocationForSession(UserRole role, AppMode mode) {
+    if (role.usesStaffShell) return staff.entryLocation;
+    if (role.usesLandlordShell && mode == AppMode.landlord) {
+      return landlord.entryLocation;
+    }
+    return tenant.entryLocation;
+  }
+
   /// 判断指定角色是否有权限访问某个路由
   static bool canAccess(UserRole role, String? routeName) {
     if (routeName == null) return true;
+    if (role.usesLandlordShell) {
+      return tenant.allowedRouteNames.contains(routeName) ||
+          landlord.allowedRouteNames.contains(routeName);
+    }
     return forRole(role).allowedRouteNames.contains(routeName);
   }
 }

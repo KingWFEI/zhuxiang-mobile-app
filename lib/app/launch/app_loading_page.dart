@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/location/user_location_provider.dart';
 import '../../features/auth/presentation/auth_controller.dart';
+import '../router/app_mode_controller.dart';
 import '../router/role_navigation_config.dart';
 import '../router/route_paths.dart';
 
@@ -70,7 +71,10 @@ class _AppLoadingPageState extends ConsumerState<AppLoadingPage>
         ? RoleNavigationConfig.tenant.entryLocation
         : authState.user == null
         ? RoutePaths.login
-        : RoleNavigationConfig.entryLocationForRole(authState.user!.role);
+        : RoleNavigationConfig.entryLocationForSession(
+            authState.user!.role,
+            ref.read(appModeProvider),
+          );
 
     GoRouter.of(context).go(target);
   }

@@ -13,4 +13,5 @@ class StorageKeys {
   static const autoUnlockEnabled = 'auto_unlock_enabled';
   static const selectedCity = 'selected_city';
   static const selectedDistrict = 'selected_district';
+  static const lastAppModePrefix = 'last_app_mode_';
 }
