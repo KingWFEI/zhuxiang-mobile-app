@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_shadows.dart';
@@ -264,7 +265,10 @@ class _LeaseTerminationApplyPageState
       if (current != null) {
         await _showExistingTerminationDialog(current);
         if (!mounted) return;
-        context.pop();
+        context.pushReplacementNamed(
+          RouteNames.moveOutInspection,
+          pathParameters: {'leaseId': widget.leaseId},
+        );
         return;
       }
 
@@ -312,7 +316,10 @@ class _LeaseTerminationApplyPageState
       );
       if (!mounted) return;
       ref.invalidate(leaseDetailProvider(widget.leaseId));
-      context.pop();
+      context.pushReplacementNamed(
+        RouteNames.moveOutInspection,
+        pathParameters: {'leaseId': widget.leaseId},
+      );
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
