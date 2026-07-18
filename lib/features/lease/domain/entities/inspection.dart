@@ -28,6 +28,11 @@ class MoveOutInspection {
 
   factory MoveOutInspection.fromJson(Map<String, dynamic> json) {
     final rawRooms = json['rooms'] ?? json['roomItems'] ?? json['items'];
+    final rooms = _rooms(rawRooms);
+    final rawPhotos =
+        json['existingMoveOutPhotos'] ??
+        json['moveOutPhotos'] ??
+        json['photos'];
     return MoveOutInspection(
       contractId: _string(json, ['contractId', 'contract_id']),
       status: parseMoveOutInspectionStatus(json['status']),
@@ -35,7 +40,7 @@ class MoveOutInspection {
       completionComment: _nullableString(
         json['completionComment'] ?? json['completion_comment'],
       ),
-      rooms: _rooms(rawRooms),
+      rooms: _mergePhotos(rooms, rawPhotos),
     );
   }
 }
@@ -156,6 +161,40 @@ List<InspectionPhoto> _photos(Object? value) => value is List
           .where((photo) => photo.url.isNotEmpty)
           .toList()
     : const [];
+
+List<InspectionRoom> _mergePhotos(
+  List<InspectionRoom> rooms,
+  Object? rawPhotos,
+) {
+  final photos = rawPhotos is List
+      ? rawPhotos.whereType<Map<String, dynamic>>().map((json) {
+          return (
+            roomCode: _string(json, ['roomCode', 'room_code']),
+            itemCode: _string(json, ['itemCode', 'item_code']),
+            photo: InspectionPhoto.fromJson(json),
+          );
+        }).toList()
+      : const <({String roomCode, String itemCode, InspectionPhoto photo})>[];
+
+  if (photos.isEmpty) return rooms;
+  return rooms.map((room) {
+    return InspectionRoom(
+      roomCode: room.roomCode,
+      roomName: room.roomName,
+      items: room.items.map((item) {
+        final itemPhotos = photos
+            .where(
+              (entry) =>
+                  entry.roomCode == room.roomCode &&
+                  entry.itemCode == item.itemCode,
+            )
+            .map((entry) => entry.photo)
+            .toList();
+        return itemPhotos.isEmpty ? item : item.copyWith(photos: itemPhotos);
+      }).toList(),
+    );
+  }).toList();
+}
 
 String _string(Map<String, dynamic> json, List<String> keys) {
   for (final key in keys) {

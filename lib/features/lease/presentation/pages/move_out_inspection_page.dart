@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../app/theme/app_colors.dart';
@@ -249,6 +250,7 @@ class _MoveOutInspectionPageState extends ConsumerState<MoveOutInspectionPage> {
           );
       if (!mounted) return;
       setState(() => _inspection = result);
+      context.pop();
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('验房照片已提交，等待管理端归档')));

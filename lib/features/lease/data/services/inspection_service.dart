@@ -41,18 +41,20 @@ class InspectionService {
     final result = await _apiClient.post(
       '/app/contracts/$contractId/move-out-inspection/submit',
       data: {
-        'items': [
+        'photos': [
           for (final room in rooms)
             for (final item in room.items)
-              {
-                'roomCode': room.roomCode,
-                'itemCode': item.itemCode,
-                'remark': item.remark ?? '',
-                'photos': item.photos.map((photo) => photo.toJson()).toList(),
-              },
+              for (final photo in item.photos)
+                {
+                  'roomCode': room.roomCode,
+                  'itemCode': item.itemCode,
+                  'url': photo.url,
+                  'capturedAt': DateTime.now().toIso8601String(),
+                },
         ],
       },
     );
-    return result.unwrapData(MoveOutInspection.fromJson);
+    await result.unwrapValue((_) => true);
+    return getMoveOutInspection(contractId);
   }
 }
