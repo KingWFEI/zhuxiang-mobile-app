@@ -25,6 +25,22 @@ class LandlordHouseService {
     return LandlordHouseItem.fromJson(data);
   }
 
+  Future<List<HouseDictionaryItem>> getHouseFacilities() async {
+    final result = await _apiClient.get('/landlord/house-facilities');
+    return _unwrapList(result)
+        .map(HouseDictionaryItem.fromJson)
+        .where((item) => item.id.isNotEmpty && item.name.isNotEmpty)
+        .toList();
+  }
+
+  Future<List<HouseDictionaryItem>> getHouseTags() async {
+    final result = await _apiClient.get('/landlord/house-tags');
+    return _unwrapList(result)
+        .map(HouseDictionaryItem.fromJson)
+        .where((item) => item.id.isNotEmpty && item.name.isNotEmpty)
+        .toList();
+  }
+
   Future<LandlordHouseItem> createHouse(CreateHouseRequest request) async {
     final result = await _apiClient.post(
       '/landlord/houses',
@@ -85,10 +101,7 @@ class LandlordHouseService {
         );
       }
     }
-    throw const ApiException(
-      type: ApiExceptionType.server,
-      message: '请求失败',
-    );
+    throw const ApiException(type: ApiExceptionType.server, message: '请求失败');
   }
 
   List<Map<String, dynamic>> _unwrapList(ApiResult<Response<dynamic>> result) {
@@ -101,10 +114,12 @@ class LandlordHouseService {
           if (payload is List) {
             return payload.whereType<Map<String, dynamic>>().toList();
           }
-          if (payload is Map && payload['items'] is List) {
-            return (payload['items'] as List)
-                .whereType<Map<String, dynamic>>()
-                .toList();
+          if (payload is Map) {
+            final items =
+                payload['items'] ?? payload['records'] ?? payload['list'];
+            if (items is List) {
+              return items.whereType<Map<String, dynamic>>().toList();
+            }
           }
         }
         throw ApiException(
@@ -113,9 +128,6 @@ class LandlordHouseService {
         );
       }
     }
-    throw const ApiException(
-      type: ApiExceptionType.server,
-      message: '请求失败',
-    );
+    throw const ApiException(type: ApiExceptionType.server, message: '请求失败');
   }
 }
