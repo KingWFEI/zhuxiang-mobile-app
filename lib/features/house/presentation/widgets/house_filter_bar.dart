@@ -130,7 +130,7 @@ class _FilterButton extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyles.bodySmall.copyWith(
-                    fontSize: 10,
+                    fontSize: 12,
                     color: color,
                     fontWeight: FontWeight.w500,
                   ),

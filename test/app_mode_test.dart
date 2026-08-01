@@ -53,6 +53,20 @@ void main() {
       isFalse,
     );
     expect(
+      RoleNavigationConfig.canAccess(
+        UserRole.landlord,
+        RouteNames.landlordProfileEdit,
+      ),
+      isTrue,
+    );
+    expect(
+      RoleNavigationConfig.canAccess(
+        UserRole.tenant,
+        RouteNames.landlordProfileEdit,
+      ),
+      isFalse,
+    );
+    expect(
       RoleNavigationConfig.entryLocationForSession(
         UserRole.landlord,
         AppMode.tenant,
@@ -65,6 +79,68 @@ void main() {
         AppMode.landlord,
       ),
       RoutePaths.landlordWorkbench,
+    );
+  });
+
+  test('viewing appointment stays inside tenant route permissions', () {
+    expect(
+      RoleNavigationConfig.canAccess(
+        UserRole.tenant,
+        RouteNames.viewingAppointment,
+      ),
+      isTrue,
+    );
+    expect(
+      RoleNavigationConfig.canAccess(
+        UserRole.housekeeper,
+        RouteNames.viewingAppointment,
+      ),
+      isFalse,
+    );
+    expect(
+      RoleNavigationConfig.canAccess(
+        UserRole.admin,
+        RouteNames.viewingAppointment,
+      ),
+      isFalse,
+    );
+    expect(
+      RoleNavigationConfig.canAccess(
+        UserRole.tenant,
+        RouteNames.appointmentUnlock,
+      ),
+      isTrue,
+    );
+    expect(
+      RoleNavigationConfig.canAccess(
+        UserRole.housekeeper,
+        RouteNames.appointmentUnlock,
+      ),
+      isFalse,
+    );
+  });
+
+  test('landlord appointment management is isolated from tenant and staff', () {
+    expect(
+      RoleNavigationConfig.canAccess(
+        UserRole.landlord,
+        RouteNames.landlordAppointments,
+      ),
+      isTrue,
+    );
+    expect(
+      RoleNavigationConfig.canAccess(
+        UserRole.tenant,
+        RouteNames.landlordAppointments,
+      ),
+      isFalse,
+    );
+    expect(
+      RoleNavigationConfig.canAccess(
+        UserRole.housekeeper,
+        RouteNames.landlordAppointmentDetail,
+      ),
+      isFalse,
     );
   });
 }

@@ -300,7 +300,7 @@ class _LeaseHeader extends StatelessWidget {
               child: Center(
                 child: Text(
                   '我的租约',
-                  style: AppTextStyles.titleLarge.copyWith(fontSize: 22),
+                  style: AppTextStyles.normalPageTitle,
                 ),
               ),
             ),

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_icon.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
@@ -30,44 +33,60 @@ class _BillListPageState extends ConsumerState<BillListPage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('我的账单')),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: result.when(
-            loading: () =>
-                const AppLoadingView(message: '正在加载账单'),
-            error: (error, _) => AppErrorView(
-              message: '账单加载失败',
-              onRetry: () => ref.invalidate(myBillsProvider),
-            ),
-            data: (data) => RefreshIndicator(
-              onRefresh: () async => ref.invalidate(myBillsProvider),
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.pageHorizontal,
-                  AppSpacing.lg,
-                  AppSpacing.pageHorizontal,
-                  108,
-                ),
-                children: [
-                  _BillSegment(
-                    tabs: [
-                      _TabInfo('未到期', data.scheduledBills.length),
-                      _TabInfo('待支付', data.pendingBills.length),
-                      _TabInfo('已支付', data.paidBills.length),
-                    ],
-                    activeIndex: _activeTab,
-                    onChanged: (i) => setState(() => _activeTab = i),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  switch (_activeTab) {
-                    0 => _buildScheduledBills(context, data),
-                    1 => _buildPendingBills(context, data),
-                    _ => _buildPaidBills(context, data),
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Column(
+              children: [
+                _BillHeader(
+                  onBack: () {
+                    if (context.canPop()) {
+                      context.pop();
+                      return;
+                    }
+                    context.goNamed(RouteNames.profile);
                   },
-                ],
-              ),
+                ),
+                Expanded(
+                  child: result.when(
+                    loading: () =>
+                        const AppLoadingView(message: '正在加载账单'),
+                    error: (error, _) => AppErrorView(
+                      message: '账单加载失败',
+                      onRetry: () => ref.invalidate(myBillsProvider),
+                    ),
+                    data: (data) => RefreshIndicator(
+                      onRefresh: () async => ref.invalidate(myBillsProvider),
+                      child: ListView(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.pageHorizontal,
+                          AppSpacing.lg,
+                          AppSpacing.pageHorizontal,
+                          108,
+                        ),
+                        children: [
+                          _BillSegment(
+                            tabs: [
+                              _TabInfo('未到期', data.scheduledBills.length),
+                              _TabInfo('待支付', data.pendingBills.length),
+                              _TabInfo('已支付', data.paidBills.length),
+                            ],
+                            activeIndex: _activeTab,
+                            onChanged: (i) => setState(() => _activeTab = i),
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          switch (_activeTab) {
+                            0 => _buildScheduledBills(context, data),
+                            1 => _buildPendingBills(context, data),
+                            _ => _buildPaidBills(context, data),
+                          },
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -351,6 +370,53 @@ class _BillCard extends StatelessWidget {
   static String _yuan(int fen) {
     final yuan = fen / 100.0;
     return yuan == yuan.toInt() ? yuan.toInt().toString() : yuan.toStringAsFixed(2);
+  }
+}
+
+class _BillHeader extends StatelessWidget {
+  const _BillHeader({required this.onBack});
+
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.pageHorizontal,
+        AppSpacing.sm,
+        AppSpacing.pageHorizontal,
+        AppSpacing.sm,
+      ),
+      child: SizedBox(
+        height: 44,
+        child: Row(
+          children: [
+            SizedBox(
+              width: 80,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: GestureDetector(
+                  onTap: onBack,
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: AppIcon.iconBack,
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: Text(
+                  '我的账单',
+                  style: AppTextStyles.normalPageTitle,
+                ),
+              ),
+            ),
+            const SizedBox(width: 80),
+          ],
+        ),
+      ),
+    );
   }
 }
 

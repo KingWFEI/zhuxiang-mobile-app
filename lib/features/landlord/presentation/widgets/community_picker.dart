@@ -43,9 +43,12 @@ class CommunityPicker extends StatelessWidget {
             onChanged(result);
           },
           child: InputDecorator(
-            isEmpty: selected == null,
+            // 未选择时仍显示了“搜索并选择小区”，装饰器实际并非空状态。
+            // 固定浮动标签，避免 labelText 与提示文字占用同一行。
+            isEmpty: false,
             decoration: InputDecoration(
               labelText: '小区',
+              floatingLabelBehavior: FloatingLabelBehavior.always,
               errorText: field.errorText,
               prefixIcon: const Icon(Icons.apartment_rounded),
               suffixIcon: const Icon(Icons.chevron_right_rounded),

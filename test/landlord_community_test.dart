@@ -1,6 +1,10 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zhuxiang_app/core/network/api_client.dart';
+import 'package:zhuxiang_app/core/network/api_client_provider.dart';
+import 'package:zhuxiang_app/core/network/api_result.dart';
 import 'package:zhuxiang_app/features/landlord/data/models/community.dart';
 import 'package:zhuxiang_app/features/landlord/data/models/landlord_house.dart';
 import 'package:zhuxiang_app/features/landlord/data/providers/landlord_providers.dart';
@@ -65,7 +69,6 @@ void main() {
       imageUrls: [],
       location: '重庆市 江北区',
       communityId: 'community-1',
-      landlordId: 'user-1',
       price: 300000,
       rentType: 'long_rent',
       facilityIds: ['facility-1'],
@@ -77,7 +80,7 @@ void main() {
 
     final json = request.toJson();
     expect(json['communityId'], 'community-1');
-    expect(json['landlordId'], 'user-1');
+    expect(json.containsKey('landlordId'), isFalse);
     expect(json['address'], '北滨一路');
     expect(json['area'], 45.5);
     expect(json['facilityIds'], ['facility-1']);
@@ -142,7 +145,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('基本信息').hitTestable(), findsOneWidget);
-    expect(find.text('提交发布').hitTestable(), findsOneWidget);
+    expect(find.text('保存草稿').hitTestable(), findsOneWidget);
 
     for (var index = 0; index < 4; index++) {
       await tester.drag(find.byType(Scrollable).first, const Offset(0, -300));
@@ -158,4 +161,53 @@ void main() {
     expect(find.text('点击上传封面图').hitTestable(), findsOneWidget);
     expect(find.text('添加房源图片').hitTestable(), findsOneWidget);
   });
+
+  testWidgets('edit form calculates deposit immediately after loading rent', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [apiClientProvider.overrideWithValue(_HouseFormApiClient())],
+        child: const MaterialApp(
+          home: LandlordHouseFormPage(houseId: 'house-1'),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('¥3000'), findsOneWidget);
+    final rentField = tester.widget<TextFormField>(
+      find.widgetWithText(TextFormField, '月租金（元）'),
+    );
+    expect(rentField.controller?.text, '3000');
+  });
+}
+
+class _HouseFormApiClient extends ApiClient {
+  @override
+  Future<ApiResult<Response<dynamic>>> get(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    final data = switch (path) {
+      '/landlord/houses/house-1' => <String, dynamic>{
+        'id': 'house-1',
+        'title': '测试房源',
+        'price': 300000,
+        'paymentMethod': '押一付一',
+        'status': 'offline',
+      },
+      '/landlord/house-facilities' => <dynamic>[],
+      '/landlord/house-tags' => <dynamic>[],
+      _ => <dynamic>[],
+    };
+    return ApiSuccess(
+      Response<dynamic>(
+        requestOptions: RequestOptions(path: path),
+        data: {'code': 200, 'message': 'success', 'data': data},
+      ),
+    );
+  }
 }

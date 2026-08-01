@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:zhuxiang_app/app/theme/app_icon.dart';
 import 'package:zhuxiang_app/core/network/api_result.dart';
 import 'package:zhuxiang_app/features/house/data/models/house_detail.dart';
+import 'package:zhuxiang_app/features/house/data/models/house_facility_item.dart';
 import 'package:zhuxiang_app/features/house/data/models/immersive_tour.dart';
 import 'package:zhuxiang_app/features/house/data/providers/house_providers.dart';
 
@@ -15,6 +18,7 @@ import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../auth/presentation/auth_controller.dart';
+import '../../../landlord/data/models/landlord_profile.dart';
 import '../../../real_name_auth/data/models/real_name_auth_models.dart';
 import '../../../real_name_auth/data/providers/real_name_auth_providers.dart';
 import '../../../rental_flow/presentation/widgets/confirm_rent_sheet.dart';
@@ -28,7 +32,7 @@ class HouseDetailPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final houseDetailAsync = ref.watch(houseDetailProvider(houseId));
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF5F7FA),
       body: houseDetailAsync.when(
         data: (result) {
           if (result is ApiFailure<HouseDetail>) {
@@ -45,14 +49,32 @@ class HouseDetailPage extends ConsumerWidget {
               children: [
                 CustomScrollView(
                   slivers: [
-                    _DetailAppBar(house: house),
                     SliverToBoxAdapter(
-                      child: Transform.translate(
-                        offset: const Offset(0, -26),
-                        child: _DetailContent(house: house),
+                      child: Column(
+                        children: [
+                          SizedBox(
+                            width: double.infinity,
+                            height: 250,
+                            child: _ImageCarousel(
+                              images: house.images.isEmpty
+                                  ? [house.coverImage]
+                                  : house.images,
+                            ),
+                          ),
+                          Transform.translate(
+                            offset: const Offset(0, -38),
+                            child: _DetailContent(house: house),
+                          ),
+                        ],
                       ),
                     ),
                   ],
+                ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  child: _DetailHeaderActions(house: house),
                 ),
                 Positioned(
                   left: 0,
@@ -87,72 +109,40 @@ class HouseDetailPage extends ConsumerWidget {
   }
 }
 
-class _DetailAppBar extends ConsumerWidget {
-  const _DetailAppBar({required this.house});
+class _DetailHeaderActions extends ConsumerWidget {
+  const _DetailHeaderActions({required this.house});
 
   final HouseDetail house;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return SliverAppBar(
-      expandedHeight: 150,
-      pinned: true,
-      backgroundColor: AppColors.surface,
-      leadingWidth: 44,
-      leading: Padding(
-        padding: const EdgeInsets.only(left: AppSpacing.sm),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: SizedBox.square(
-            dimension: 28,
-            child: IconButton(
-              style: IconButton.styleFrom(
-                backgroundColor: AppColors.surface,
-                shape: const CircleBorder(),
-                fixedSize: const Size.square(28),
-                minimumSize: const Size.square(28),
-                padding: EdgeInsets.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              onPressed: () {
-                if (context.canPop()) {
-                  context.pop();
-                  return;
-                }
-                context.goNamed(RouteNames.search);
-              },
-              icon: const Icon(Icons.arrow_back_ios_new, size: 16),
-            ),
-          ),
-        ),
+    return SafeArea(
+      bottom: false,
+      minimum: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.sm,
+        AppSpacing.md,
+        0,
       ),
-      actions: [
-        Padding(
-          padding: const EdgeInsets.all(2),
-          child: IconButton(
-            style: IconButton.styleFrom(
-              backgroundColor: AppColors.surface,
-              shape: const CircleBorder(),
-              minimumSize: const Size(28, 28),
-              padding: EdgeInsets.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            iconSize: 16,
+      child: Row(
+        children: [
+          _HeaderCircleButton(
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+                return;
+              }
+              context.goNamed(RouteNames.search);
+            },
+            icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+          ),
+          const Spacer(),
+          _HeaderCircleButton(
             onPressed: () => _showMessage(context, '分享功能暂未接入'),
             icon: AppIcon.iconNormal(Icons.share_outlined),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(AppSpacing.sm),
-          child: IconButton(
-            style: IconButton.styleFrom(
-              backgroundColor: AppColors.surface,
-              shape: const CircleBorder(),
-              minimumSize: const Size(28, 28),
-              padding: EdgeInsets.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            iconSize: 16,
+          const SizedBox(width: AppSpacing.sm),
+          _HeaderCircleButton(
             onPressed: () async {
               final authState = ref.read(authControllerProvider);
               if (!authState.isLoggedIn) {
@@ -167,8 +157,9 @@ class _DetailAppBar extends ConsumerWidget {
                 }
                 ref.invalidate(houseDetailProvider(house.id));
               } on Object {
-                if (context.mounted)
+                if (context.mounted) {
                   AppToast.show(context, '操作失败', type: AppToastType.error);
+                }
               }
             },
             icon: house.isFavorite
@@ -178,10 +169,7 @@ class _DetailAppBar extends ConsumerWidget {
                     color: AppColors.textPrimary,
                   ),
           ),
-        ),
-      ],
-      flexibleSpace: FlexibleSpaceBar(
-        background: _ImageCarousel(images: house.images),
+        ],
       ),
     );
   }
@@ -190,6 +178,34 @@ class _DetailAppBar extends ConsumerWidget {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+class _HeaderCircleButton extends StatelessWidget {
+  const _HeaderCircleButton({required this.onPressed, required this.icon});
+
+  final VoidCallback onPressed;
+  final Widget icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.92),
+      elevation: 3,
+      shadowColor: Colors.black12,
+      shape: const CircleBorder(),
+      child: IconButton(
+        onPressed: onPressed,
+        icon: icon,
+        iconSize: 19,
+        style: IconButton.styleFrom(
+          shape: const CircleBorder(),
+          fixedSize: const Size.square(40),
+          minimumSize: const Size.square(40),
+          padding: EdgeInsets.zero,
+        ),
+      ),
+    );
   }
 }
 
@@ -214,7 +230,7 @@ class _ImageCarouselState extends State<_ImageCarousel> {
 
   @override
   Widget build(BuildContext context) {
-    final images = widget.images;
+    final images = widget.images.where((image) => image.isNotEmpty).toList();
 
     if (images.isEmpty) {
       return Container(
@@ -255,24 +271,69 @@ class _ImageCarouselState extends State<_ImageCarousel> {
             },
           ),
         ),
+        const IgnorePointer(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.center,
+                colors: [Color(0x52000000), Colors.transparent],
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          right: 16,
+          bottom: 42,
+          child: IgnorePointer(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.52),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.photo_library_outlined,
+                    color: Colors.white,
+                    size: 14,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    '${_current + 1}/${images.length}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
         if (images.length > 1)
           Positioned(
-            bottom: 12,
+            bottom: 25,
             left: 0,
             right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                images.length,
-                (i) => Container(
-                  width: 6,
-                  height: 6,
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: i == _current
-                        ? Colors.white
-                        : Colors.white.withValues(alpha: 0.5),
+            child: IgnorePointer(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  images.length,
+                  (i) => Container(
+                    width: 6,
+                    height: 6,
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: i == _current
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.5),
+                    ),
                   ),
                 ),
               ),
@@ -290,15 +351,55 @@ class _DetailContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Container(
+    return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.pageHorizontal,
-        AppSpacing.lg,
-        AppSpacing.pageHorizontal,
         0,
+        AppSpacing.pageHorizontal,
+        80,
       ),
-      decoration: const BoxDecoration(color: Colors.white),
-      margin: const EdgeInsets.only(bottom: 40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _HeroInfoCard(house: house),
+          const SizedBox(height: AppSpacing.md),
+          _FacilitiesCard(house: house),
+          const SizedBox(height: AppSpacing.md),
+          _ImmersiveTourEntryCard(house: house),
+          _LandlordCard(house: house),
+          const SizedBox(height: AppSpacing.md),
+          _SmartLifeCard(house: house),
+          const SizedBox(height: AppSpacing.md),
+          _DescriptionCard(house: house),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroInfoCard extends StatelessWidget {
+  const _HeroInfoCard({required this.house});
+
+  final HouseDetail house;
+
+  @override
+  Widget build(BuildContext context) {
+    final tags = [if (house.rentType.isNotEmpty) house.rentType, ...house.tags];
+    return Container(
+      key: const Key('house-detail-floating-info-card'),
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.9)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1A1D4F91),
+            blurRadius: 28,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -306,172 +407,146 @@ class _DetailContent extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: AppSpacing.lg),
-                  child: Stack(
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            house.title,
-                            style: AppTextStyles.titleLarge.copyWith(
-                              fontSize: 18,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          Text.rich(
-                            TextSpan(
-                              text: '¥ ${_displayPrice(house.price)}',
-                              style: AppTextStyles.titleLarge.copyWith(
-                                color: AppColors.primary,
-                                fontSize: 18,
-                              ),
-                              children: [
-                                TextSpan(
-                                  text: ' /月',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      // Positioned(
-                      //   top: 10,
-                      //   right: 0,
-                      //   child: Container(
-                      //     padding: const EdgeInsets.symmetric(
-                      //       horizontal: AppSpacing.sm,
-                      //       vertical: AppSpacing.xs,
-                      //     ),
-                      //     decoration: BoxDecoration(
-                      //       color: AppColors.primaryLight,
-                      //       borderRadius: BorderRadius.circular(8),
-                      //     ),
-                      //     child: const Row(
-                      //       mainAxisSize: MainAxisSize.min,
-                      //       children: [
-                      //         Icon(
-                      //           Icons.verified_user,
-                      //           size: 10,
-                      //           color: AppColors.primary,
-                      //         ),
-                      //         SizedBox(width: AppSpacing.xs),
-                      //         Text(
-                      //           '平台验真',
-                      //           style: TextStyle(
-                      //             fontSize: 10,
-                      //             fontWeight: FontWeight.w600,
-                      //             color: AppColors.primary,
-                      //           ),
-                      //         ),
-                      //       ],
-                      //     ),
-                      //   ),
-                      // ),
-                    ],
+                child: Text(
+                  house.title,
+                  style: AppTextStyles.titleLarge.copyWith(
+                    fontSize: 21,
+                    height: 1.3,
+                    fontWeight: FontWeight.w500,
+                    // letterSpacing: -0.2,
                   ),
                 ),
               ),
+              const SizedBox(width: AppSpacing.sm),
+              _DetailSourceBadge(
+                label: house.sourceLabel,
+                isPlatform: house.isPlatformSource,
+              ),
             ],
           ),
-          const SizedBox(height: AppSpacing.xs),
-          InkWell(
-            onTap: (house.longitude != null && house.latitude != null)
-                ? () {
-                    context.pushNamed(
-                      RouteNames.houseMap,
-                      pathParameters: {'houseId': house.id},
-                      extra: {
-                        'latitude': house.latitude,
-                        'longitude': house.longitude,
-                        'houseTitle': house.title,
-                        'houseAddress': '${house.location} · ${house.community}',
-                      },
-                    );
-                  }
-                : null,
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.location_on,
-                    color: AppColors.iconMuted,
-                    size: 14,
+          const SizedBox(height: AppSpacing.md),
+          _LocationRow(house: house),
+          if (tags.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.md),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: tags.take(6).map((tag) => _DetailTag(tag)).toList(),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.lg),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '¥',
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(width: 2),
+              Text(
+                _displayPrice(house.price),
+                style: AppTextStyles.titleLarge.copyWith(
+                  color: AppColors.primary,
+                  fontSize: 28,
+                  height: 1,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2, left: 3),
+                child: Text(
+                  '/月',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
                   ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Expanded(
-                    child: Text(
-                      '${house.location} · ${house.community}',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
+                ),
+              ),
+              const Spacer(),
+              if (house.paymentMethod.isNotEmpty)
+                Text(
+                  house.paymentMethod,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
                   ),
-                  if (house.longitude != null && house.latitude != null)
-                    const Icon(
-                      Icons.chevron_right,
-                      color: AppColors.primary,
-                      size: 16,
-                    )
-                  else
-                    const Icon(
-                      Icons.chevron_right,
-                      color: AppColors.iconMuted,
-                      size: 16,
-                    ),
-                ],
+                ),
+            ],
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+            child: Divider(height: 1, color: Color(0xFFEEF1F5)),
+          ),
+          Row(
+            children: [
+              _InfoMetric(value: house.roomType, label: '户型'),
+              _MetricDivider(),
+              _InfoMetric(value: '${house.area}m²', label: '面积'),
+              _MetricDivider(),
+              _InfoMetric(value: house.floor, label: '楼层'),
+              _MetricDivider(),
+              _InfoMetric(value: house.orientation, label: '朝向'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LocationRow extends StatelessWidget {
+  const _LocationRow({required this.house});
+
+  final HouseDetail house;
+
+  @override
+  Widget build(BuildContext context) {
+    final canOpenMap = house.longitude != null && house.latitude != null;
+    return InkWell(
+      onTap: canOpenMap
+          ? () => context.pushNamed(
+              RouteNames.houseMap,
+              pathParameters: {'houseId': house.id},
+              extra: {
+                'latitude': house.latitude,
+                'longitude': house.longitude,
+                'houseTitle': house.title,
+                'houseAddress': '${house.location} · ${house.community}',
+              },
+            )
+          : null,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight,
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: const Icon(
+              Icons.location_on_outlined,
+              color: AppColors.primary,
+              size: 17,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              '${house.location} · ${house.community}',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+                fontSize: 13,
               ),
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.xs,
-            runSpacing: AppSpacing.xs,
-            children: house.tags.map((tag) => _DetailTag(tag)).toList(),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          _InfoCard(
-            title: '房屋信息',
-            children: [
-              _InfoMetric(
-                icon: Icons.home_outlined,
-                value: house.roomType,
-                label: '户型',
-              ),
-              _InfoMetric(
-                icon: Icons.straighten,
-                value: '${house.area}m²',
-                label: '面积',
-              ),
-              _InfoMetric(
-                icon: Icons.apartment,
-                value: house.floor,
-                label: '楼层',
-              ),
-              _InfoMetric(
-                icon: Icons.explore_outlined,
-                value: house.orientation,
-                label: '朝向',
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          _FacilitiesCard(house: house),
-          const SizedBox(height: AppSpacing.sm),
-          _ImmersiveTourEntryCard(house: house),
-          _LandlordCard(house: house),
-          const SizedBox(height: AppSpacing.sm),
-          _SmartLifeCard(house: house),
-          const SizedBox(height: AppSpacing.sm),
-          _DescriptionCard(house: house),
+          if (canOpenMap)
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textMuted,
+              size: 20,
+            ),
         ],
       ),
     );
@@ -485,41 +560,62 @@ String _displayPrice(int price) {
       : value.toStringAsFixed(2);
 }
 
-class _InfoCard extends StatelessWidget {
-  const _InfoCard({required this.title, required this.children});
+const _moduleShadow = [
+  BoxShadow(color: Color(0x0D1D4F91), blurRadius: 20, offset: Offset(0, 7)),
+];
 
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
   final String title;
-  final List<Widget> children;
+  final String subtitle;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        boxShadow: AppShadows.card,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: AppTextStyles.housedetailtoolTitle),
-          const SizedBox(height: 6),
-          Row(children: children),
-        ],
-      ),
+    return Row(
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: AppColors.primaryLight,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: AppColors.primary, size: 20),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AppTextStyles.bodyLarge.copyWith(fontSize: 16),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textMuted,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
 
 class _InfoMetric extends StatelessWidget {
-  const _InfoMetric({
-    required this.icon,
-    required this.value,
-    required this.label,
-  });
+  const _InfoMetric({required this.value, required this.label});
 
-  final IconData icon;
   final String value;
   final String label;
 
@@ -528,19 +624,36 @@ class _InfoMetric extends StatelessWidget {
     return Expanded(
       child: Column(
         children: [
-          Icon(icon, color: AppColors.textSecondary, size: 24),
-          const SizedBox(height: 2),
           Text(
-            value,
-            style: AppTextStyles.housedetailtoolL1,
+            value.isEmpty ? '-' : value,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: AppSpacing.xs),
-          Text(label, style: AppTextStyles.housedetailtoolL2),
+          Text(
+            label,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textMuted,
+              fontSize: 11,
+            ),
+          ),
         ],
       ),
     );
+  }
+}
+
+class _MetricDivider extends StatelessWidget {
+  const _MetricDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(width: 1, height: 28, color: const Color(0xFFEEF1F5));
   }
 }
 
@@ -551,70 +664,139 @@ class _FacilitiesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icons = [
-      Icons.bathtub,
-      Icons.ac_unit,
-      Icons.local_laundry_service,
-      Icons.water_drop,
-      Icons.kitchen,
-      Icons.wifi,
-    ];
+    final facilities = house.displayFacilities.take(8).toList();
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        boxShadow: AppShadows.card,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: const Color(0xFFF0F2F5)),
+        boxShadow: _moduleShadow,
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text('房屋设施', style: AppTextStyles.housedetailtoolTitle),
-              const Spacer(),
-              // Text(
-              //   '查看全部',
-              //   style: TextStyle(color: AppColors.primary, fontSize: 8),
-              // ),
-              // const Icon(
-              //   Icons.chevron_right,
-              //   color: AppColors.iconMuted,
-              //   size: 14,
-              // ),
-            ],
+          const _SectionHeader(
+            icon: Icons.chair_outlined,
+            title: '房屋设施',
+            subtitle: '舒适生活所需配置',
           ),
-          const SizedBox(height: AppSpacing.lg),
-          Row(
-            children: [
-              for (
-                var index = 0;
-                index < house.facilities.take(6).length;
-                index++
-              )
-                Expanded(
+          const SizedBox(height: 18),
+          if (facilities.isEmpty)
+            Text(
+              '暂无设施信息',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textMuted,
+              ),
+            )
+          else
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
+              itemCount: facilities.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                mainAxisExtent: 72,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 10,
+              ),
+              itemBuilder: (context, index) {
+                final facility = facilities[index];
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFD),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                   child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        icons[index],
-                        color: AppColors.textSecondary,
-                        size: 24,
+                        _facilityIcon(facility),
+                        color: AppColors.primary,
+                        size: 21,
                       ),
-                      const SizedBox(height: AppSpacing.sm),
+                      const SizedBox(height: 7),
                       Text(
-                        house.facilities[index],
-                        style: AppTextStyles.housedetailtoolL2,
+                        facility.name,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textPrimary,
+                          fontSize: 11,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
-                ),
-            ],
-          ),
+                );
+              },
+            ),
         ],
       ),
     );
+  }
+
+  IconData _facilityIcon(HouseFacilityItem facility) {
+    final configuredIcon = switch (facility.iconKey.trim().toLowerCase()) {
+      'wifi' => Icons.wifi_rounded,
+      'ac_unit' => Icons.ac_unit_rounded,
+      'tv' => Icons.tv_outlined,
+      'local_laundry_service' => Icons.local_laundry_service_outlined,
+      'microwave' => Icons.microwave_outlined,
+      'kitchen' => Icons.kitchen_outlined,
+      'oven' => Icons.local_fire_department_outlined,
+      'shower' => Icons.shower_outlined,
+      'bathtub' => Icons.bathtub_outlined,
+      'dry' => Icons.dry_cleaning_outlined,
+      'bed' => Icons.bed_outlined,
+      'chair' => Icons.chair_outlined,
+      'checkroom' => Icons.checkroom_outlined,
+      'living' => Icons.weekend_outlined,
+      'desk' => Icons.desk_outlined,
+      'curtains' => Icons.curtains_outlined,
+      'security' => Icons.security_outlined,
+      'lock' || 'smart_lock' => Icons.lock_outline_rounded,
+      'nfc' => Icons.nfc_rounded,
+      'fingerprint' => Icons.fingerprint_rounded,
+      'bluetooth' => Icons.bluetooth_rounded,
+      'pin' => Icons.pin_outlined,
+      'smoke_free' => Icons.smoke_free_outlined,
+      'fire_extinguisher' => Icons.fire_extinguisher_outlined,
+      'elevator' => Icons.elevator_outlined,
+      'local_parking' => Icons.local_parking_rounded,
+      'fitness_center' => Icons.fitness_center_rounded,
+      'pool' => Icons.pool_outlined,
+      'yard' => Icons.yard_outlined,
+      'balcony' => Icons.balcony_outlined,
+      'garage' => Icons.garage_outlined,
+      'store' => Icons.storefront_outlined,
+      'local_shipping' => Icons.local_shipping_outlined,
+      'pets' => Icons.pets_outlined,
+      'sunny' => Icons.wb_sunny_outlined,
+      'water' => Icons.water_drop_outlined,
+      'eco' => Icons.eco_outlined,
+      _ => null,
+    };
+    if (configuredIcon != null) return configuredIcon;
+
+    final name = facility.name;
+    if (name.contains('空调')) return Icons.ac_unit_rounded;
+    if (name.contains('洗衣')) return Icons.local_laundry_service_outlined;
+    if (name.contains('冰箱')) return Icons.kitchen_outlined;
+    if (name.contains('网络') || name.contains('Wi')) {
+      return Icons.wifi_rounded;
+    }
+    if (name.contains('热水') || name.contains('淋浴')) {
+      return Icons.shower_outlined;
+    }
+    if (name.contains('床')) return Icons.bed_outlined;
+    if (name.contains('电视')) return Icons.tv_outlined;
+    return Icons.check_circle_outline_rounded;
   }
 }
 
@@ -670,17 +852,17 @@ class _ImmersiveTourEntryCardState
             : widget.house.coverImage;
 
         return Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+          padding: const EdgeInsets.only(bottom: AppSpacing.md),
           child: InkWell(
-            borderRadius: BorderRadius.circular(AppRadius.xl),
+            borderRadius: BorderRadius.circular(AppRadius.card),
             onTap: _openImmersiveTour,
             child: Container(
-              height: 112,
+              height: 100,
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 color: AppColors.surface,
-                borderRadius: BorderRadius.circular(AppRadius.xl),
-                boxShadow: AppShadows.card,
+                borderRadius: BorderRadius.circular(AppRadius.card),
+                boxShadow: _moduleShadow,
               ),
               child: Stack(
                 fit: StackFit.expand,
@@ -701,14 +883,14 @@ class _ImmersiveTourEntryCardState
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
                         colors: [
-                          Colors.black.withValues(alpha: 0.74),
-                          Colors.black.withValues(alpha: 0.30),
+                          const Color(0xFF0B2748).withValues(alpha: 0.88),
+                          const Color(0xFF0B2748).withValues(alpha: 0.18),
                         ],
                       ),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    padding: const EdgeInsets.all(15),
                     child: Row(
                       children: [
                         Expanded(
@@ -720,29 +902,29 @@ class _ImmersiveTourEntryCardState
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   const Icon(
-                                    Icons.view_in_ar,
+                                    Icons.view_in_ar_rounded,
                                     color: Colors.white,
-                                    size: 18,
+                                    size: 22,
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
                                     '沉浸式看房',
-                                    style: AppTextStyles.housedetailtoolTitle
-                                        .copyWith(
-                                          color: Colors.white,
-                                          fontSize: 16,
-                                        ),
+                                    style: AppTextStyles.bodyLarge.copyWith(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 6),
                               const Text(
-                                '在线浏览房间场景和空间动线',
+                                '720° 在线浏览房间场景与空间动线',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   color: Colors.white70,
-                                  fontSize: 12,
+                                  fontSize: 13,
                                 ),
                               ),
                             ],
@@ -750,12 +932,12 @@ class _ImmersiveTourEntryCardState
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 7,
+                            horizontal: 14,
+                            vertical: 9,
                           ),
                           decoration: BoxDecoration(
                             color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
@@ -819,81 +1001,457 @@ class _LandlordCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        boxShadow: AppShadows.card,
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: AppColors.primaryLight,
-            backgroundImage: house.avatarUrl.isNotEmpty
-                ? NetworkImage(house.avatarUrl)
-                : null,
-            child: house.avatarUrl.isEmpty
-                ? const Icon(Icons.person, color: AppColors.primary, size: 24)
-                : null,
+    final profile = house.landlordProfile;
+    final avatar = profile?.avatarUrl.isNotEmpty == true
+        ? profile!.avatarUrl
+        : house.avatarUrl;
+    return Material(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(AppRadius.card),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        onTap: profile == null ? null : () => _showProfile(context, profile),
+        child: Container(
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            border: Border.all(color: const Color(0xFFF0F2F5)),
+            boxShadow: _moduleShadow,
           ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '${house.landlordName} · 房东',
-                        style: AppTextStyles.housedetailtoolTitle,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (house.isVerified) ...[
-                      const SizedBox(width: AppSpacing.sm),
-                      const Text(
-                        '已实名',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _SectionHeader(
+                icon: Icons.person_outline_rounded,
+                title: '房东信息',
+                subtitle: '认证资料与服务评价',
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                child: Divider(height: 1, color: Color(0xFFEEF1F5)),
+              ),
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: AppColors.primaryLight,
+                    backgroundImage:
+                        !house.isPlatformSource && avatar.isNotEmpty
+                        ? NetworkImage(avatar)
+                        : null,
+                    child: house.isPlatformSource || avatar.isEmpty
+                        ? Icon(
+                            house.isPlatformSource
+                                ? Icons.apartment_rounded
+                                : Icons.person,
+                            color: AppColors.primary,
+                            size: 26,
+                          )
+                        : null,
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                house.isPlatformSource
+                                    ? '勿忧管家'
+                                    : profile?.name ?? house.landlordName,
+                                style: AppTextStyles.bodyLarge.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (profile?.isVerified ?? house.isVerified) ...[
+                              const SizedBox(width: 6),
+                              const Icon(
+                                Icons.verified_rounded,
+                                color: AppColors.primary,
+                                size: 17,
+                              ),
+                            ],
+                          ],
                         ),
+                        const SizedBox(height: 5),
+                        Text(
+                          profile?.slogan.isNotEmpty == true
+                              ? profile!.slogan
+                              : house.responseDescription,
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          '评分 ${(profile?.rating ?? house.rating).toStringAsFixed(1)}  ·  已租 ${profile?.rentedCount ?? house.rentedCount} 套',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (profile?.phone?.isNotEmpty == true)
+                    Container(
+                      decoration: const BoxDecoration(
+                        color: AppColors.primaryLight,
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        tooltip: '拨打电话',
+                        onPressed: () =>
+                            launchUrl(Uri(scheme: 'tel', path: profile!.phone)),
+                        icon: const Icon(
+                          Icons.phone_outlined,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                      ),
+                    )
+                  else
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppColors.textMuted,
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showProfile(BuildContext context, LandlordProfile profile) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => _LandlordProfileSheet(
+        profile: profile,
+        isPlatform: house.isPlatformSource,
+      ),
+    );
+  }
+}
+
+class _LandlordProfileSheet extends StatelessWidget {
+  const _LandlordProfileSheet({
+    required this.profile,
+    required this.isPlatform,
+  });
+
+  final LandlordProfile profile;
+  final bool isPlatform;
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.72,
+      minChildSize: 0.45,
+      maxChildSize: 0.92,
+      builder: (context, controller) => ListView(
+        controller: controller,
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.sm,
+          AppSpacing.lg,
+          AppSpacing.xxl,
+        ),
+        children: [
+          Center(
+            child: Container(
+              width: 42,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          if (profile.coverImageUrl.isNotEmpty) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+              child: AspectRatio(
+                aspectRatio: 16 / 7,
+                child: Image.network(
+                  profile.coverImageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => Container(
+                    color: AppColors.primaryLight,
+                    child: const Icon(
+                      Icons.image_not_supported_outlined,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+          ],
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 32,
+                backgroundColor: AppColors.primaryLight,
+                backgroundImage: profile.avatarUrl.isNotEmpty
+                    ? NetworkImage(profile.avatarUrl)
+                    : null,
+                child: profile.avatarUrl.isEmpty
+                    ? Icon(
+                        isPlatform ? Icons.apartment_rounded : Icons.person,
+                        color: AppColors.primary,
+                        size: 30,
+                      )
+                    : null,
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            isPlatform ? '勿忧管家' : profile.name,
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        if (profile.isVerified) ...[
+                          const SizedBox(width: AppSpacing.sm),
+                          const Icon(
+                            Icons.verified_rounded,
+                            color: AppColors.primary,
+                            size: 18,
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (profile.slogan.isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        profile.slogan,
+                        style: const TextStyle(color: AppColors.textSecondary),
                       ),
                     ],
                   ],
                 ),
-                SizedBox(height: 2),
-                Text(
-                  '${house.responseDescription}   评分 ${house.rating} · 已租 ${house.rentedCount} 套',
-                  style: AppTextStyles.housedetailtoolL2,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              _ProfileMetric(
+                icon: Icons.star_rounded,
+                label: '${profile.rating.toStringAsFixed(1)} 分',
+              ),
+              _ProfileMetric(
+                icon: Icons.home_work_outlined,
+                label: '已租 ${profile.rentedCount} 套',
+              ),
+              if (profile.serviceYears > 0)
+                _ProfileMetric(
+                  icon: Icons.workspace_premium_outlined,
+                  label: '${profile.serviceYears} 年经验',
                 ),
-              ],
+            ],
+          ),
+          if (profile.profileTags.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.lg),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: profile.profileTags
+                  .map((tag) => Chip(label: Text(tag)))
+                  .toList(),
             ),
-          ),
-          IconButton(
-            onPressed: () => _showTodo(context),
-            icon: const Icon(
-              Icons.chat_bubble,
-              color: AppColors.primary,
-              size: 20,
+          ],
+          if (profile.introduction.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.lg),
+            _ProfileSection(title: '关于房东', content: profile.introduction),
+          ],
+          if (profile.serviceArea.isNotEmpty)
+            _ProfileSection(title: '服务区域', content: profile.serviceArea),
+          if (profile.responseDescription.isNotEmpty)
+            _ProfileSection(
+              title: '响应说明',
+              content: profile.responseDescription,
             ),
-          ),
-          IconButton(
-            onPressed: () => _showTodo(context),
-            icon: const Icon(Icons.phone, color: AppColors.primary, size: 20),
-          ),
+          if (profile.contactTime.isNotEmpty)
+            _ProfileSection(title: '方便联系', content: profile.contactTime),
+          if (profile.hasPublicContact) ...[
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              '公开联系方式',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            if (profile.phone?.isNotEmpty == true)
+              _ContactTile(
+                icon: Icons.phone_outlined,
+                label: '电话',
+                value: profile.phone!,
+                onTap: () => launchUrl(Uri(scheme: 'tel', path: profile.phone)),
+              ),
+            if (profile.wechat?.isNotEmpty == true)
+              _ContactTile(
+                icon: Icons.chat_outlined,
+                label: '微信',
+                value: profile.wechat!,
+                onTap: () => _copy(context, profile.wechat!, '微信号'),
+              ),
+            if (profile.email?.isNotEmpty == true)
+              _ContactTile(
+                icon: Icons.email_outlined,
+                label: '邮箱',
+                value: profile.email!,
+                onTap: () =>
+                    launchUrl(Uri(scheme: 'mailto', path: profile.email)),
+              ),
+          ],
         ],
       ),
     );
   }
 
-  void _showTodo(BuildContext context) {
+  void _copy(BuildContext context, String value, String label) {
+    Clipboard.setData(ClipboardData(text: value));
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('联系能力暂未接入')));
+    ).showSnackBar(SnackBar(content: Text('$label已复制')));
+  }
+}
+
+class _ProfileMetric extends StatelessWidget {
+  const _ProfileMetric({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.primaryLight,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: AppColors.primary),
+          const SizedBox(width: AppSpacing.xs),
+          Text(label),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileSection extends StatelessWidget {
+  const _ProfileSection({required this.title, required this.content});
+
+  final String title;
+  final String content;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            content,
+            style: const TextStyle(color: AppColors.textSecondary, height: 1.6),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ContactTile extends StatelessWidget {
+  const _ContactTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(icon, color: AppColors.primary),
+      title: Text(label),
+      subtitle: Text(value),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: onTap,
+    );
+  }
+}
+
+class _DetailSourceBadge extends StatelessWidget {
+  const _DetailSourceBadge({required this.label, required this.isPlatform});
+
+  final String label;
+  final bool isPlatform;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: isPlatform ? AppColors.primaryLight : AppColors.successLight,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        label,
+        style: AppTextStyles.bodySmall.copyWith(
+          color: isPlatform ? AppColors.primary : AppColors.secondary,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
   }
 }
 
@@ -905,30 +1463,73 @@ class _SmartLifeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        boxShadow: AppShadows.card,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: const Color(0xFFF0F2F5)),
+        boxShadow: _moduleShadow,
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.lock, size: 24, color: AppColors.textPrimary),
-          const SizedBox(width: AppSpacing.lg),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          const _SectionHeader(
+            icon: Icons.auto_awesome_outlined,
+            title: '智能生活',
+            subtitle: '让入住更便捷、更安心',
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: house.isSmartLockSupported
+                  ? AppColors.primaryLight
+                  : const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
               children: [
-                Text('智能生活', style: AppTextStyles.housedetailtoolTitle),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  house.isSmartLockSupported ? '智能门锁已连接，门锁运行正常' : '该房源暂不支持智能门锁',
-                  style: AppTextStyles.housedetailtoolL2,
+                Icon(
+                  Icons.lock_outline_rounded,
+                  size: 24,
+                  color: house.isSmartLockSupported
+                      ? AppColors.primary
+                      : AppColors.textMuted,
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '智能门锁',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        house.isSmartLockSupported
+                            ? '支持无钥匙便捷入住'
+                            : '该房源暂未配置智能门锁',
+                        style: AppTextStyles.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  house.isSmartLockSupported
+                      ? Icons.check_circle_rounded
+                      : Icons.remove_circle_outline,
+                  color: house.isSmartLockSupported
+                      ? AppColors.primary
+                      : AppColors.textMuted,
+                  size: 20,
                 ),
               ],
             ),
           ),
-          const Icon(Icons.chevron_right, color: AppColors.iconMuted, size: 14),
         ],
       ),
     );
@@ -944,21 +1545,28 @@ class _DescriptionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        boxShadow: AppShadows.card,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: const Color(0xFFF0F2F5)),
+        boxShadow: _moduleShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('房源描述', style: AppTextStyles.housedetailtoolTitle),
-          const SizedBox(height: 4),
+          const _SectionHeader(
+            icon: Icons.notes_rounded,
+            title: '房源描述',
+            subtitle: '更多房屋与周边信息',
+          ),
+          const SizedBox(height: AppSpacing.lg),
           Text(
-            house.description,
-            style: AppTextStyles.housedetailtoolTitle.copyWith(
-              color: const Color.fromARGB(255, 78, 78, 78),
+            house.description.isEmpty ? '房东暂未填写更多房源描述。' : house.description,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+              height: 1.75,
+              fontSize: 14,
             ),
           ),
         ],
@@ -978,14 +1586,14 @@ class _DetailTag extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: AppColors.primaryLight,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         label,
         style: AppTextStyles.bodyMedium.copyWith(
           color: AppColors.primary,
           fontWeight: FontWeight.w600,
-          fontSize: 9,
+          fontSize: 11,
         ),
       ),
     );
@@ -999,57 +1607,68 @@ class _BottomActionBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return SafeArea(
-      top: false,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.pageHorizontal,
-          AppSpacing.md,
-          AppSpacing.pageHorizontal,
-          AppSpacing.md,
-        ),
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x14000000),
-              blurRadius: 16,
-              offset: Offset(0, -4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: AppColors.surface,
-                  side: const BorderSide(color: AppColors.primary, width: 1),
-                  foregroundColor: AppColors.primary,
-                  fixedSize: const Size.fromHeight(36),
-                  padding: EdgeInsets.zero,
-                  visualDensity: VisualDensity.compact,
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.pageHorizontal,
+        10,
+        AppSpacing.pageHorizontal,
+        10 + 16,
+      ),
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: Color(0xFFF0F2F5))),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x120B2748),
+            blurRadius: 24,
+            offset: Offset(0, -8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                backgroundColor: AppColors.primaryLight,
+                side: const BorderSide(color: Color(0xFFBBD9FF)),
+                foregroundColor: AppColors.primary,
+                fixedSize: const Size.fromHeight(52),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                onPressed: () => _openViewing(context),
-                child: const Text('预约看房'),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  fixedSize: const Size.fromHeight(36),
-                  padding: EdgeInsets.zero,
-                  visualDensity: VisualDensity.compact,
+                textStyle: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
                 ),
-                onPressed: () => _openApplication(context, ref),
-                child: Text(_applicationLabel),
               ),
+              onPressed: () => _openViewing(context),
+              child: const Text('预约看房'),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            flex: 1,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: AppColors.textMuted,
+                elevation: 0,
+                fixedSize: const Size.fromHeight(52),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              onPressed: () => _openApplication(context, ref),
+              child: Text(_applicationLabel),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1201,7 +1820,7 @@ class _DetailSkeleton extends StatelessWidget {
         CustomScrollView(
           slivers: [
             SliverAppBar(
-              expandedHeight: 150,
+              expandedHeight: 250,
               pinned: true,
               backgroundColor: AppColors.surface,
               flexibleSpace: FlexibleSpaceBar(
@@ -1210,7 +1829,7 @@ class _DetailSkeleton extends StatelessWidget {
             ),
             SliverToBoxAdapter(
               child: Transform.translate(
-                offset: const Offset(0, -26),
+                offset: const Offset(0, -38),
                 child: Container(
                   padding: const EdgeInsets.fromLTRB(
                     AppSpacing.pageHorizontal,

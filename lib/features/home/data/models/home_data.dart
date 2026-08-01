@@ -1,4 +1,5 @@
 import '../../../house/data/models/house.dart';
+import '../../../house/data/models/house_source_type.dart';
 
 class HomeData {
   final HomeHeaderData header;
@@ -200,6 +201,7 @@ class HomeHouseItem {
   final String rentAvailability;
   final String activeOrderId;
   final bool activeOrderBelongsToMe;
+  final HouseSourceType sourceType;
 
   const HomeHouseItem({
     required this.id,
@@ -224,6 +226,7 @@ class HomeHouseItem {
     this.rentAvailability = '',
     this.activeOrderId = '',
     this.activeOrderBelongsToMe = false,
+    this.sourceType = HouseSourceType.platform,
   });
 
   factory HomeHouseItem.fromJson(Map<String, dynamic> json) {
@@ -258,6 +261,7 @@ class HomeHouseItem {
       activeOrderId:
           '${json['activeOrderId'] ?? json['active_order_id'] ?? ''}',
       activeOrderBelongsToMe: _parseActiveOrderBelongsToMe(json),
+      sourceType: HouseSourceType.fromJson(json['sourceType']),
     );
   }
 
@@ -285,6 +289,7 @@ class HomeHouseItem {
       rentAvailability: rentAvailability,
       activeOrderId: activeOrderId,
       activeOrderBelongsToMe: activeOrderBelongsToMe,
+      sourceType: sourceType,
     );
   }
 

@@ -19,7 +19,7 @@ import 'package:zhuxiang_app/features/message/data/services/message_service.dart
 import 'package:zhuxiang_app/features/message/domain/entities/app_message.dart';
 
 void main() {
-  testWidgets('Zhuxiang app renders loading page', (tester) async {
+  testWidgets('勿忧管家 app renders loading page', (tester) async {
     AppRouter.router.go(RoutePaths.splash);
     await tester.pumpWidget(
       ProviderScope(
@@ -36,9 +36,9 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('住享'), findsOneWidget);
+    expect(find.text('勿忧管家'), findsOneWidget);
     expect(find.text('让每一次归家，都心中有数'), findsOneWidget);
-    expect(find.bySemanticsLabel('住享社区建筑背景'), findsOneWidget);
+    expect(find.bySemanticsLabel('勿忧管家社区建筑背景'), findsOneWidget);
     expect(find.bySemanticsLabel('正在加载'), findsOneWidget);
   });
 

@@ -214,7 +214,7 @@ UnlockRecord _record(
     operatorName: operatorName,
     operatorType: operatorType,
     failureReason: failureReason,
-    deviceName: method == UnlockMethod.bluetooth ? 'iPhone 16' : '住享 App',
+    deviceName: method == UnlockMethod.bluetooth ? 'iPhone 16' : '勿忧管家 App',
     remark: result == UnlockResult.success ? '开锁指令执行完成' : '开锁未完成',
   );
 }

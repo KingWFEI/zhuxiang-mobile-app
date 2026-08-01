@@ -8,6 +8,7 @@ import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../appointment/data/providers/appointment_providers.dart';
 import '../../data/providers/landlord_providers.dart';
 
 class LandlordWorkbenchPage extends ConsumerWidget {
@@ -16,12 +17,20 @@ class LandlordWorkbenchPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final count = ref.watch(landlordPendingContractCountProvider).valueOrNull;
+    final appointments = ref.watch(landlordAppointmentsProvider).valueOrNull;
+    final pendingAppointments = appointments
+        ?.where((item) => item.status == 'PENDING_CONFIRMATION')
+        .length;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('房东工作台')),
       body: RefreshIndicator(
-        onRefresh: () =>
+        onRefresh: () async {
+          await Future.wait([
             ref.refresh(landlordPendingContractCountProvider.future),
+            ref.refresh(landlordAppointmentsProvider.future),
+          ]);
+        },
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(AppSpacing.pageHorizontal),
@@ -33,6 +42,16 @@ class LandlordWorkbenchPage extends ConsumerWidget {
               title: '房源管理',
               subtitle: '发布、编辑和上下架房源',
               onTap: () => context.pushNamed(RouteNames.landlordHouses),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _WorkbenchEntry(
+              icon: Icons.event_available_outlined,
+              title: '看房预约',
+              subtitle: '确认、改期并核验租客到场',
+              badge: pendingAppointments != null && pendingAppointments > 0
+                  ? '$pendingAppointments条待确认'
+                  : null,
+              onTap: () => context.pushNamed(RouteNames.landlordAppointments),
             ),
             const SizedBox(height: AppSpacing.md),
             _WorkbenchEntry(

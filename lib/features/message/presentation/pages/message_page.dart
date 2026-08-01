@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_names.dart';
+import '../../../../app/router/app_mode_controller.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/widgets/app_empty_view.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
 import '../../../../core/widgets/app_logo.dart';
 import '../../../../core/widgets/app_toast.dart';
+import '../../../auth/presentation/auth_controller.dart';
 import '../../application/message_controller.dart';
 import '../../data/providers/message_providers.dart';
 import '../../domain/entities/app_message.dart';
@@ -317,6 +319,21 @@ class _MessagePageState extends ConsumerState<MessagePage> {
       }
     }
     if (!mounted) return;
+    if (message.actionType == 'appointment' &&
+        message.actionTarget != null &&
+        message.actionTarget!.isNotEmpty) {
+      final isLandlord =
+          ref.read(authControllerProvider).user?.role.usesLandlordShell ??
+          false;
+      final inLandlordMode = ref.read(appModeProvider) == AppMode.landlord;
+      context.pushNamed(
+        isLandlord && inLandlordMode
+            ? RouteNames.landlordAppointmentDetail
+            : RouteNames.viewingDetail,
+        pathParameters: {'appointmentId': message.actionTarget!},
+      );
+      return;
+    }
     context.pushNamed(
       RouteNames.messageDetail,
       pathParameters: {'messageId': message.id},

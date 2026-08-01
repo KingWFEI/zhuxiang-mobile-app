@@ -61,7 +61,7 @@ class LeaseModel {
       tenantName: _string(json, [
         'tenantName',
         'tenant_name',
-      ], fallback: _string(tenant, ['name', 'realName'], fallback: '住享租客')),
+      ], fallback: _string(tenant, ['name', 'realName'], fallback: '勿忧管家租客')),
       tenantPhone: _string(json, [
         'tenantPhone',
         'tenant_phone',

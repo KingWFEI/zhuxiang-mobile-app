@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -100,6 +102,30 @@ void main() {
     expect(notifier.state.hasMore, isFalse);
   });
 
+  test(
+    'refresh keeps current houses visible while request is pending',
+    () async {
+      final service = _DeferredRefreshHouseService();
+      final container = containerWithService(service);
+      addTearDown(container.dispose);
+
+      final notifier = container.read(houseSearchProvider.notifier);
+      await notifier.search();
+      expect(notifier.state.houses.map((house) => house.id), ['house-1']);
+
+      final refreshFuture = notifier.refresh();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(notifier.state.isRefreshing, isTrue);
+      expect(notifier.state.houses.map((house) => house.id), ['house-1']);
+
+      service.completeRefresh();
+      await refreshFuture;
+      expect(notifier.state.isRefreshing, isFalse);
+      expect(notifier.state.houses.map((house) => house.id), ['house-1']);
+    },
+  );
+
   test('mock service returns six houses and supports rent sorting', () async {
     final service = HouseService(ApiClient());
     final result = await service.fetchHouses(const {
@@ -157,7 +183,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.textContaining('住享'), findsAtLeastNWidgets(1));
+    expect(find.textContaining('勿忧管家'), findsAtLeastNWidgets(1));
     expect(find.text('重庆'), findsOneWidget);
     expect(find.textContaining('1286'), findsOneWidget);
     expect(find.text('测试房源 house-1'), findsOneWidget);
@@ -442,6 +468,47 @@ class _PaginationHouseService extends HouseService {
       pageSize: 20,
       total: 2,
       hasMore: false,
+    );
+  }
+
+  @override
+  Future<ApiResult<HouseDetail>> getHouseDetail(String houseId) {
+    throw UnimplementedError();
+  }
+}
+
+class _DeferredRefreshHouseService extends HouseService {
+  _DeferredRefreshHouseService() : super(ApiClient());
+
+  final _refreshCompleter = Completer<PageResult<House>>();
+  int callCount = 0;
+
+  @override
+  Future<PageResult<House>> fetchHouses(Map<String, dynamic> query) {
+    callCount++;
+    if (callCount == 1) {
+      return Future.value(
+        PageResult(
+          items: [_house('house-1')],
+          page: 1,
+          pageSize: 20,
+          total: 1,
+          hasMore: false,
+        ),
+      );
+    }
+    return _refreshCompleter.future;
+  }
+
+  void completeRefresh() {
+    _refreshCompleter.complete(
+      PageResult(
+        items: [_house('house-1')],
+        page: 1,
+        pageSize: 20,
+        total: 1,
+        hasMore: false,
+      ),
     );
   }
 
