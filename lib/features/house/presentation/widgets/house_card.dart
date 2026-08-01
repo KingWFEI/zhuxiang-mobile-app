@@ -115,7 +115,7 @@ class _ListContent extends StatelessWidget {
                                 house.title,
                                 style: const TextStyle(
                                   color: AppColors.textPrimary,
-                                  fontSize: 12,
+                                  fontSize: 14,
                                   fontWeight: FontWeight.w600,
                                 ),
                                 maxLines: 1,
@@ -145,7 +145,7 @@ class _ListContent extends StatelessWidget {
                           '${house.location} · ${house.community}  ${house.metro}',
                           style: const TextStyle(
                             color: Color(0xFF76839A),
-                            fontSize: 8,
+                            fontSize: 10,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -155,7 +155,7 @@ class _ListContent extends StatelessWidget {
                           '${house.roomType}  |  ${house.area}m²  |  ${house.orientation}  |  ${house.floor}',
                           style: const TextStyle(
                             color: Color(0xFF7F8A9E),
-                            fontSize: 8,
+                            fontSize: 10,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -175,14 +175,14 @@ class _ListContent extends StatelessWidget {
                             text: '¥ ${_displayPrice(house.price)}',
                             style: AppTextStyles.titleMedium.copyWith(
                               color: AppColors.primary,
-                              fontSize: 10,
+                              fontSize: 12,
                               fontWeight: FontWeight.w700,
                             ),
                             children: const [
                               TextSpan(
                                 text: ' /月',
                                 style: TextStyle(
-                                  fontSize: 10,
+                                  fontSize: 12,
                                   color: AppColors.textSecondary,
                                   fontWeight: FontWeight.w400,
                                 ),
@@ -357,7 +357,41 @@ class _HouseCover extends StatelessWidget {
                 ),
               ),
             ),
+          Positioned(
+            left: 6,
+            bottom: 6,
+            child: _HouseSourceBadge(
+              label: house.sourceLabel,
+              isPlatform: house.isPlatformSource,
+            ),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _HouseSourceBadge extends StatelessWidget {
+  const _HouseSourceBadge({required this.label, required this.isPlatform});
+
+  final String label;
+  final bool isPlatform;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: isPlatform ? AppColors.primary : AppColors.secondary,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
@@ -389,7 +423,7 @@ class _HouseTag extends StatelessWidget {
         label,
         style: AppTextStyles.bodyMedium.copyWith(
           color: AppColors.primary,
-          fontSize: 8,
+          fontSize: 10,
           fontWeight: FontWeight.w600,
         ),
       ),

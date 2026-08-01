@@ -65,7 +65,7 @@ class _MoveInCompletePageState extends ConsumerState<MoveInCompletePage> {
               Text('租住成功', style: AppTextStyles.titleLarge),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                '欢迎入住${order?.houseName ?? '住享房源'}',
+                '欢迎入住${order?.houseName ?? '勿忧管家房源'}',
                 textAlign: TextAlign.center,
                 style: AppTextStyles.bodyMedium,
               ),

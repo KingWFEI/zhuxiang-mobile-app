@@ -10,7 +10,6 @@ import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_toast.dart';
-import '../../../auth/presentation/auth_controller.dart';
 import '../../data/models/community.dart';
 import '../../data/models/landlord_house.dart';
 import '../../data/providers/landlord_providers.dart';
@@ -38,7 +37,6 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
   late final _unitCtrl = TextEditingController();
   late final _roomCtrl = TextEditingController();
   late final _priceCtrl = TextEditingController();
-  late final _depositCtrl = TextEditingController();
   late final _areaCtrl = TextEditingController();
   late final _floorCtrl = TextEditingController();
   late final _metroCtrl = TextEditingController();
@@ -53,6 +51,10 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
   String _decoration = '';
   String _coverUrl = '';
   final _imageUrls = <String>[];
+  XFile? _propertyCertificateFile;
+  String _propertyCertificateName = '';
+  String _propertyCertificateStatus = '';
+  String _propertyCertificateRemark = '';
   final _selectedFacilityIds = <String>{};
   final _selectedTagIds = <String>{};
   var _isSmartLock = false;
@@ -72,8 +74,7 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
           .getHouseDetail(widget.houseId!);
       if (!mounted) return;
       _titleCtrl.text = house.title;
-      _priceCtrl.text = (house.price / 100).toString();
-      _depositCtrl.text = (house.deposit / 100).toString();
+      _priceCtrl.text = house.priceYuan;
       _areaCtrl.text = house.area > 0 ? house.area.toString() : '';
       _floorCtrl.text = house.floor;
       _metroCtrl.text = house.metro;
@@ -105,7 +106,7 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
         'short_rent' || '短租' || '合租' => '合租',
         _ => '整租',
       };
-      _paymentMethod = house.paymentMethod;
+      _paymentMethod = _normalizePaymentMethod(house.paymentMethod);
       _roomTypeCtrl.text = house.roomType;
       _orientation = switch (house.orientation) {
         '朝南' || '南' => '南',
@@ -115,9 +116,13 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
         '南北通透' || '南北' => '南北',
         _ => '',
       };
-      _decoration = house.decoration;
+      _decoration = _normalizeDecoration(house.decoration);
       _isSmartLock = house.isSmartLockSupported;
       _isSelfViewingSupported = house.isSelfViewingSupported;
+      _propertyCertificateName = house.propertyCertificate?.originalName ?? '';
+      _propertyCertificateStatus = house.propertyCertificate?.statusLabel ?? '';
+      _propertyCertificateRemark =
+          house.propertyCertificate?.reviewRemark ?? '';
       setState(() {});
     } on Object {
       if (mounted) {
@@ -133,7 +138,6 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
     _unitCtrl.dispose();
     _roomCtrl.dispose();
     _priceCtrl.dispose();
-    _depositCtrl.dispose();
     _areaCtrl.dispose();
     _floorCtrl.dispose();
     _metroCtrl.dispose();
@@ -150,7 +154,7 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
     return Scaffold(
       backgroundColor: AppColors.authBackground,
       appBar: AppBar(
-        title: Text(widget.isEdit ? '编辑房源' : '发布房源'),
+        title: Text(widget.isEdit ? '编辑房源' : '新增房源'),
         backgroundColor: AppColors.surface,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
@@ -187,13 +191,12 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
                       _buildTextField(
                         _priceCtrl,
                         '月租金（元）',
-                        keyboardType: TextInputType.number,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        onChanged: (_) => setState(() {}),
                       ),
-                      _buildTextField(
-                        _depositCtrl,
-                        '押金（元）',
-                        keyboardType: TextInputType.number,
-                      ),
+                      _buildCalculatedDepositField(),
                     ]),
                     _fieldGap,
                     _buildPaymentMethodPicker(),
@@ -348,6 +351,13 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
                   title: '房源图片',
                   subtitle: '建议上传 6–12 张清晰实拍图',
                   children: [_buildImageSection()],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                _SectionCard(
+                  icon: Icons.verified_user_outlined,
+                  title: '房产证明',
+                  subtitle: '提交管理员审核前必须上传，替换后会保留历史记录',
+                  children: [_buildPropertyCertificateSection()],
                 ),
               ],
             ),
@@ -535,7 +545,7 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.isEdit ? '完善房源信息' : '发布优质房源',
+                  widget.isEdit ? '完善房源信息' : '录入房源草稿',
                   style: AppTextStyles.titleMedium.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
@@ -592,7 +602,7 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
                       ),
                     )
                   : Text(
-                      widget.isEdit ? '保存修改' : '提交发布',
+                      widget.isEdit ? '保存修改' : '保存草稿',
                       style: AppTextStyles.labelLarge,
                     ),
             ),
@@ -607,10 +617,12 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
     String label, {
     String? hint,
     TextInputType? keyboardType,
+    ValueChanged<String>? onChanged,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
+      onChanged: onChanged,
       decoration: _inputDecoration(label, hint: hint),
       validator: (v) {
         if (['房源标题', '月租金（元）'].contains(label)) {
@@ -651,10 +663,12 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
 
   Widget _buildPaymentMethodPicker() {
     const options = [
+      ('无押金月付', '无押金（月付）'),
       ('押一付一', '押一付一'),
       ('押一付三', '押一付三'),
       ('押一付六', '押一付六'),
-      ('押一付十二', '押一付年'),
+      ('押一付十二', '押一付十二'),
+      ('押二付一', '押二付一'),
     ];
     return _buildDropdown('付款方式', _paymentMethod, options, (v) {
       setState(() => _paymentMethod = v);
@@ -675,7 +689,12 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
   }
 
   Widget _buildDecorationPicker() {
-    const options = [('精装', '精装'), ('简装', '简装'), ('毛坯', '毛坯'), ('豪装', '豪装')];
+    const options = [
+      ('精装修', '精装修'),
+      ('简装修', '简装修'),
+      ('毛坯', '毛坯'),
+      ('豪华装修', '豪华装修'),
+    ];
     return _buildDropdown('装修', _decoration, options, (v) {
       setState(() => _decoration = v);
     });
@@ -687,16 +706,89 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
     List<(String, String)> options,
     ValueChanged<String> onChanged,
   ) {
+    final uniqueOptions = <String, String>{};
+    for (final option in options) {
+      uniqueOptions.putIfAbsent(option.$1, () => option.$2);
+    }
+    final selectedValue = value.trim();
+    if (selectedValue.isNotEmpty && !uniqueOptions.containsKey(selectedValue)) {
+      uniqueOptions[selectedValue] = '$selectedValue（原值）';
+    }
     return DropdownButtonFormField<String>(
-      initialValue: value.isNotEmpty ? value : null,
+      initialValue: selectedValue.isNotEmpty ? selectedValue : null,
       decoration: _inputDecoration(label),
-      items: options.map((o) {
-        return DropdownMenuItem(value: o.$1, child: Text(o.$2));
+      items: uniqueOptions.entries.map((option) {
+        return DropdownMenuItem(value: option.key, child: Text(option.value));
       }).toList(),
       onChanged: (v) {
         if (v != null) onChanged(v);
       },
     );
+  }
+
+  String _normalizePaymentMethod(String value) {
+    return switch (value.trim()) {
+      '无押金' || '免押' || '零押金' => '无押金月付',
+      '月付' => '押一付一',
+      '季付' => '押一付三',
+      '半年付' => '押一付六',
+      '押一付年' || '年付' => '押一付十二',
+      '无押金月付' ||
+      '押一付一' ||
+      '押一付三' ||
+      '押一付六' ||
+      '押一付十二' ||
+      '押二付一' => value.trim(),
+      _ => '押一付一',
+    };
+  }
+
+  int get _depositMonths {
+    return switch (_paymentMethod) {
+      '无押金月付' => 0,
+      '押二付一' => 2,
+      _ => 1,
+    };
+  }
+
+  int get _monthlyRentCents {
+    final monthlyRentYuan = double.tryParse(_priceCtrl.text.trim()) ?? 0;
+    return (monthlyRentYuan * 100).round();
+  }
+
+  int get _calculatedDepositCents {
+    return _monthlyRentCents * _depositMonths;
+  }
+
+  String _formatCentsAsYuan(int cents) {
+    final yuan = cents / 100;
+    return yuan == yuan.roundToDouble()
+        ? yuan.toInt().toString()
+        : yuan.toStringAsFixed(2);
+  }
+
+  Widget _buildCalculatedDepositField() {
+    return InputDecorator(
+      isEmpty: false,
+      decoration: _inputDecoration(
+        '押金（自动计算）',
+        hint: '由付款方式决定',
+      ).copyWith(helperText: '按 $_depositMonths 个月租金计算'),
+      child: Text(
+        '¥${_formatCentsAsYuan(_calculatedDepositCents)}',
+        style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+
+  String _normalizeDecoration(String value) {
+    return switch (value.trim()) {
+      '精装' || '精装房' => '精装修',
+      '简装' || '简装房' => '简装修',
+      '豪装' || '豪华装' => '豪华装修',
+      '毛坯房' => '毛坯',
+      final normalized => normalized,
+    };
   }
 
   Widget _buildDatePicker(
@@ -871,6 +963,96 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
     );
   }
 
+  Widget _buildPropertyCertificateSection() {
+    final hasCertificate = _propertyCertificateName.isNotEmpty;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: AppColors.authBackground,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: AppColors.inputBorder),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                hasCertificate
+                    ? Icons.description_outlined
+                    : Icons.upload_file_outlined,
+                color: hasCertificate ? AppColors.primary : AppColors.textMuted,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      hasCertificate ? _propertyCertificateName : '尚未上传房产证',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (_propertyCertificateStatus.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '材料状态：$_propertyCertificateStatus',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: _propertyCertificateStatus == '已驳回'
+                              ? AppColors.error
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (_propertyCertificateRemark.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            '驳回原因：$_propertyCertificateRemark',
+            style: AppTextStyles.bodySmall.copyWith(color: AppColors.error),
+          ),
+        ],
+        const SizedBox(height: AppSpacing.sm),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _submitting ? null : _pickPropertyCertificate,
+            icon: const Icon(Icons.add_photo_alternate_outlined),
+            label: Text(hasCertificate ? '替换房产证照片' : '选择房产证照片'),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          '支持 JPG、PNG、WebP，最大 10MB。材料仅供本人和管理员查看。',
+          style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _pickPropertyCertificate() async {
+    final file = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 95,
+    );
+    if (file == null || !mounted) return;
+    setState(() {
+      _propertyCertificateFile = file;
+      _propertyCertificateName = file.name;
+      _propertyCertificateStatus = '待保存';
+      _propertyCertificateRemark = '';
+    });
+  }
+
   Widget _imagePreview(String url) {
     final isCover = _coverUrl == url;
     return Container(
@@ -1038,21 +1220,16 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
       AppToast.show(context, '请先上传封面图', type: AppToastType.error);
       return;
     }
-    final landlordId = ref.read(authControllerProvider).user?.id;
-    if (landlordId == null || landlordId.isEmpty) {
-      AppToast.show(context, '登录状态已失效，请重新登录', type: AppToastType.error);
-      return;
-    }
-
-    final price = int.tryParse(_priceCtrl.text) ?? 0;
-    final deposit = int.tryParse(_depositCtrl.text);
+    final price = _monthlyRentCents;
+    final deposit = _calculatedDepositCents;
 
     setState(() => _submitting = true);
 
     try {
       final service = ref.read(landlordHouseServiceProvider);
+      late final LandlordHouseItem savedHouse;
       if (widget.isEdit) {
-        await service.updateHouse(
+        savedHouse = await service.updateHouse(
           widget.houseId!,
           UpdateHouseRequest(
             title: _titleCtrl.text.trim(),
@@ -1062,8 +1239,8 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
                 ? community.regionLabel
                 : community.name,
             communityId: community.id,
-            price: price * 100,
-            deposit: deposit != null ? deposit * 100 : null,
+            price: price,
+            deposit: deposit,
             rentType: _rentType,
             facilityIds: facilityIds,
             tagIds: tagIds,
@@ -1085,7 +1262,7 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
           ),
         );
       } else {
-        await service.createHouse(
+        savedHouse = await service.createHouse(
           CreateHouseRequest(
             title: _titleCtrl.text.trim(),
             coverImage: _coverUrl,
@@ -1094,12 +1271,11 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
                 ? community.regionLabel
                 : community.name,
             communityId: community.id,
-            landlordId: landlordId,
-            price: price * 100,
+            price: price,
             rentType: _rentType,
             facilityIds: facilityIds,
             tagIds: tagIds,
-            deposit: deposit != null ? deposit * 100 : null,
+            deposit: deposit,
             paymentMethod: _paymentMethod,
             roomType: _roomTypeCtrl.text.trim(),
             area: double.tryParse(_areaCtrl.text),
@@ -1119,10 +1295,23 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
         );
       }
 
+      final certificateFile = _propertyCertificateFile;
+      if (certificateFile != null) {
+        await service.uploadPropertyCertificate(
+          savedHouse.id,
+          certificateFile.path,
+          certificateFile.name,
+        );
+      }
+
       if (!mounted) return;
       AppToast.show(
         context,
-        widget.isEdit ? '房源信息已更新' : '房源发布成功',
+        certificateFile != null
+            ? '房源和房产证已保存，请在房源列表提交审核'
+            : widget.isEdit
+            ? '房源信息已更新'
+            : '房源草稿已保存，请上传房产证后提交审核',
         type: AppToastType.success,
       );
       ref.invalidate(landlordHousesProvider(null));

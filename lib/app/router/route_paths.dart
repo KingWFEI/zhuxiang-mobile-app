@@ -46,7 +46,8 @@ class RoutePaths {
   static const customerServiceEnter = '/customer-service-chat';
   static const customerServiceChat = '/customer-service-chat/:sessionId';
   static const viewingAppointment = '/rental-flow/:houseId/viewing-appointment';
-  static const viewingDetail = '/rental-flow/:houseId/viewing-detail';
+  static const viewingDetail = '/appointments/:appointmentId';
+  static const appointmentUnlock = '/appointments/:appointmentId/unlock';
   static const rentalApplication = '/rental-flow/:houseId/rental-application';
   static const leaseContract = '/rental-flow/:orderId/contract';
   static const rentalPayment = '/rental-flow/:orderId/payment';
@@ -62,11 +63,15 @@ class RoutePaths {
   static const landlordHouseCreate = '/landlord/houses/create';
   static const landlordHouseEdit = '/landlord/houses/:houseId';
   static const landlordContracts = '/landlord/contracts';
+  static const landlordAppointments = '/landlord/appointments';
+  static const landlordAppointmentDetail =
+      '/landlord/appointments/:appointmentId';
   static const landlordContractDetail = '/landlord/contracts/:orderId';
   static const landlordContractWebview = '/landlord/contracts/:orderId/sign';
   static const landlordContractResult =
       '/landlord/contracts/:orderId/sign-result';
   static const landlordProfile = '/landlord/profile';
+  static const landlordProfileEdit = '/landlord/profile/edit';
   static const userAgreement = '/profile/agreement';
   static const privacyPolicy = '/profile/privacy';
   static const favoriteHouses = '/profile/favorites';

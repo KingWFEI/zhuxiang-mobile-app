@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_icon.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
@@ -14,6 +14,7 @@ import '../../../../core/network/api_exception.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
 import '../../../../core/widgets/app_toast.dart';
+import '../../../../core/widgets/app_webview_page.dart';
 import '../../data/models/real_name_auth_models.dart';
 import '../../data/providers/real_name_auth_providers.dart';
 
@@ -79,11 +80,20 @@ class _RealNameAuthPageState extends ConsumerState<RealNameAuthPage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('实名认证'),
-        backgroundColor: AppColors.surface,
-      ),
-      body: status.when(
+      body: SafeArea(
+        child: Column(
+          children: [
+            _AuthHeader(
+              onBack: () {
+                if (context.canPop()) {
+                  context.pop();
+                  return;
+                }
+                context.goNamed(RouteNames.profile);
+              },
+            ),
+            Expanded(
+              child: status.when(
         loading: () => const AppLoadingView(message: '正在查询认证状态'),
         error: (error, stackTrace) => AppErrorView(
           message: _errorMessage(error),
@@ -93,6 +103,10 @@ class _RealNameAuthPageState extends ConsumerState<RealNameAuthPage> {
           },
         ),
         data: _buildStatusContent,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -317,16 +331,30 @@ class _RealNameAuthPageState extends ConsumerState<RealNameAuthPage> {
       }
       return;
     }
-    final uri = Uri.tryParse(value);
-    if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
+    if (!AppWebViewPage.supportsUrl(value)) {
       if (mounted) {
         AppToast.show(context, '无法打开实名认证页面', type: AppToastType.error);
       }
       return;
     }
-    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!launched && mounted) {
-      AppToast.show(context, '无法打开实名认证页面', type: AppToastType.error);
+    if (mounted) setState(() => _isOpeningAuth = true);
+    try {
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => AppWebViewPage(
+            title: '实名认证',
+            initialUrl: value,
+            allowCamera: true,
+          ),
+        ),
+      );
+      if (mounted) await _refreshStatus(showLoading: false);
+    } on Object {
+      if (mounted) {
+        AppToast.show(context, '无法打开实名认证页面', type: AppToastType.error);
+      }
+    } finally {
+      if (mounted) setState(() => _isOpeningAuth = false);
     }
   }
 
@@ -412,6 +440,53 @@ class _RealNameAuthPageState extends ConsumerState<RealNameAuthPage> {
       };
     }
     return '实名认证操作失败，请稍后重试';
+  }
+}
+
+class _AuthHeader extends StatelessWidget {
+  const _AuthHeader({required this.onBack});
+
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.pageHorizontal,
+        AppSpacing.sm,
+        AppSpacing.pageHorizontal,
+        AppSpacing.sm,
+      ),
+      child: SizedBox(
+        height: 44,
+        child: Row(
+          children: [
+            SizedBox(
+              width: 80,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: GestureDetector(
+                  onTap: onBack,
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: AppIcon.iconBack,
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: Text(
+                  '实名认证',
+                  style: AppTextStyles.normalPageTitle,
+                ),
+              ),
+            ),
+            const SizedBox(width: 80),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -564,7 +639,7 @@ class _VerifyingContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _Notice(text: '请在浏览器中完成人脸识别。完成后返回本页面，再点击“我已完成认证”查询结果。'),
+        const _Notice(text: '请在 App 内完成人脸识别。关闭认证页面后会自动查询认证结果。'),
         const SizedBox(height: AppSpacing.md),
         if (status.idCardMasked != null)
           _InfoRow(label: '证件号码', value: status.idCardMasked!),
@@ -573,7 +648,7 @@ class _VerifyingContent extends StatelessWidget {
         const SizedBox(height: AppSpacing.lg),
         FilledButton.icon(
           onPressed: isOpeningAuth ? null : onOpenAuth,
-          icon: const Icon(Icons.open_in_browser),
+          icon: const Icon(Icons.web_asset_rounded),
           label: const Text('打开认证页面'),
         ),
         OutlinedButton.icon(

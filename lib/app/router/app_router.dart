@@ -7,6 +7,11 @@ import '../../core/widgets/app_placeholder_page.dart';
 import '../../core/widgets/static_content_page.dart';
 import '../../features/customer_service/presentation/pages/chat_page.dart';
 import '../../features/customer_service/presentation/pages/session_list_page.dart';
+import '../../features/appointment/presentation/pages/appointment_detail_page.dart';
+import '../../features/appointment/presentation/pages/appointment_list_page.dart';
+import '../../features/appointment/presentation/pages/appointment_unlock_page.dart';
+import '../../features/appointment/presentation/pages/landlord_appointment_detail_page.dart';
+import '../../features/appointment/presentation/pages/landlord_appointment_list_page.dart';
 import '../../features/auth/presentation/auth_controller.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
@@ -26,6 +31,7 @@ import '../../features/landlord/presentation/pages/contract_sign_result_page.dar
 import '../../features/landlord/presentation/pages/contract_webview_page.dart';
 import '../../features/landlord/presentation/pages/landlord_workbench_page.dart';
 import '../../features/landlord/presentation/pages/landlord_profile_page.dart';
+import '../../features/landlord/presentation/pages/landlord_profile_edit_page.dart';
 import '../../features/lease/presentation/pages/deposit_detail_page.dart';
 import '../../features/lease/presentation/pages/lease_contract_view_page.dart';
 import '../../features/lease/presentation/pages/lease_detail_page.dart';
@@ -57,7 +63,6 @@ import '../../features/rental_flow/presentation/pages/online_sign_page.dart';
 import '../../features/rental_flow/presentation/pages/payment_page.dart';
 import '../../features/rental_flow/presentation/pages/rental_application_page.dart';
 import '../../features/rental_flow/presentation/pages/viewing_appointment_page.dart';
-import '../../features/rental_flow/presentation/pages/viewing_detail_page.dart';
 import '../../features/staff/lock_initial/presentation/lock_initial.dart';
 import '../../features/staff/lock_initial/presentation/lock_manage_page.dart';
 import '../../features/staff/workbench/presentation/workbench_page.dart';
@@ -372,9 +377,26 @@ class AppRouter {
         ),
       ),
       GoRoute(
+        name: RouteNames.landlordProfileEdit,
+        path: RoutePaths.landlordProfileEdit,
+        builder: (context, state) => const LandlordProfileEditPage(),
+      ),
+      GoRoute(
         name: RouteNames.landlordContracts,
         path: RoutePaths.landlordContracts,
         builder: (context, state) => const LandlordContractListPage(),
+      ),
+      GoRoute(
+        name: RouteNames.landlordAppointments,
+        path: RoutePaths.landlordAppointments,
+        builder: (context, state) => const LandlordAppointmentListPage(),
+      ),
+      GoRoute(
+        name: RouteNames.landlordAppointmentDetail,
+        path: RoutePaths.landlordAppointmentDetail,
+        builder: (context, state) => LandlordAppointmentDetailPage(
+          appointmentId: state.pathParameters['appointmentId'] ?? '',
+        ),
       ),
       GoRoute(
         name: RouteNames.landlordContractDetail,
@@ -538,7 +560,7 @@ class AppRouter {
       GoRoute(
         name: RouteNames.appointment,
         path: RoutePaths.appointment,
-        builder: (context, state) => const AppPlaceholderPage(title: '预约看房'),
+        builder: (context, state) => const AppointmentListPage(),
       ),
       GoRoute(
         name: RouteNames.realNameAuth,
@@ -683,10 +705,17 @@ class AppRouter {
       GoRoute(
         name: RouteNames.viewingDetail,
         path: RoutePaths.viewingDetail,
-        builder: (context, state) {
-          final houseId = state.pathParameters['houseId'] ?? '';
-          return ViewingDetailPage(houseId: houseId);
-        },
+        builder: (context, state) => AppointmentDetailPage(
+          appointmentId: state.pathParameters['appointmentId'] ?? '',
+          returnHouseId: state.uri.queryParameters['fromHouseId'],
+        ),
+      ),
+      GoRoute(
+        name: RouteNames.appointmentUnlock,
+        path: RoutePaths.appointmentUnlock,
+        builder: (context, state) => AppointmentUnlockPage(
+          appointmentId: state.pathParameters['appointmentId'] ?? '',
+        ),
       ),
       GoRoute(
         name: RouteNames.rentalApplication,
@@ -829,7 +858,7 @@ class AppRouter {
 
 更新日期：2026年7月1日
 
-欢迎使用住享平台（以下简称"本平台"）。在注册和使用本平台服务前，请您仔细阅读并充分理解本协议的全部内容。
+欢迎使用勿忧管家平台（以下简称"本平台"）。在注册和使用本平台服务前，请您仔细阅读并充分理解本协议的全部内容。
 
 一、服务条款的接受
 您在使用本平台提供的服务时，即表示您已阅读、理解并同意接受本协议的全部条款和条件。如您不同意本协议的任何条款，请立即停止使用本平台服务。
@@ -868,7 +897,7 @@ class AppRouter {
 
 更新日期：2026年7月1日
 
-住享平台（以下简称"我们"）深知个人信息对您的重要性，我们将按照法律法规的规定，保护您的个人信息安全。
+勿忧管家平台（以下简称"我们"）深知个人信息对您的重要性，我们将按照法律法规的规定，保护您的个人信息安全。
 
 一、我们收集的信息
 1. 账号信息：手机号码、密码、姓名、身份证号码等用于注册和实名认证的信息。

@@ -37,6 +37,7 @@ class LandlordHouseItem {
     this.province = '',
     this.city = '',
     this.district = '',
+    this.propertyCertificate,
   });
 
   factory LandlordHouseItem.fromJson(Map<String, dynamic> json) {
@@ -97,6 +98,11 @@ class LandlordHouseItem {
       province: json['province']?.toString() ?? '',
       city: json['city']?.toString() ?? '',
       district: json['district']?.toString() ?? '',
+      propertyCertificate: json['propertyCertificate'] is Map<String, dynamic>
+          ? PropertyCertificateInfo.fromJson(
+              json['propertyCertificate'] as Map<String, dynamic>,
+            )
+          : null,
     );
   }
 
@@ -118,6 +124,7 @@ class LandlordHouseItem {
   final String province;
   final String city;
   final String district;
+  final PropertyCertificateInfo? propertyCertificate;
   final int price;
   final int deposit;
   final String paymentMethod;
@@ -142,12 +149,19 @@ class LandlordHouseItem {
     return switch (status) {
       'draft' => '草稿',
       'available' => '已上架',
+      'pendingReview' => '待审核',
+      'rejected' => '审核驳回',
       'offline' => '已下架',
       'reserved' => '已预定',
       'rented' => '已出租',
       _ => status,
     };
   }
+
+  bool get hasPropertyCertificate => propertyCertificate != null;
+  bool get hasSubmittablePropertyCertificate =>
+      propertyCertificate != null &&
+      propertyCertificate!.auditStatus != 'rejected';
 
   String get priceYuan {
     final yuan = price / 100;
@@ -185,6 +199,46 @@ class LandlordHouseItem {
         })
         .where((id) => id.isNotEmpty)
         .toList();
+  }
+}
+
+class PropertyCertificateInfo {
+  const PropertyCertificateInfo({
+    required this.id,
+    required this.originalName,
+    required this.auditStatus,
+    required this.createdAt,
+    this.reviewRemark = '',
+    this.submittedAt = '',
+    this.reviewedAt = '',
+  });
+
+  factory PropertyCertificateInfo.fromJson(Map<String, dynamic> json) {
+    return PropertyCertificateInfo(
+      id: json['id']?.toString() ?? '',
+      originalName: json['originalName']?.toString() ?? '',
+      auditStatus: json['auditStatus']?.toString() ?? 'pending',
+      reviewRemark: json['reviewRemark']?.toString() ?? '',
+      createdAt: json['createdAt']?.toString() ?? '',
+      submittedAt: json['submittedAt']?.toString() ?? '',
+      reviewedAt: json['reviewedAt']?.toString() ?? '',
+    );
+  }
+
+  final String id;
+  final String originalName;
+  final String auditStatus;
+  final String reviewRemark;
+  final String createdAt;
+  final String submittedAt;
+  final String reviewedAt;
+
+  String get statusLabel {
+    return switch (auditStatus) {
+      'approved' => '已通过',
+      'rejected' => '已驳回',
+      _ => submittedAt.isEmpty ? '待提交' : '待审核',
+    };
   }
 }
 
@@ -229,7 +283,6 @@ class CreateHouseRequest {
     required this.imageUrls,
     required this.location,
     required this.communityId,
-    required this.landlordId,
     required this.price,
     required this.rentType,
     required this.facilityIds,
@@ -257,7 +310,6 @@ class CreateHouseRequest {
   final List<String> imageUrls;
   final String location;
   final String communityId;
-  final String landlordId;
   final int price;
   final String rentType;
   final List<String> facilityIds;
@@ -286,7 +338,6 @@ class CreateHouseRequest {
       'imageUrls': imageUrls,
       'location': location,
       'communityId': communityId,
-      'landlordId': landlordId,
       'price': price,
       'rentType': rentType,
       'facilityIds': facilityIds,

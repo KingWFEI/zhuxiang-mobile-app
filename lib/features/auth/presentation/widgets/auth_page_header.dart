@@ -80,7 +80,7 @@ class _BrandMark extends StatelessWidget {
       children: [
         const Icon(Icons.home_work, color: AppColors.primary, size: 18),
         const SizedBox(width: 2),
-        Text('住享', style: AppTextStyles.logoTitle),
+        Text('勿忧管家', style: AppTextStyles.logoTitle),
       ],
     );
   }

@@ -7,6 +7,7 @@ import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/network/api_exception.dart';
 import '../../../../core/widgets/app_empty_view.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
@@ -37,7 +38,7 @@ class _LandlordHouseListPageState extends ConsumerState<LandlordHouseListPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
-            tooltip: '发布房源',
+            tooltip: '新增房源',
             onPressed: () => context.pushNamed('landlordHouseCreate'),
           ),
         ],
@@ -81,8 +82,10 @@ class _LandlordHouseListPageState extends ConsumerState<LandlordHouseListPage> {
                   _HouseCard(
                     house: house,
                     isProcessing: _processingHouseIds.contains(house.id),
+                    onEdit: () => _editHouse(house),
                     onPublish: () => _changeHouseStatus(house, publish: true),
                     onOffline: () => _changeHouseStatus(house, publish: false),
+                    onDelete: () => _deleteHouse(house),
                   ),
                   const SizedBox(height: AppSpacing.md),
                 ],
@@ -99,6 +102,12 @@ class _LandlordHouseListPageState extends ConsumerState<LandlordHouseListPage> {
     required bool publish,
   }) async {
     if (_processingHouseIds.contains(house.id)) return;
+    final isRelisting = publish && house.status == 'offline';
+    final actionName = isRelisting
+        ? '重新上架'
+        : publish
+        ? '提交审核'
+        : '下架';
     setState(() => _processingHouseIds.add(house.id));
     try {
       final service = ref.read(landlordHouseServiceProvider);
@@ -110,7 +119,11 @@ class _LandlordHouseListPageState extends ConsumerState<LandlordHouseListPage> {
       if (!mounted) return;
       AppToast.show(
         context,
-        publish ? '房源上架成功' : '房源下架成功',
+        isRelisting
+            ? '重新上架申请已提交，等待管理员审核'
+            : publish
+            ? '房源已提交审核'
+            : '房源下架成功',
         type: AppToastType.success,
       );
       ref.invalidate(landlordHousesProvider(_statusFilter));
@@ -118,7 +131,66 @@ class _LandlordHouseListPageState extends ConsumerState<LandlordHouseListPage> {
       if (!mounted) return;
       AppToast.show(
         context,
-        '${publish ? '上架' : '下架'}失败：$error',
+        _errorMessage(error, fallback: '$actionName失败，请稍后重试'),
+        type: AppToastType.error,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _processingHouseIds.remove(house.id));
+      }
+    }
+  }
+
+  String _errorMessage(Object error, {required String fallback}) {
+    if (error is ApiException && error.message.trim().isNotEmpty) {
+      return error.message;
+    }
+    return fallback;
+  }
+
+  Future<void> _editHouse(LandlordHouseItem house) async {
+    await context.pushNamed(
+      'landlordHouseEdit',
+      pathParameters: {'houseId': house.id},
+    );
+    if (mounted) {
+      ref.invalidate(landlordHousesProvider(_statusFilter));
+    }
+  }
+
+  Future<void> _deleteHouse(LandlordHouseItem house) async {
+    if (_processingHouseIds.contains(house.id)) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('删除房源'),
+        content: Text('确定删除“${house.title}”吗？删除后将不再显示，但历史合同和订单仍会保留。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('确认删除'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _processingHouseIds.add(house.id));
+    try {
+      await ref.read(landlordHouseServiceProvider).deleteHouse(house.id);
+      if (!mounted) return;
+      AppToast.show(context, '房源删除成功', type: AppToastType.success);
+      ref.invalidate(landlordHousesProvider(_statusFilter));
+    } on Object catch (error) {
+      if (!mounted) return;
+      AppToast.show(
+        context,
+        _errorMessage(error, fallback: '删除失败，请稍后重试'),
         type: AppToastType.error,
       );
     } finally {
@@ -138,6 +210,8 @@ class _StatusFilterBar extends StatelessWidget {
   static const _filters = [
     (null, '全部'),
     ('available', '已上架'),
+    ('pendingReview', '待审核'),
+    ('rejected', '已驳回'),
     ('draft', '草稿'),
     ('offline', '已下架'),
   ];
@@ -182,14 +256,18 @@ class _HouseCard extends StatelessWidget {
   const _HouseCard({
     required this.house,
     required this.isProcessing,
+    required this.onEdit,
     required this.onPublish,
     required this.onOffline,
+    required this.onDelete,
   });
 
   final LandlordHouseItem house;
   final bool isProcessing;
+  final VoidCallback onEdit;
   final VoidCallback onPublish;
   final VoidCallback onOffline;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -204,10 +282,7 @@ class _HouseCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.card),
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.card),
-          onTap: () => context.pushNamed(
-            'landlordHouseEdit',
-            pathParameters: {'houseId': house.id},
-          ),
+          onTap: isProcessing ? null : onEdit,
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
@@ -294,6 +369,22 @@ class _HouseCard extends StatelessWidget {
                               ),
                             ],
                           ),
+                          if (house.status == 'rejected' &&
+                              (house
+                                      .propertyCertificate
+                                      ?.reviewRemark
+                                      .isNotEmpty ??
+                                  false)) ...[
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              '驳回原因：${house.propertyCertificate!.reviewRemark}',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.error,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -306,33 +397,62 @@ class _HouseCard extends StatelessWidget {
                     _quickAction(
                       icon: Icons.edit_outlined,
                       label: '编辑',
-                      onTap: () => context.pushNamed(
-                        'landlordHouseEdit',
-                        pathParameters: {'houseId': house.id},
-                      ),
+                      onTap: isProcessing ? null : onEdit,
                     ),
-                    const SizedBox(width: AppSpacing.lg),
-                    if (house.status == 'available')
+                    if (house.status == 'available') ...[
+                      const SizedBox(width: AppSpacing.lg),
                       _quickAction(
                         icon: Icons.visibility_off_outlined,
                         label: '下架',
                         loading: isProcessing,
                         onTap: isProcessing ? null : onOffline,
                       ),
-                    if (house.status == 'draft' || house.status == 'offline')
+                    ],
+                    if (house.status == 'draft' ||
+                        house.status == 'rejected') ...[
+                      const SizedBox(width: AppSpacing.lg),
+                      _quickAction(
+                        icon: house.hasSubmittablePropertyCertificate
+                            ? Icons.fact_check_outlined
+                            : Icons.upload_file_outlined,
+                        label: house.hasSubmittablePropertyCertificate
+                            ? '提交审核'
+                            : house.hasPropertyCertificate
+                            ? '重新上传房产证'
+                            : '上传房产证',
+                        loading: isProcessing,
+                        onTap: isProcessing
+                            ? null
+                            : house.hasSubmittablePropertyCertificate
+                            ? onPublish
+                            : onEdit,
+                      ),
+                    ],
+                    if (house.status == 'pendingReview') ...[
+                      const SizedBox(width: AppSpacing.lg),
+                      _quickAction(
+                        icon: Icons.hourglass_top_outlined,
+                        label: '审核中',
+                        onTap: null,
+                      ),
+                    ],
+                    if (house.status == 'offline') ...[
+                      const SizedBox(width: AppSpacing.lg),
                       _quickAction(
                         icon: Icons.publish_outlined,
-                        label: '上架',
+                        label: '重新上架',
                         loading: isProcessing,
                         onTap: isProcessing ? null : onPublish,
                       ),
-                    const SizedBox(width: AppSpacing.lg),
-                    _quickAction(
-                      icon: Icons.delete_outline,
-                      label: '删除',
-                      color: AppColors.textMuted,
-                      onTap: () {},
-                    ),
+                      const SizedBox(width: AppSpacing.lg),
+                      _quickAction(
+                        icon: Icons.delete_outline,
+                        label: '删除',
+                        color: AppColors.error,
+                        loading: isProcessing,
+                        onTap: isProcessing ? null : onDelete,
+                      ),
+                    ],
                   ],
                 ),
               ],
@@ -347,6 +467,8 @@ class _HouseCard extends StatelessWidget {
     return switch (house.status) {
       'available' => AppColors.success,
       'draft' => AppColors.warning,
+      'pendingReview' => AppColors.primary,
+      'rejected' => AppColors.error,
       'offline' => AppColors.textMuted,
       'rented' => AppColors.primary,
       _ => AppColors.textSecondary,

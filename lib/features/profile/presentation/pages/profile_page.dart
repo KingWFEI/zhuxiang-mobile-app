@@ -91,7 +91,7 @@ class _ProfileHeader extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AppSpacing.sm),
-              Text('安心居住，住享相伴', style: AppTextStyles.bodySmall),
+              Text('安心居住，勿忧管家相伴', style: AppTextStyles.bodySmall),
             ],
           ),
         ],
@@ -276,6 +276,7 @@ class _DashboardCardState extends ConsumerState<_DashboardCard> {
     (Icons.verified_user, '房东认证', Color(0xFF7667F8)),
     (Icons.badge, '实名认证', AppColors.primary),
     (Icons.star, '我的收藏', Color(0xFF7667F8)),
+    (Icons.event_available, '我的预约', AppColors.primary),
   ];
 
   @override
@@ -477,6 +478,8 @@ class _DashboardCardState extends ConsumerState<_DashboardCard> {
         context.pushNamed(RouteNames.realNameAuth);
       case 7:
         context.pushNamed(RouteNames.favoriteHouses);
+      case 8:
+        context.pushNamed(RouteNames.appointment);
     }
   }
 }
@@ -529,7 +532,11 @@ class _HomeLockCard extends StatelessWidget {
 }
 
 class _NoLockCard extends StatelessWidget {
-  _NoLockCard({this.address, this.leaseInvalid = false, this.coverImage = ''});
+  const _NoLockCard({
+    this.address,
+    this.leaseInvalid = false,
+    this.coverImage = '',
+  });
 
   final String? address;
   final bool leaseInvalid;

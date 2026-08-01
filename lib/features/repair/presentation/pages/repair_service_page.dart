@@ -208,101 +208,47 @@ class _RepairHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 176,
+    return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.xl,
-        AppSpacing.lg,
-        AppSpacing.xl,
-        AppSpacing.lg,
+        AppSpacing.pageHorizontal,
+        AppSpacing.sm,
+        AppSpacing.pageHorizontal,
+        AppSpacing.sm,
       ),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFF4FAFF), Color(0xFFE7F3FF)],
-        ),
-        borderRadius: BorderRadius.vertical(
-          bottom: Radius.circular(AppRadius.xxl),
-        ),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: -AppSpacing.lg,
-            left: -AppSpacing.xl,
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              child: IconButton(
-                onPressed: () {
-                  if (context.canPop()) {
-                    context.pop();
-                    return;
-                  }
-                  context.goNamed(RouteNames.profile);
-                },
-                icon: AppIcon.iconBack,
+      child: SizedBox(
+        height: 44,
+        child: Row(
+          children: [
+            SizedBox(
+              width: 80,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: GestureDetector(
+                  onTap: () {
+                    if (context.canPop()) {
+                      context.pop();
+                      return;
+                    }
+                    context.goNamed(RouteNames.profile);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: AppIcon.iconBack,
+                  ),
+                ),
               ),
             ),
-          ),
-          Positioned(
-            right: -54,
-            bottom: -54,
-            child: Opacity(
-              opacity: 0.42,
-              child: Image.asset('assets/home_bk.png', width: 300),
+            Expanded(
+              child: Center(
+                child: Text(
+                  '报修服务',
+                  style: AppTextStyles.normalPageTitle,
+                ),
+              ),
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const SizedBox(width: 48),
-                  const Icon(
-                    Icons.home_work,
-                    color: AppColors.primary,
-                    size: 24,
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Text(
-                    '住享',
-                    style: AppTextStyles.titleMedium.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const Spacer(),
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      const Icon(Icons.notifications_none_rounded, size: 26),
-                      Positioned(
-                        right: 1,
-                        top: 1,
-                        child: Container(
-                          width: 7,
-                          height: 7,
-                          decoration: const BoxDecoration(
-                            color: AppColors.error,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const Spacer(),
-              Text(
-                '报修服务',
-                style: AppTextStyles.titleLarge.copyWith(fontSize: 30),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text('问题及时报修，管家全程跟进', style: AppTextStyles.bodyMedium),
-            ],
-          ),
-        ],
+            const SizedBox(width: 80),
+          ],
+        ),
       ),
     );
   }

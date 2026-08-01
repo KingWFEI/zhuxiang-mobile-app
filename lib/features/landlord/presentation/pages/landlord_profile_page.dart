@@ -88,6 +88,13 @@ class LandlordProfilePage extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
           _ProfileEntry(
+            icon: Icons.badge_outlined,
+            title: '房东公开资料',
+            subtitle: '设置租客可见的介绍、服务标签和联系方式',
+            onTap: () => context.pushNamed(RouteNames.landlordProfileEdit),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _ProfileEntry(
             icon: Icons.swap_horiz_rounded,
             title: '切换到普通用户端',
             subtitle: '浏览房源、查看租约和使用租客服务',

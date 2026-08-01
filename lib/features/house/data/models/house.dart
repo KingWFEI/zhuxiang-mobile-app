@@ -1,3 +1,5 @@
+import 'house_source_type.dart';
+
 /// 房源列表使用的数据模型。
 class House {
   const House({
@@ -25,6 +27,7 @@ class House {
     required this.availableDate,
     this.landlordId = '',
     this.landlordName = '',
+    this.sourceType = HouseSourceType.platform,
     this.avatarUrl = '',
     this.isVerified = false,
     this.rating = 0.0,
@@ -61,6 +64,7 @@ class House {
   final String availableDate;
   final String landlordId;
   final String landlordName;
+  final HouseSourceType sourceType;
   final String avatarUrl;
   final bool isVerified;
   final double rating;
@@ -77,6 +81,9 @@ class House {
       (rentAvailability.toLowerCase() == 'locked' ||
           rentAvailability.toLowerCase() == 'reserved' ||
           activeOrderId.isNotEmpty);
+
+  bool get isPlatformSource => sourceType.isPlatform;
+  String get sourceLabel => sourceType.label;
 
   factory House.fromJson(Map<String, dynamic> json) {
     return House(
@@ -114,6 +121,7 @@ class House {
       availableDate: json['availableDate'] as String? ?? '',
       landlordId: json['landlordId'] as String? ?? '',
       landlordName: json['landlordName'] as String? ?? '',
+      sourceType: HouseSourceType.fromJson(json['sourceType']),
       avatarUrl: json['avatarUrl'] as String? ?? '',
       isVerified: json['isVerified'] as bool? ?? false,
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,

@@ -371,11 +371,13 @@ class _FindHomePageState extends ConsumerState<FindHomePage> {
       } else {
         await ref.read(houseServiceProvider).addFavorite(house.id);
       }
-      // 刷新列表以更新 isFavorite 状态
-      ref.invalidate(houseSearchProvider);
+      // 保留当前列表并从服务端同步收藏状态。
+      // 直接 invalidate 会将 Provider 重置为空列表，而页面不会重走 initState。
+      await ref.read(houseSearchProvider.notifier).refresh();
     } on Object {
-      if (mounted)
+      if (mounted) {
         AppToast.show(context, '操作失败，请稍后重试', type: AppToastType.error);
+      }
     }
   }
 
