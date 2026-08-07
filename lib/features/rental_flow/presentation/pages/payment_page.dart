@@ -10,6 +10,7 @@ import '../../../../core/widgets/app_toast.dart';
 import '../../data/providers/rental_flow_providers.dart';
 import '../../domain/entities/rental_flow_step.dart';
 import '../widgets/rent_fee_detail_card.dart';
+import '../widgets/rent_order_deadline_banner.dart';
 import '../widgets/rental_flow_bottom_bar.dart';
 import '../widgets/rental_flow_page_shell.dart';
 import 'alipay_webview_page.dart';
@@ -34,6 +35,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(rentalFlowControllerProvider);
     final payment = state.paymentInfo;
+    final order = state.order;
     final selected = payment?.selectedPaymentMethod;
     return RentalFlowPageShell(
       title: '支付',
@@ -47,6 +49,13 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
         onPrimary: _submit,
       ),
       children: [
+        if (order?.paymentDeadline != null) ...[
+          RentOrderDeadlineBanner(
+            order: order!,
+            onExpired: _handleDeadlineExpired,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+        ],
         FlowCard(
           child: Column(
             children: [
@@ -100,6 +109,13 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
         .loadPaymentInfo(widget.orderId);
   }
 
+  void _handleDeadlineExpired() {
+    ref.invalidate(myRentOrdersProvider);
+    if (!mounted) return;
+    AppToast.show(context, '支付已超时，房源已释放');
+    context.goNamed(RouteNames.rentOrders);
+  }
+
   Future<void> _submit() async {
     final selected = ref
         .read(rentalFlowControllerProvider)
@@ -131,17 +147,17 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
       if (!mounted) return;
       if (paid == true) {
         context.pushReplacementNamed(
-          RouteNames.onlineSign,
+          RouteNames.waitingLandlordSign,
           pathParameters: {'orderId': widget.orderId},
         );
       }
       return;
     }
 
-    // mock 支付 → 直接跳转签约
+    // mock 支付 → 进入等待房东签约页
     ref.invalidate(myRentOrdersProvider);
     context.pushReplacementNamed(
-      RouteNames.onlineSign,
+      RouteNames.waitingLandlordSign,
       pathParameters: {'orderId': widget.orderId},
     );
   }

@@ -8,7 +8,7 @@ import '../theme/app_text_styles.dart';
 import 'role_navigation_config.dart';
 import 'route_names.dart';
 
-class AppShell extends ConsumerWidget {
+class AppShell extends ConsumerStatefulWidget {
   const AppShell({
     required this.navigationShell,
     required this.tabs,
@@ -19,7 +19,17 @@ class AppShell extends ConsumerWidget {
   final List<AppTabConfig> tabs;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  @override
+  ConsumerState<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends ConsumerState<AppShell> {
+  DateTime? _lastTabTapAt;
+
+  @override
+  Widget build(BuildContext context) {
+    final navigationShell = widget.navigationShell;
+    final tabs = widget.tabs;
     final hasMessageTab = tabs.any(
       (tab) => tab.routeName == RouteNames.messageCenter,
     );
@@ -55,6 +65,13 @@ class AppShell extends ConsumerWidget {
         tabs: tabs,
         unreadMessageCount: unreadMessageCount,
         onSelected: (index) {
+          final now = DateTime.now();
+          final lastTap = _lastTabTapAt;
+          if (lastTap != null &&
+              now.difference(lastTap) < const Duration(milliseconds: 350)) {
+            return;
+          }
+          _lastTabTapAt = now;
           if (index == navigationShell.currentIndex) return;
           if (tabs[index].routeName == RouteNames.messageCenter) {
             ref.read(messageControllerProvider.notifier).refreshUnreadCounts();

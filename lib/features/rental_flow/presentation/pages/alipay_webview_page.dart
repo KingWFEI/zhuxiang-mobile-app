@@ -26,12 +26,45 @@ class AlipayWebViewPage extends ConsumerStatefulWidget {
 class _AlipayWebViewPageState extends ConsumerState<AlipayWebViewPage> {
   late final WebViewController _controller;
   bool _checking = false;
+  bool _pageLoading = true;
+  String? _loadError;
 
   @override
   void initState() {
     super.initState();
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageStarted: (_) {
+            if (mounted) {
+              setState(() {
+                _pageLoading = true;
+                _loadError = null;
+              });
+            }
+          },
+          onPageFinished: (_) {
+            if (mounted) setState(() => _pageLoading = false);
+          },
+          onNavigationRequest: (request) {
+            final uri = Uri.tryParse(request.url);
+            if (uri != null && uri.path == '/zhuxiang-payment-done') {
+              _confirmReturnedPayment();
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
+          },
+          onWebResourceError: (error) {
+            if (error.isForMainFrame == true && mounted) {
+              setState(() {
+                _pageLoading = false;
+                _loadError = '支付宝页面加载失败，请检查网络后重试';
+              });
+            }
+          },
+        ),
+      )
       ..loadRequest(Uri.parse(widget.paymentUrl));
   }
 
@@ -42,6 +75,29 @@ class _AlipayWebViewPageState extends ConsumerState<AlipayWebViewPage> {
     } on Object catch (_) {
       return false;
     }
+  }
+
+  Future<void> _confirmReturnedPayment() async {
+    if (_checking) return;
+    setState(() => _checking = true);
+
+    var paid = false;
+    for (var attempt = 0; attempt < 3 && !paid; attempt++) {
+      paid = await _checkPayment();
+      if (!paid && attempt < 2) {
+        await Future<void>.delayed(const Duration(seconds: 1));
+      }
+    }
+    if (!mounted) return;
+    if (paid) {
+      ref.invalidate(myRentOrdersProvider);
+      Navigator.pop(context, true);
+      return;
+    }
+    setState(() {
+      _checking = false;
+      _loadError = '暂未确认支付结果，请稍后重试';
+    });
   }
 
   /// 用户主动点关闭按钮 / 手势退出
@@ -78,11 +134,7 @@ class _AlipayWebViewPageState extends ConsumerState<AlipayWebViewPage> {
       ),
     );
     if (leave == true && mounted) {
-      setState(() => _checking = true);
-      final second = await _checkPayment();
-      if (!mounted) return;
-      if (second) ref.invalidate(myRentOrdersProvider);
-      Navigator.pop(context, second);
+      Navigator.pop(context, false);
     }
   }
 
@@ -121,7 +173,9 @@ class _AlipayWebViewPageState extends ConsumerState<AlipayWebViewPage> {
             const SizedBox(height: AppSpacing.lg),
             Text(
               '正在确认支付结果…',
-              style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textMuted),
+              style: AppTextStyles.bodyLarge.copyWith(
+                color: AppColors.textMuted,
+              ),
             ),
           ],
         ),
@@ -134,12 +188,64 @@ class _AlipayWebViewPageState extends ConsumerState<AlipayWebViewPage> {
           height: 48,
           padding: const EdgeInsets.only(left: 4),
           alignment: Alignment.centerLeft,
-          child: IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: _exit,
-          ),
+          child: IconButton(icon: const Icon(Icons.close), onPressed: _exit),
         ),
-        Expanded(child: WebViewWidget(controller: _controller)),
+        Expanded(
+          child: _loadError == null
+              ? Stack(
+                  children: [
+                    WebViewWidget(controller: _controller),
+                    if (_pageLoading)
+                      const ColoredBox(
+                        color: Colors.white,
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircularProgressIndicator(),
+                              SizedBox(height: AppSpacing.md),
+                              Text('支付宝沙箱加载中，请稍候…'),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                )
+              : Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.xl),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.cloud_off_outlined,
+                          size: 48,
+                          color: AppColors.textMuted,
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          _loadError!,
+                          textAlign: TextAlign.center,
+                          style: AppTextStyles.bodyMedium,
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        FilledButton(
+                          onPressed: () {
+                            setState(() {
+                              _pageLoading = true;
+                              _loadError = null;
+                            });
+                            _controller.loadRequest(
+                              Uri.parse(widget.paymentUrl),
+                            );
+                          },
+                          child: const Text('重新加载'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+        ),
       ],
     );
   }

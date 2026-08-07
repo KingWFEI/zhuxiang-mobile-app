@@ -9,6 +9,7 @@ import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/widgets/app_empty_view.dart';
 import '../../../../core/widgets/app_error_view.dart';
+import '../../../auth/presentation/auth_controller.dart';
 import '../../data/models/landlord_contract.dart';
 import '../../data/providers/landlord_providers.dart';
 
@@ -29,10 +30,12 @@ class _LandlordContractListPageState
   bool _hasMore = true;
   bool _loading = false;
   Object? _error;
+  String? _loadedUserId;
 
   @override
   void initState() {
     super.initState();
+    _loadedUserId = ref.read(authControllerProvider).user?.id;
     _controller.addListener(_onScroll);
     _load(reset: true);
   }
@@ -89,6 +92,23 @@ class _LandlordContractListPageState
 
   @override
   Widget build(BuildContext context) {
+    final userId = ref.watch(
+      authControllerProvider.select((state) => state.user?.id),
+    );
+    if (_loadedUserId != userId) {
+      _loadedUserId = userId;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _loadedUserId != userId) return;
+        setState(() {
+          _items.clear();
+          _page = 1;
+          _hasMore = true;
+          _error = null;
+        });
+        _load(reset: true);
+      });
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('待我签署')),

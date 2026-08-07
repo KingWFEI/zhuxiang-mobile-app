@@ -56,6 +56,7 @@ import '../../features/rental_flow/presentation/pages/move_in_complete_page.dart
 import '../../features/rental_flow/presentation/pages/my_rent_orders_page.dart';
 import '../../features/rental_flow/presentation/pages/online_sign_page.dart';
 import '../../features/rental_flow/presentation/pages/payment_page.dart';
+import '../../features/rental_flow/presentation/pages/waiting_landlord_sign_page.dart';
 import '../../features/rental_flow/presentation/pages/rental_application_page.dart';
 import '../../features/rental_flow/presentation/pages/viewing_appointment_page.dart';
 import '../../features/rental_flow/presentation/pages/viewing_detail_page.dart';
@@ -432,16 +433,16 @@ class AppRouter {
                   leaseId: state.pathParameters['leaseId'] ?? '',
                 ),
               ),
+              GoRoute(
+                name: RouteNames.leaseContractView,
+                path: RoutePaths.leaseContractView,
+                builder: (context, state) => LeaseContractViewPage(
+                  leaseId: state.pathParameters['leaseId'] ?? '',
+                ),
+              ),
             ],
           ),
         ],
-      ),
-      GoRoute(
-        name: RouteNames.leaseContractView,
-        path: RoutePaths.leaseContractView,
-        builder: (context, state) => LeaseContractViewPage(
-          leaseId: state.pathParameters['leaseId'] ?? '',
-        ),
       ),
       GoRoute(
         name: RouteNames.leaseTerminationApply,
@@ -726,6 +727,14 @@ class AppRouter {
         builder: (context, state) {
           final orderId = state.pathParameters['orderId'] ?? '';
           return OnlineSignPage(orderId: orderId);
+        },
+      ),
+      GoRoute(
+        name: RouteNames.waitingLandlordSign,
+        path: RoutePaths.waitingLandlordSign,
+        builder: (context, state) {
+          final orderId = state.pathParameters['orderId'] ?? '';
+          return WaitingLandlordSignPage(orderId: orderId);
         },
       ),
       GoRoute(
