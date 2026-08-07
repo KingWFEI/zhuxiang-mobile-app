@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_icon.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_shadows.dart';
@@ -64,137 +67,190 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        toolbarHeight: 44,
+        leadingWidth: 80,
+        leading: const _ProfileEditBackButton(),
+        actions: const [SizedBox(width: 80)],
+        titleTextStyle: AppTextStyles.normalPageTitle,
         title: const Text('个人信息'),
-        backgroundColor: AppColors.surface,
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.pageHorizontal),
-        children: [
-          _ProfileEditCard(
-            avatarUrl: _avatarUrl,
-            isUploading: _isUploadingAvatar,
-            onPickAvatar: _handlePickAvatar,
-            nicknameController: _nicknameController,
-            isSaving: _isSavingProfile,
-            onSave: _handleSaveProfile,
+      extendBodyBehindAppBar: true,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFEAF4FF), Color(0xFFF6FAFF), Color(0xFFFBFDFF)],
+            stops: [0, 0.42, 1],
           ),
-          const SizedBox(height: AppSpacing.lg),
-          _SectionCard(
-            title: user.hasPassword ? '修改密码' : '设置密码',
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.pageHorizontal,
+              AppSpacing.md,
+              AppSpacing.pageHorizontal,
+              AppSpacing.xxl,
+            ),
             children: [
-              if (user.hasPassword) ...[
-                _PasswordField(
-                  controller: _oldPasswordController,
-                  hintText: '请输入旧密码',
-                ),
-                const SizedBox(height: AppSpacing.md),
-              ],
-              _PasswordField(
-                controller: _newPasswordController,
-                hintText: '请输入新密码（6-32位）',
-              ),
-              const SizedBox(height: AppSpacing.md),
-              _PasswordField(
-                controller: _confirmPasswordController,
-                hintText: '请再次输入新密码',
-                onVisibilityToggle: () =>
-                    setState(() => _passwordVisible = !_passwordVisible),
-                visible: _passwordVisible,
+              _ProfileEditCard(
+                avatarUrl: _avatarUrl,
+                isUploading: _isUploadingAvatar,
+                onPickAvatar: _handlePickAvatar,
+                nicknameController: _nicknameController,
+                isSaving: _isSavingProfile,
+                onSave: _handleSaveProfile,
               ),
               const SizedBox(height: AppSpacing.lg),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _isChangingPassword
-                      ? null
-                      : user.hasPassword
-                      ? _handleChangePassword
-                      : _handleSetPassword,
-                  child: _isChangingPassword
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(user.hasPassword ? '修改密码' : '设置密码'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          _SectionCard(
-            title: '修改手机号',
-            children: [
-              TextField(
-                controller: _newPhoneController,
-                keyboardType: TextInputType.phone,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(11),
-                ],
-                decoration: const InputDecoration(
-                  hintText: '请输入新手机号',
-                  prefixIcon: Icon(Icons.phone_android_outlined),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Row(
+              _SectionCard(
+                title: user.hasPassword ? '修改密码' : '设置密码',
                 children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _smsCodeController,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(6),
-                      ],
-                      decoration: const InputDecoration(
-                        hintText: '验证码',
-                        prefixIcon: Icon(Icons.verified_user_outlined),
+                  if (user.hasPassword) ...[
+                    _PasswordField(
+                      controller: _oldPasswordController,
+                      hintText: '请输入旧密码',
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                  ],
+                  _PasswordField(
+                    controller: _newPasswordController,
+                    hintText: '请输入新密码（6-32位）',
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _PasswordField(
+                    controller: _confirmPasswordController,
+                    hintText: '请再次输入新密码',
+                    onVisibilityToggle: () =>
+                        setState(() => _passwordVisible = !_passwordVisible),
+                    visible: _passwordVisible,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: _isChangingPassword
+                          ? null
+                          : user.hasPassword
+                          ? _handleChangePassword
+                          : _handleSetPassword,
+                      child: _isChangingPassword
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(user.hasPassword ? '修改密码' : '设置密码'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              _SectionCard(
+                title: '修改手机号',
+                children: [
+                  TextField(
+                    controller: _newPhoneController,
+                    keyboardType: TextInputType.phone,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(11),
+                    ],
+                    decoration: InputDecoration(
+                      hintText: '请输入新手机号',
+                      prefixIcon: Transform.scale(
+                        scale: 0.6,
+                        child: const HugeIcon(
+                          icon: HugeIcons.strokeRoundedSmartPhone01,
+                          color: AppColors.textPrimary,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _smsCodeController,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(6),
+                          ],
+                          decoration: InputDecoration(
+                            hintText: '验证码',
+                            prefixIcon: Transform.scale(
+                              scale: 0.6,
+                              child: const HugeIcon(
+                                icon: HugeIcons.strokeRoundedSecurityValidation,
+                                color: AppColors.textPrimary,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      SizedBox(
+                        width: 112,
+                        height: 48,
+                        child: OutlinedButton(
+                          onPressed: _isSendingCode ? null : _handleSendCode,
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: _isSendingCode
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text(
+                                  '获取验证码',
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  style: TextStyle(fontSize: 13),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
                   SizedBox(
-                    width: 112,
-                    height: 48,
-                    child: OutlinedButton(
-                      onPressed: _isSendingCode ? null : _handleSendCode,
-                      child: _isSendingCode
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: _isChangingPhone ? null : _handleChangePhone,
+                      child: _isChangingPhone
                           ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
                             )
-                          : const Text('获取验证码'),
+                          : const Text('修改手机号'),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.lg),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _isChangingPhone ? null : _handleChangePhone,
-                  child: _isChangingPhone
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text('修改手机号'),
-                ),
-              ),
+              const SizedBox(height: AppSpacing.xxl),
             ],
           ),
-          const SizedBox(height: AppSpacing.xxl),
-        ],
+        ),
       ),
     );
   }
@@ -417,6 +473,27 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
   }
 }
 
+class _ProfileEditBackButton extends StatelessWidget {
+  const _ProfileEditBackButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        if (context.canPop()) {
+          context.pop();
+          return;
+        }
+        context.goNamed(RouteNames.home);
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        child: AppIcon.iconBack,
+      ),
+    );
+  }
+}
+
 class _ProfileEditCard extends StatelessWidget {
   const _ProfileEditCard({
     required this.avatarUrl,
@@ -457,10 +534,10 @@ class _ProfileEditCard extends StatelessWidget {
                       ? NetworkImage(avatarUrl!)
                       : null,
                   child: (avatarUrl == null || avatarUrl!.isEmpty)
-                      ? const Icon(
-                          Icons.person,
-                          color: AppColors.primary,
-                          size: 42,
+                      ? const HugeIcon(
+                          icon: HugeIcons.strokeRoundedUserCircle,
+                          color: AppColors.textPrimary,
+                          size: 32,
                         )
                       : null,
                 ),
@@ -482,10 +559,10 @@ class _ProfileEditCard extends StatelessWidget {
                               color: Colors.white,
                             ),
                           )
-                        : const Icon(
-                            Icons.camera_alt,
+                        : const HugeIcon(
+                            icon: HugeIcons.strokeRoundedCamera01,
                             color: Colors.white,
-                            size: 14,
+                            size: 12,
                           ),
                   ),
                 ),
@@ -498,9 +575,16 @@ class _ProfileEditCard extends StatelessWidget {
           // 昵称
           TextField(
             controller: nicknameController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: '昵称',
-              prefixIcon: Icon(Icons.edit_outlined),
+              prefixIcon: Transform.scale(
+                scale: 0.6,
+                child: const HugeIcon(
+                  icon: HugeIcons.strokeRoundedUserEdit01,
+                  color: AppColors.textPrimary,
+                  size: 20,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -579,11 +663,22 @@ class _PasswordField extends StatelessWidget {
       inputFormatters: [LengthLimitingTextInputFormatter(32)],
       decoration: InputDecoration(
         hintText: hintText,
-        prefixIcon: const Icon(Icons.lock_outline_rounded),
+        prefixIcon: Transform.scale(
+          scale: 0.6,
+          child: const HugeIcon(
+            icon: HugeIcons.strokeRoundedLockPassword,
+            color: AppColors.textPrimary,
+            size: 20,
+          ),
+        ),
         suffixIcon: onVisibilityToggle != null
             ? IconButton(
-                icon: Icon(
-                  (visible ?? false) ? Icons.visibility : Icons.visibility_off,
+                icon: HugeIcon(
+                  icon: (visible ?? false)
+                      ? HugeIcons.strokeRoundedEye
+                      : HugeIcons.strokeRoundedViewOff,
+                  color: AppColors.textPrimary,
+                  size: 16,
                 ),
                 onPressed: onVisibilityToggle,
               )

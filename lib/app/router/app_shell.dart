@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 import '../../features/message/data/providers/message_providers.dart';
 import '../theme/app_colors.dart';
@@ -116,8 +117,8 @@ class _BottomTabBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        height: 50,
-        padding: const EdgeInsets.only(top: 10),
+        height: 58,
+        padding: const EdgeInsets.only(top: 6),
         decoration: const BoxDecoration(color: AppColors.surface),
         child: tabs.length <= 4
             ? Row(
@@ -146,8 +147,8 @@ class _TabItem extends StatelessWidget {
     this.badgeCount = 0,
   });
 
-  final IconData icon;
-  final IconData selectedIcon;
+  final List<List<dynamic>> icon;
+  final List<List<dynamic>> selectedIcon;
   final String label;
   final bool isSelected;
   final int badgeCount;
@@ -164,7 +165,11 @@ class _TabItem extends StatelessWidget {
           Stack(
             clipBehavior: Clip.none,
             children: [
-              Icon(isSelected ? selectedIcon : icon, color: color, size: 18),
+              HugeIcon(
+                icon: isSelected ? selectedIcon : icon,
+                color: color,
+                size: 22,
+              ),
               if (badgeCount > 0)
                 Positioned(
                   left: 12,
@@ -200,6 +205,7 @@ class _TabItem extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: AppTextStyles.bottomTextStyle.copyWith(
               color: color,
+              fontSize: 11,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
             ),
           ),

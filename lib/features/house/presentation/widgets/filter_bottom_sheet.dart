@@ -12,6 +12,8 @@ class HouseFilterSelection {
     required this.minPrice,
     required this.maxPrice,
     required this.roomType,
+    required this.rentMode,
+    required this.rentType,
     required this.sort,
   });
 
@@ -19,6 +21,8 @@ class HouseFilterSelection {
   final int minPrice;
   final int maxPrice;
   final String roomType;
+  final String rentMode;
+  final String rentType;
   final String sort;
 }
 
@@ -168,6 +172,8 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
         minPrice: _prices.start.round(),
         maxPrice: _prices.end >= _maxPrice ? 0 : _prices.end.round(),
         roomType: _roomType,
+        rentMode: widget.initialState.rentMode,
+        rentType: widget.initialState.category,
         sort: _sort,
       ),
     );

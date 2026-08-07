@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -5,6 +7,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../data/auth_models.dart';
 
 class AuthTextField extends StatelessWidget {
   const AuthTextField({
@@ -72,13 +75,105 @@ class AuthTextField extends StatelessWidget {
   }
 }
 
-class AuthCodeButton extends StatelessWidget {
-  const AuthCodeButton({required this.onPressed, super.key});
+class AuthCodeButton extends StatefulWidget {
+  const AuthCodeButton({
+    required this.onPressed,
+    this.retryAfterOnFailure,
+    this.now,
+    super.key,
+  });
 
-  final VoidCallback onPressed;
+  final Future<SmsCodeResult?> Function() onPressed;
+  final int? Function()? retryAfterOnFailure;
+  @visibleForTesting
+  final DateTime Function()? now;
+
+  @override
+  State<AuthCodeButton> createState() => _AuthCodeButtonState();
+}
+
+class _AuthCodeButtonState extends State<AuthCodeButton>
+    with WidgetsBindingObserver {
+  Timer? _timer;
+  DateTime? _availableAt;
+  int _remainingSeconds = 0;
+  bool _isRequesting = false;
+  bool _hasRequested = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _syncRemaining();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _requestCode() async {
+    if (_isRequesting || _remainingSeconds > 0) return;
+    setState(() => _isRequesting = true);
+    try {
+      final result = await widget.onPressed();
+      if (!mounted) return;
+      final retryAfter =
+          result?.retryAfter ?? widget.retryAfterOnFailure?.call() ?? 0;
+      if (retryAfter > 0) {
+        _startCountdown(retryAfter);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isRequesting = false);
+      }
+    }
+  }
+
+  void _startCountdown(int seconds) {
+    _hasRequested = true;
+    _availableAt = _now().add(Duration(seconds: seconds));
+    _timer?.cancel();
+    _syncRemaining();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      _syncRemaining();
+    });
+  }
+
+  void _syncRemaining() {
+    final availableAt = _availableAt;
+    if (availableAt == null || !mounted) return;
+    final milliseconds = availableAt.difference(_now()).inMilliseconds;
+    final remaining = milliseconds <= 0 ? 0 : (milliseconds + 999) ~/ 1000;
+    if (remaining == 0) {
+      _timer?.cancel();
+      _timer = null;
+      _availableAt = null;
+    }
+    if (_remainingSeconds != remaining) {
+      setState(() => _remainingSeconds = remaining);
+    }
+  }
+
+  DateTime _now() => widget.now?.call() ?? DateTime.now();
+
+  String get _label {
+    if (_isRequesting) return '发送中...';
+    if (_remainingSeconds > 0) return '$_remainingSeconds秒后重试';
+    return _hasRequested ? '重新获取' : '获取验证码';
+  }
 
   @override
   Widget build(BuildContext context) {
+    final enabled = !_isRequesting && _remainingSeconds == 0;
     return Padding(
       padding: const EdgeInsets.only(right: AppSpacing.md),
       child: Row(
@@ -86,16 +181,16 @@ class AuthCodeButton extends StatelessWidget {
         children: [
           Container(width: 1, height: 18, color: AppColors.border),
           TextButton(
-            onPressed: onPressed,
+            onPressed: enabled ? _requestCode : null,
             style: TextButton.styleFrom(
               minimumSize: const Size(0, 34),
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             child: Text(
-              '获取验证码',
+              _label,
               style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.primary,
+                color: enabled ? AppColors.primary : AppColors.textMuted,
                 fontWeight: FontWeight.w600,
               ),
             ),

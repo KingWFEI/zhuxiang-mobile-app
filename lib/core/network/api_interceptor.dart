@@ -7,7 +7,11 @@ typedef OnForceLogout = Future<void> Function();
 
 class ApiInterceptor extends Interceptor {
   static const _sensitiveKeys = {
-    'lockdata', 'ekey', 'password', 'accesstoken', 'refreshtoken',
+    'lockdata',
+    'ekey',
+    'password',
+    'accesstoken',
+    'refreshtoken',
   };
 
   /// 防止并发刷新 token
@@ -52,7 +56,9 @@ class ApiInterceptor extends Interceptor {
     Response<dynamic> response,
     ResponseInterceptorHandler handler,
   ) {
-    AppLoggerDebug.debug('HTTP ${response.statusCode} ${response.requestOptions.uri}');
+    AppLoggerDebug.debug(
+      'HTTP ${response.statusCode} ${response.requestOptions.uri}',
+    );
     handler.next(response);
   }
 
@@ -110,12 +116,14 @@ class ApiInterceptor extends Interceptor {
     final baseUrl = err.requestOptions.baseUrl.isNotEmpty
         ? err.requestOptions.baseUrl
         : err.requestOptions.uri.origin;
-    AppLoggerDebug.debug('Refreshing token using refreshToken: ${baseUrl}');
-    final dio = Dio(BaseOptions(
-      baseUrl: baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
-    ));
+    AppLoggerDebug.debug('Refreshing token using refreshToken: $baseUrl');
+    final dio = Dio(
+      BaseOptions(
+        baseUrl: baseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+      ),
+    );
     final resp = await dio.post(
       '/auth/refresh',
       data: {'refreshToken': tokens.refreshToken},
@@ -132,14 +140,14 @@ class ApiInterceptor extends Interceptor {
   }
 
   Future<Response<dynamic>> _retryRequest(RequestOptions opts) async {
-    final baseUrl = opts.baseUrl.isNotEmpty
-        ? opts.baseUrl
-        : opts.uri.origin;
-    final dio = Dio(BaseOptions(
-      baseUrl: baseUrl,
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 15),
-    ));
+    final baseUrl = opts.baseUrl.isNotEmpty ? opts.baseUrl : opts.uri.origin;
+    final dio = Dio(
+      BaseOptions(
+        baseUrl: baseUrl,
+        connectTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(seconds: 15),
+      ),
+    );
     return dio.request(
       opts.path,
       data: opts.data,
@@ -147,6 +155,12 @@ class ApiInterceptor extends Interceptor {
       options: Options(
         method: opts.method,
         headers: opts.headers,
+        responseType: opts.responseType,
+        contentType: opts.contentType,
+        receiveTimeout: opts.receiveTimeout,
+        sendTimeout: opts.sendTimeout,
+        followRedirects: opts.followRedirects,
+        receiveDataWhenStatusError: opts.receiveDataWhenStatusError,
       ),
     );
   }

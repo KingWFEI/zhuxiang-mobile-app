@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/location/user_location_provider.dart';
 import '../../features/auth/presentation/auth_controller.dart';
 import '../router/app_mode_controller.dart';
 import '../router/role_navigation_config.dart';
@@ -40,10 +41,13 @@ class _AppLoadingPageState extends ConsumerState<AppLoadingPage>
       _minimumLoadingFinished = true;
       _navigateWhenReady();
     });
-    // 启动阶段只恢复会话。定位由找房页或用户手动刷新时触发，
-    // 避免在不带 Google Play 服务的模拟器上拖慢首屏。
+    // 启动阶段并行加载：会话恢复 + 后台定位
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _restoreSession();
+      final location = ref.read(userLocationProvider);
+      if (!location.hasSelection) {
+        ref.read(userLocationProvider.notifier).fetch();
+      }
     });
   }
 

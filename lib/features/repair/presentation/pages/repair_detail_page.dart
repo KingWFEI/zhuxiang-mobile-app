@@ -9,7 +9,7 @@ import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
-import '../../../../core/widgets/app_error_view.dart';
+import '../../../../core/widgets/app_api_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
 import '../../application/repair_controller.dart';
 import '../../data/providers/repair_providers.dart';
@@ -72,7 +72,7 @@ class RepairDetailPage extends ConsumerWidget {
     if (order == null) {
       return SizedBox(
         height: 420,
-        child: AppErrorView(
+        child: AppApiErrorView(
           message: '报修详情加载失败',
           onRetry: ref.read(repairControllerProvider.notifier).load,
         ),

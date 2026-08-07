@@ -9,7 +9,7 @@ import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
-import '../../../../core/widgets/app_error_view.dart';
+import '../../../../core/widgets/app_api_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
 import '../../data/providers/lease_providers.dart';
 import '../../domain/entities/lease.dart';
@@ -62,7 +62,8 @@ class _LeaseTerminationApplyPageState
           constraints: const BoxConstraints(maxWidth: 480),
           child: detail.when(
             loading: () => const AppLoadingView(message: '正在加载租约信息'),
-            error: (error, stackTrace) => AppErrorView(
+            error: (error, stackTrace) => AppApiErrorView(
+              error: error,
               message: '租约信息加载失败',
               onRetry: () =>
                   ref.invalidate(leaseDetailProvider(widget.leaseId)),

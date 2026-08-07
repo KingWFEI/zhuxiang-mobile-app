@@ -10,7 +10,7 @@ import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_empty_view.dart';
-import '../../../../core/widgets/app_error_view.dart';
+import '../../../../core/widgets/app_api_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
 import '../../data/providers/payment_providers.dart';
 import '../../domain/entities/payment_record.dart';
@@ -71,8 +71,8 @@ class _PaymentRecordsPageState extends ConsumerState<PaymentRecordsPage> {
                             ),
                             error: (error, _) => SizedBox(
                               height: 360,
-                              child: AppErrorView(
-                                message: '支付记录加载失败，请稍后重试',
+                              child: AppApiErrorView(
+                                error: error,
                                 onRetry: () => ref.invalidate(
                                   paymentRecordsProvider(query),
                                 ),
@@ -131,10 +131,7 @@ class _PageHeader extends StatelessWidget {
             ),
             Expanded(
               child: Center(
-                child: Text(
-                  '支付记录',
-                  style: AppTextStyles.normalPageTitle,
-                ),
+                child: Text('支付记录', style: AppTextStyles.normalPageTitle),
               ),
             ),
             const SizedBox(width: 80),
@@ -160,47 +157,77 @@ class _PaymentFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _FilterChip(
-                label: '全部',
-                selected: status == null,
-                onSelected: () => onStatusChanged(null),
-              ),
-              for (final item in PaymentRecordStatus.values)
-                _FilterChip(
-                  label: item.label,
-                  selected: status == item.name,
-                  onSelected: () => onStatusChanged(item.name),
-                ),
-            ],
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: AppColors.primaryLight),
+        boxShadow: AppShadows.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '\u652f\u4ed8\u72b6\u6001',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _FilterChip(
-                label: '全部类型',
-                selected: type == null,
-                onSelected: () => onTypeChanged(null),
-              ),
-              for (final item in PaymentRecordType.values)
+          const SizedBox(height: AppSpacing.xs),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
                 _FilterChip(
-                  label: item.label,
-                  selected: type == item.value,
-                  onSelected: () => onTypeChanged(item.value),
+                  label: '全部',
+                  selected: status == null,
+                  onSelected: () => onStatusChanged(null),
                 ),
-            ],
+                for (final item in PaymentRecordStatus.values)
+                  _FilterChip(
+                    label: item.label,
+                    selected: status == item.name,
+                    onSelected: () => onStatusChanged(item.name),
+                  ),
+              ],
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: AppSpacing.sm),
+          const Text(
+            '\u652f\u4ed8\u7c7b\u578b',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _FilterChip(
+                  label: '全部类型',
+                  selected: type == null,
+                  onSelected: () => onTypeChanged(null),
+                ),
+                for (final item in PaymentRecordType.values)
+                  _FilterChip(
+                    label: item.label,
+                    selected: type == item.value,
+                    onSelected: () => onTypeChanged(item.value),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -224,6 +251,20 @@ class _FilterChip extends StatelessWidget {
         label: Text(label),
         selected: selected,
         onSelected: (_) => onSelected(),
+        labelStyle: TextStyle(
+          color: selected ? Colors.white : AppColors.textSecondary,
+          fontSize: 13,
+          fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+        ),
+        backgroundColor: AppColors.primaryLight.withValues(alpha: 0.45),
+        selectedColor: AppColors.primary,
+        side: BorderSide.none,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        visualDensity: VisualDensity.compact,
+        showCheckmark: false,
       ),
     );
   }

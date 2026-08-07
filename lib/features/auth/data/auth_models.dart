@@ -1,12 +1,16 @@
 import '../domain/entities/auth_user.dart';
 
 class SmsCodeResult {
-  const SmsCodeResult({required this.expiresIn});
+  const SmsCodeResult({required this.expiresIn, required this.retryAfter});
 
   final int expiresIn;
+  final int retryAfter;
 
   factory SmsCodeResult.fromJson(Map<String, dynamic> json) {
-    return SmsCodeResult(expiresIn: (json['expiresIn'] as num).toInt());
+    return SmsCodeResult(
+      expiresIn: (json['expiresIn'] as num).toInt(),
+      retryAfter: (json['retryAfter'] as num?)?.toInt() ?? 60,
+    );
   }
 }
 

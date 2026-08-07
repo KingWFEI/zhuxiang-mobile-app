@@ -32,6 +32,7 @@ import '../../features/landlord/presentation/pages/contract_webview_page.dart';
 import '../../features/landlord/presentation/pages/landlord_workbench_page.dart';
 import '../../features/landlord/presentation/pages/landlord_profile_page.dart';
 import '../../features/landlord/presentation/pages/landlord_profile_edit_page.dart';
+import '../../features/landlord_auth/presentation/pages/landlord_auth_page.dart';
 import '../../features/lease/presentation/pages/deposit_detail_page.dart';
 import '../../features/lease/presentation/pages/lease_contract_view_page.dart';
 import '../../features/lease/presentation/pages/lease_detail_page.dart';
@@ -50,6 +51,7 @@ import '../../features/payment/presentation/pages/payment_records_page.dart';
 import '../../features/profile/presentation/pages/favorite_houses_page.dart';
 import '../../features/profile/presentation/pages/profile_edit_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/profile/presentation/pages/rented_home_detail_page.dart';
 import '../../features/profile/presentation/pages/settings_page.dart';
 import '../../features/real_name_auth/presentation/pages/real_name_auth_page.dart';
 import '../../features/repair/domain/entities/repair_order.dart';
@@ -627,13 +629,17 @@ class AppRouter {
       GoRoute(
         name: RouteNames.landlordVerify,
         path: RoutePaths.landlordVerify,
-        builder: (context, state) => const AppPlaceholderPage(
-          title: '房东认证',
-          description: '房东认证功能即将上线，敬请期待。',
-        ),
+        builder: (context, state) => const LandlordAuthPage(),
       ),
 
       // ── 个人信息 & 设置 ──
+      GoRoute(
+        name: RouteNames.rentedHomeDetail,
+        path: RoutePaths.rentedHomeDetail,
+        builder: (context, state) => RentedHomeDetailPage(
+          leaseId: state.pathParameters['leaseId'] ?? '',
+        ),
+      ),
       GoRoute(
         name: RouteNames.profileEdit,
         path: RoutePaths.profileEdit,

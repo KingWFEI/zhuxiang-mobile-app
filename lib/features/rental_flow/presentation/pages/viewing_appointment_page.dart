@@ -10,6 +10,7 @@ import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/network/api_result.dart';
+import '../../../../core/network/api_exception.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../appointment/data/models/appointment_models.dart';
 import '../../../appointment/data/providers/appointment_providers.dart';
@@ -40,12 +41,14 @@ class _ViewingAppointmentPageState
   final _remarkController = TextEditingController();
 
   late DateTime _selectedDate;
-  String _selectedTime = '10:00';
+  DateTime? _selectedStartAt;
   bool _agreedToPrivacy = false;
   bool _isSubmitting = false;
   bool _isLoadingSlots = true;
   String? _slotError;
   List<ViewingSlotDay> _slotDays = const [];
+  String _viewingMode = 'LANDLORD_HOSTED';
+  bool _requiresConfirmation = true;
 
   @override
   void initState() {
@@ -73,11 +76,13 @@ class _ViewingAppointmentPageState
     final houseAsync = ref.watch(houseDetailProvider(widget.houseId));
     final result = houseAsync.valueOrNull;
     final house = result is ApiSuccess<HouseDetail> ? result.data : null;
+    final selectedSlot = _selectedSlot();
+    final selfService = _viewingMode == 'SELF_SERVICE_LOCK';
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('预约看房'),
+        title: Text(selfService ? '预约自助看房' : '预约看房'),
         centerTitle: true,
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
@@ -118,8 +123,18 @@ class _ViewingAppointmentPageState
                         fallbackTitle: widget.houseTitle,
                         isLoading: houseAsync.isLoading,
                       ),
+                      if (!_isLoadingSlots && _slotError == null) ...[
+                        const SizedBox(height: AppSpacing.lg),
+                        _ViewingModeNotice(
+                          viewingMode: _viewingMode,
+                          requiresConfirmation: _requiresConfirmation,
+                        ),
+                      ],
                       const SizedBox(height: AppSpacing.xl),
-                      const _SectionTitle(index: 1, title: '选择看房时间'),
+                      _SectionTitle(
+                        index: 1,
+                        title: selfService ? '选择自助看房时间' : '选择陪同看房时间',
+                      ),
                       const SizedBox(height: AppSpacing.lg),
                       _DateSelector(
                         dates: _slotDays.map((day) => day.date).toList(),
@@ -127,8 +142,10 @@ class _ViewingAppointmentPageState
                         onSelected: (date) {
                           setState(() {
                             _selectedDate = date;
-                            final times = _availableTimesFor(date);
-                            _selectedTime = times.isEmpty ? '' : times.first;
+                            final slots = _availableSlotsFor(date);
+                            _selectedStartAt = slots.isEmpty
+                                ? null
+                                : slots.first.startAt;
                           });
                         },
                         onMore: _showDatePicker,
@@ -138,14 +155,14 @@ class _ViewingAppointmentPageState
                         const Center(child: CircularProgressIndicator())
                       else if (_slotError != null)
                         _SlotError(message: _slotError!, onRetry: _loadSlots)
-                      else if (_availableTimesFor(_selectedDate).isEmpty)
+                      else if (_availableSlotsFor(_selectedDate).isEmpty)
                         const _EmptySlots()
                       else
                         _TimeSelector(
-                          slots: _availableTimesFor(_selectedDate),
-                          selectedTime: _selectedTime,
-                          onSelected: (time) {
-                            setState(() => _selectedTime = time);
+                          slots: _availableSlotsFor(_selectedDate),
+                          selectedStartAt: _selectedStartAt,
+                          onSelected: (slot) {
+                            setState(() => _selectedStartAt = slot.startAt);
                           },
                         ),
                       const SizedBox(height: AppSpacing.xxl),
@@ -186,7 +203,12 @@ class _ViewingAppointmentPageState
                       const SizedBox(height: AppSpacing.lg),
                       _ConfirmationCard(
                         date: _selectedDate,
-                        time: _selectedTime,
+                        time: _selectedStartAt == null
+                            ? ''
+                            : _hourMinute(_selectedStartAt!),
+                        slot: selectedSlot,
+                        viewingMode: _viewingMode,
+                        requiresConfirmation: _requiresConfirmation,
                         houseTitle: house?.title ?? widget.houseTitle,
                         roomType: house?.roomType ?? '',
                         contactName: _nameController.text.trim(),
@@ -277,8 +299,8 @@ class _ViewingAppointmentPageState
     }
     setState(() {
       _selectedDate = selected;
-      final times = _availableTimesFor(selected);
-      _selectedTime = times.isEmpty ? '' : times.first;
+      final slots = _availableSlotsFor(selected);
+      _selectedStartAt = slots.isEmpty ? null : slots.first.startAt;
     });
   }
 
@@ -299,15 +321,17 @@ class _ViewingAppointmentPageState
           .toList(growable: false);
       setState(() {
         _slotDays = availableDays;
+        _viewingMode = result.viewingMode;
+        _requiresConfirmation = result.requiresConfirmation;
         _isLoadingSlots = false;
         if (availableDays.isNotEmpty) {
           _selectedDate = availableDays.first.date;
           final firstSlot = availableDays.first.slots.firstWhere(
             (slot) => slot.available,
           );
-          _selectedTime = _hourMinute(firstSlot.startAt);
+          _selectedStartAt = firstSlot.startAt;
         } else {
-          _selectedTime = '';
+          _selectedStartAt = null;
         }
       });
     } on Object {
@@ -319,12 +343,11 @@ class _ViewingAppointmentPageState
     }
   }
 
-  List<String> _availableTimesFor(DateTime date) {
+  List<ViewingSlot> _availableSlotsFor(DateTime date) {
     for (final day in _slotDays) {
       if (DateUtils.isSameDay(day.date, date)) {
         return day.slots
             .where((slot) => slot.available)
-            .map((slot) => _hourMinute(slot.startAt))
             .toList(growable: false);
       }
     }
@@ -335,7 +358,9 @@ class _ViewingAppointmentPageState
     for (final day in _slotDays) {
       if (!DateUtils.isSameDay(day.date, _selectedDate)) continue;
       for (final slot in day.slots) {
-        if (slot.available && _hourMinute(slot.startAt) == _selectedTime) {
+        if (slot.available &&
+            _selectedStartAt != null &&
+            slot.startAt.isAtSameMomentAs(_selectedStartAt!)) {
           return slot;
         }
       }
@@ -382,6 +407,7 @@ class _ViewingAppointmentPageState
             contactName: name,
             contactPhone: phone,
             remark: _remarkController.text.trim(),
+            testSlot: selectedSlot.testSlot,
           );
       if (!mounted) return;
       AppToast.show(
@@ -397,9 +423,12 @@ class _ViewingAppointmentPageState
     } on Object catch (error) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
-      await _loadSlots();
-      if (!mounted) return;
-      AppToast.show(context, '预约提交失败：$error', type: AppToastType.error);
+      final message = error is ApiException ? error.message : '预约提交失败，请稍后重试';
+      if (!message.contains('请先取消已有预约')) {
+        await _loadSlots();
+        if (!mounted) return;
+      }
+      AppToast.show(context, message, type: AppToastType.error);
     }
   }
 }
@@ -497,6 +526,80 @@ class _HouseSummaryCard extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ViewingModeNotice extends StatelessWidget {
+  const _ViewingModeNotice({
+    required this.viewingMode,
+    required this.requiresConfirmation,
+  });
+
+  final String viewingMode;
+  final bool requiresConfirmation;
+
+  @override
+  Widget build(BuildContext context) {
+    final selfService = viewingMode == 'SELF_SERVICE_LOCK';
+    final landlordHosted = viewingMode == 'LANDLORD_HOSTED';
+    final title = selfService
+        ? '智能门锁自助看房'
+        : landlordHosted
+        ? '房东陪同看房'
+        : '平台管家陪同看房';
+    final description = selfService
+        ? '预约成功后系统将按页面显示的有效时间发放蓝牙钥匙和开门密码，无需等待人工确认。'
+        : landlordHosted
+        ? '提交后需要等待房东确认，确认后请按约定地点与房东会合。'
+        : '提交后需要等待平台管家确认，确认后由管家按约定地点陪同看房。';
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: selfService ? const Color(0xFFEEF6FF) : const Color(0xFFFFF8EA),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(
+          color: selfService
+              ? const Color(0xFFBBD8FF)
+              : const Color(0xFFF2D49A),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            selfService ? Icons.lock_open_rounded : Icons.support_agent_rounded,
+            color: selfService ? AppColors.primary : const Color(0xFFB7791F),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(description, style: AppTextStyles.bodySmall),
+                if (requiresConfirmation) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    '当前预约需接待方确认后生效',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: const Color(0xFFB7791F),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ],
@@ -732,13 +835,13 @@ class _DateTile extends StatelessWidget {
 class _TimeSelector extends StatelessWidget {
   const _TimeSelector({
     required this.slots,
-    required this.selectedTime,
+    required this.selectedStartAt,
     required this.onSelected,
   });
 
-  final List<String> slots;
-  final String selectedTime;
-  final ValueChanged<String> onSelected;
+  final List<ViewingSlot> slots;
+  final DateTime? selectedStartAt;
+  final ValueChanged<ViewingSlot> onSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -747,20 +850,27 @@ class _TimeSelector extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       itemCount: slots.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
+        crossAxisCount: 2,
         crossAxisSpacing: AppSpacing.sm,
         mainAxisSpacing: AppSpacing.md,
-        childAspectRatio: 1.7,
+        childAspectRatio: 2.8,
       ),
       itemBuilder: (context, index) {
-        final time = slots[index];
-        final selected = time == selectedTime;
+        final slot = slots[index];
+        final time = _hourMinute(slot.startAt);
+        final selected =
+            selectedStartAt != null &&
+            slot.startAt.isAtSameMomentAs(selectedStartAt!);
         return Material(
           color: selected ? AppColors.primary : AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.lg),
           child: InkWell(
-            key: Key('appointment-time-$time'),
-            onTap: () => onSelected(time),
+            key: Key(
+              slot.testSlot
+                  ? 'appointment-time-test'
+                  : 'appointment-time-$time',
+            ),
+            onTap: () => onSelected(slot),
             borderRadius: BorderRadius.circular(AppRadius.lg),
             child: Container(
               alignment: Alignment.center,
@@ -770,13 +880,36 @@ class _TimeSelector extends StatelessWidget {
                 ),
                 borderRadius: BorderRadius.circular(AppRadius.lg),
               ),
-              child: Text(
-                time,
-                style: AppTextStyles.bodyLarge.copyWith(
-                  color: selected ? Colors.white : AppColors.textPrimary,
-                  fontSize: 15,
-                ),
-              ),
+              child: slot.testSlot
+                  ? Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '测试 · 最近整点',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: selected
+                                ? Colors.white
+                                : const Color(0xFFD97706),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text(
+                          _timeRange(slot.startAt, slot.endAt),
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: selected
+                                ? Colors.white
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    )
+                  : Text(
+                      _timeRange(slot.startAt, slot.endAt),
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        color: selected ? Colors.white : AppColors.textPrimary,
+                        fontSize: 15,
+                      ),
+                    ),
             ),
           ),
         );
@@ -879,6 +1012,9 @@ class _ConfirmationCard extends StatelessWidget {
   const _ConfirmationCard({
     required this.date,
     required this.time,
+    required this.slot,
+    required this.viewingMode,
+    required this.requiresConfirmation,
     required this.houseTitle,
     required this.roomType,
     required this.contactName,
@@ -886,12 +1022,27 @@ class _ConfirmationCard extends StatelessWidget {
 
   final DateTime date;
   final String time;
+  final ViewingSlot? slot;
+  final String viewingMode;
+  final bool requiresConfirmation;
   final String houseTitle;
   final String roomType;
   final String contactName;
 
   @override
   Widget build(BuildContext context) {
+    final selectedSlot = slot;
+    final selfService = viewingMode == 'SELF_SERVICE_LOCK';
+    final viewingTime = selectedSlot == null
+        ? '${_fullDate(date)} ${_todaySuffix(date)} $time'
+        : '${_fullDate(selectedSlot.startAt.toLocal())} '
+              '${_todaySuffix(selectedSlot.startAt.toLocal())} '
+              '${_timeRange(selectedSlot.startAt, selectedSlot.endAt)}';
+    final modeLabel = selfService
+        ? '智能门锁自助看房'
+        : viewingMode == 'LANDLORD_HOSTED'
+        ? '房东陪同看房'
+        : '平台管家陪同看房';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       decoration: BoxDecoration(
@@ -900,10 +1051,34 @@ class _ConfirmationCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _ConfirmationRow(
-            label: '看房时间',
-            value: '${_fullDate(date)} ${_todaySuffix(date)} $time',
-          ),
+          _ConfirmationRow(label: '看房时间', value: viewingTime),
+          if (selectedSlot?.testSlot == true) ...[
+            const Divider(height: 1, color: AppColors.border),
+            const _ConfirmationRow(
+              label: '测试时段',
+              value: '提交时按服务器下一个最近整点创建',
+              valueColor: Color(0xFFD97706),
+            ),
+          ],
+          const Divider(height: 1, color: AppColors.border),
+          _ConfirmationRow(label: '看房方式', value: modeLabel),
+          if (selfService &&
+              selectedSlot?.accessValidFrom != null &&
+              selectedSlot?.accessValidTo != null) ...[
+            const Divider(height: 1, color: AppColors.border),
+            _ConfirmationRow(
+              label: '门锁有效',
+              value: _dateTimeRange(
+                selectedSlot!.accessValidFrom!,
+                selectedSlot.accessValidTo!,
+              ),
+              valueColor: AppColors.primary,
+            ),
+          ],
+          if (requiresConfirmation) ...[
+            const Divider(height: 1, color: AppColors.border),
+            const _ConfirmationRow(label: '确认状态', value: '提交后等待接待方确认'),
+          ],
           const Divider(height: 1, color: AppColors.border),
           _ConfirmationRow(
             label: '房源',
@@ -924,10 +1099,15 @@ class _ConfirmationCard extends StatelessWidget {
 }
 
 class _ConfirmationRow extends StatelessWidget {
-  const _ConfirmationRow({required this.label, required this.value});
+  const _ConfirmationRow({
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
 
   final String label;
   final String value;
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
@@ -951,7 +1131,8 @@ class _ConfirmationRow extends StatelessWidget {
               value,
               textAlign: TextAlign.right,
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textPrimary,
+                color: valueColor ?? AppColors.textPrimary,
+                fontWeight: valueColor == null ? null : FontWeight.w600,
               ),
             ),
           ),
@@ -1032,6 +1213,20 @@ String _fullDate(DateTime date) {
 String _hourMinute(DateTime date) {
   final local = date.toLocal();
   return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+}
+
+String _timeRange(DateTime start, DateTime end) {
+  return '${_hourMinute(start)}–${_hourMinute(end)}';
+}
+
+String _dateTimeRange(DateTime start, DateTime end) {
+  final localStart = start.toLocal();
+  final localEnd = end.toLocal();
+  if (DateUtils.isSameDay(localStart, localEnd)) {
+    return '${_fullDate(localStart)} ${_timeRange(localStart, localEnd)}';
+  }
+  return '${_fullDate(localStart)} ${_hourMinute(localStart)}–'
+      '${_fullDate(localEnd)} ${_hourMinute(localEnd)}';
 }
 
 String _todaySuffix(DateTime date) {

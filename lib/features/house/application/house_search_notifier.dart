@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../core/location/user_location_provider.dart';
 import '../../../shared/models/page_result.dart';
 import '../data/models/house.dart';
 import '../data/models/house_search_state.dart';
@@ -88,12 +89,20 @@ class HouseSearchNotifier extends Notifier<HouseSearchState> {
     required String sort,
     required String decoration,
     required String orientation,
+    required String rentMode,
+    required String rentType,
+    required Set<String> facilityIds,
+    required Set<String> tagIds,
   }) {
     _debounceTimer?.cancel();
     state = state.copyWith(
       sort: sort,
       decoration: decoration,
       orientation: orientation,
+      rentMode: rentMode,
+      category: rentType,
+      facilityIds: facilityIds,
+      activeTags: tagIds,
       clearError: true,
     );
     unawaited(search());
@@ -105,6 +114,8 @@ class HouseSearchNotifier extends Notifier<HouseSearchState> {
     required int minPrice,
     required int maxPrice,
     required String roomType,
+    required String rentMode,
+    required String rentType,
     required String sort,
   }) {
     _debounceTimer?.cancel();
@@ -113,6 +124,8 @@ class HouseSearchNotifier extends Notifier<HouseSearchState> {
       minPrice: minPrice,
       maxPrice: maxPrice,
       roomType: roomType,
+      rentMode: rentMode,
+      category: rentType,
       sort: sort,
       clearError: true,
     );
@@ -261,14 +274,19 @@ class HouseSearchNotifier extends Notifier<HouseSearchState> {
   }
 
   Map<String, dynamic> _buildQuery(HouseSearchState value) {
+    final city = ref.read(userLocationProvider).city.trim();
     return <String, dynamic>{
       if (value.keyword.trim().isNotEmpty) 'keyword': value.keyword.trim(),
-      if (value.category.isNotEmpty) 'category': value.category,
+      if (value.category.isNotEmpty) 'rentType': value.category,
+      if (value.rentMode.isNotEmpty) 'rentMode': value.rentMode,
+      if (city.isNotEmpty) 'city': city,
       if (value.region.isNotEmpty) 'region': value.region,
       if (value.minPrice > 0) 'minPrice': value.minPrice,
       if (value.maxPrice > 0) 'maxPrice': value.maxPrice,
       if (value.roomType.isNotEmpty) 'roomType': value.roomType,
       if (value.activeTags.isNotEmpty) 'tags': value.activeTags.toList(),
+      if (value.facilityIds.isNotEmpty)
+        'facilities': value.facilityIds.join(','),
       if (value.decoration.isNotEmpty) 'decoration': value.decoration,
       if (value.orientation.isNotEmpty) 'orientation': value.orientation,
       'sort': value.sort,

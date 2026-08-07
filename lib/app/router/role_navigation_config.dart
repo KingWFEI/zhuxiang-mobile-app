@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 import '../../features/auth/domain/entities/user_role.dart';
 import 'app_mode_controller.dart';
@@ -22,10 +22,10 @@ class AppTabConfig {
   final String label;
 
   /// 未选中时图标
-  final IconData icon;
+  final List<List<dynamic>> icon;
 
   /// 选中时图标
-  final IconData selectedIcon;
+  final List<List<dynamic>> selectedIcon;
 
   /// 是否显示红点角标
   final bool showBadge;
@@ -62,27 +62,27 @@ class RoleNavigationConfig {
       AppTabConfig(
         routeName: RouteNames.home,
         label: '首页',
-        icon: Icons.home_outlined,
-        selectedIcon: Icons.home,
+        icon: HugeIcons.strokeRoundedHome01,
+        selectedIcon: HugeIcons.strokeRoundedHome02,
       ),
       AppTabConfig(
         routeName: RouteNames.search,
         label: '找房',
-        icon: Icons.search,
-        selectedIcon: Icons.manage_search,
+        icon: HugeIcons.strokeRoundedSearch01,
+        selectedIcon: HugeIcons.strokeRoundedSearch02,
       ),
       AppTabConfig(
         routeName: RouteNames.messageCenter,
         label: '消息',
-        icon: Icons.chat_bubble_outline,
-        selectedIcon: Icons.chat_bubble,
+        icon: HugeIcons.strokeRoundedChat01,
+        selectedIcon: HugeIcons.strokeRoundedChat01,
         showBadge: true,
       ),
       AppTabConfig(
         routeName: RouteNames.profile,
         label: '我的',
-        icon: Icons.person_outline,
-        selectedIcon: Icons.person,
+        icon: HugeIcons.strokeRoundedUser02,
+        selectedIcon: HugeIcons.strokeRoundedUser03,
       ),
     ],
     // 租户可访问的所有页面路由
@@ -127,6 +127,7 @@ class RoleNavigationConfig {
       RouteNames.repairDetail,
       // 个人信息 & 设置
       RouteNames.profileEdit,
+      RouteNames.rentedHomeDetail,
       RouteNames.settings,
       RouteNames.userAgreement,
       RouteNames.privacyPolicy,
@@ -157,20 +158,20 @@ class RoleNavigationConfig {
       AppTabConfig(
         routeName: RouteNames.staffWorkbench,
         label: '工作台',
-        icon: Icons.dashboard_outlined,
-        selectedIcon: Icons.dashboard,
+        icon: HugeIcons.strokeRoundedDashboardSquare01,
+        selectedIcon: HugeIcons.strokeRoundedDashboardSquare02,
       ),
       AppTabConfig(
         routeName: RouteNames.staffLockInit,
         label: '门锁配置',
-        icon: Icons.add_home_work_outlined,
-        selectedIcon: Icons.add_home_work,
+        icon: HugeIcons.strokeRoundedHome03,
+        selectedIcon: HugeIcons.strokeRoundedHome04,
       ),
       AppTabConfig(
         routeName: RouteNames.staffDebug,
         label: '系统调试',
-        icon: Icons.bug_report_outlined,
-        selectedIcon: Icons.bug_report,
+        icon: HugeIcons.strokeRoundedBug01,
+        selectedIcon: HugeIcons.strokeRoundedBug02,
       ),
     ],
     // 管理员可访问的路由
@@ -191,14 +192,14 @@ class RoleNavigationConfig {
       AppTabConfig(
         routeName: RouteNames.landlordWorkbench,
         label: '工作台',
-        icon: Icons.dashboard_outlined,
-        selectedIcon: Icons.dashboard,
+        icon: HugeIcons.strokeRoundedDashboardSquare01,
+        selectedIcon: HugeIcons.strokeRoundedDashboardSquare02,
       ),
       AppTabConfig(
         routeName: RouteNames.landlordProfile,
         label: '个人中心',
-        icon: Icons.person_outline,
-        selectedIcon: Icons.person,
+        icon: HugeIcons.strokeRoundedUser02,
+        selectedIcon: HugeIcons.strokeRoundedUser03,
       ),
     ],
     // 房东可访问的路由

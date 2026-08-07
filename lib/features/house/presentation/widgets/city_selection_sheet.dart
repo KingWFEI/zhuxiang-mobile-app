@@ -8,11 +8,27 @@ import '../../../../core/constants/storage_keys.dart';
 import '../../../../core/location/user_location_provider.dart';
 import '../../../../core/storage/storage_service.dart';
 
+String _displayCityName(String city) {
+  return city.endsWith('市') ? city : '$city市';
+}
+
 /// 热门城市列表。
 const _hotCities = <String>[
-  '重庆', '北京', '上海', '广州', '深圳',
-  '成都', '杭州', '武汉', '南京', '西安',
-  '天津', '苏州', '长沙', '郑州', '青岛',
+  '重庆',
+  '北京',
+  '上海',
+  '广州',
+  '深圳',
+  '成都',
+  '杭州',
+  '武汉',
+  '南京',
+  '西安',
+  '天津',
+  '苏州',
+  '长沙',
+  '郑州',
+  '青岛',
 ];
 
 /// 完整城市索引（拼音首字母分组）。
@@ -81,7 +97,8 @@ class _CitySelectionSheetState extends ConsumerState<CitySelectionSheet> {
           Padding(
             padding: const EdgeInsets.only(top: 12, bottom: 8),
             child: Container(
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
                 color: AppColors.border,
                 borderRadius: BorderRadius.circular(2),
@@ -105,11 +122,21 @@ class _CitySelectionSheetState extends ConsumerState<CitySelectionSheet> {
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
               children: [
-                Text('热门城市', style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  '热门城市',
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 const SizedBox(height: AppSpacing.sm),
                 _HotCityGrid(onSelect: _selectCity),
                 const SizedBox(height: AppSpacing.lg),
-                Text('全部城市', style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  '全部城市',
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 const SizedBox(height: AppSpacing.sm),
                 for (final letter in _allCities.keys)
                   _CityGroup(
@@ -158,14 +185,25 @@ class _LocationBar extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 36, height: 36,
+            width: 36,
+            height: 36,
             decoration: const BoxDecoration(
               color: AppColors.primary,
               shape: BoxShape.circle,
             ),
             child: state.isLoading
-                ? const Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Icon(Icons.my_location_rounded, color: Colors.white, size: 20),
+                ? const Padding(
+                    padding: EdgeInsets.all(8),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(
+                    Icons.my_location_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
@@ -173,11 +211,20 @@ class _LocationBar extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  state.hasLocation ? '${state.city} · ${state.district}' : '未定位',
-                  style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+                  state.hasLocation
+                      ? '${state.city} · ${state.district}'
+                      : '未定位',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 if (!state.hasLocation && state.error != null)
-                  Text(state.error!, style: AppTextStyles.bodySmall.copyWith(color: AppColors.error)),
+                  Text(
+                    state.error!,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.error,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -189,10 +236,19 @@ class _LocationBar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.3),
+                ),
               ),
               alignment: Alignment.center,
-              child: Text('重新定位', style: const TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w600)),
+              child: Text(
+                '重新定位',
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
         ],
@@ -221,10 +277,15 @@ class _HotCityGrid extends StatelessWidget {
             onTap: () => onSelect(city),
             borderRadius: BorderRadius.circular(8),
             child: Container(
-              width: (MediaQuery.of(context).size.width - 56 - AppSpacing.sm * 2) / 3,
+              width:
+                  (MediaQuery.of(context).size.width - 56 - AppSpacing.sm * 2) /
+                  3,
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
               alignment: Alignment.center,
-              child: Text(city, style: AppTextStyles.bodyMedium),
+              child: Text(
+                _displayCityName(city),
+                style: AppTextStyles.bodyMedium,
+              ),
             ),
           ),
         );
@@ -236,7 +297,11 @@ class _HotCityGrid extends StatelessWidget {
 // ── 字母分组 ─────────────────────────────────────────────────
 
 class _CityGroup extends StatelessWidget {
-  const _CityGroup({required this.letter, required this.cities, required this.onSelect});
+  const _CityGroup({
+    required this.letter,
+    required this.cities,
+    required this.onSelect,
+  });
 
   final String letter;
   final List<String> cities;
@@ -249,7 +314,13 @@ class _CityGroup extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(letter, style: AppTextStyles.titleMedium.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700)),
+          Text(
+            letter,
+            style: AppTextStyles.titleMedium.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           const SizedBox(height: AppSpacing.xs),
           Wrap(
             spacing: AppSpacing.sm,
@@ -261,8 +332,14 @@ class _CityGroup extends StatelessWidget {
                   onTap: () => onSelect(city),
                   borderRadius: BorderRadius.circular(6),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                    child: Text(city, style: AppTextStyles.bodyMedium),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
+                    ),
+                    child: Text(
+                      _displayCityName(city),
+                      style: AppTextStyles.bodyMedium,
+                    ),
                   ),
                 ),
               );

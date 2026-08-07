@@ -16,6 +16,7 @@ import '../widgets/auth_page_header.dart';
 import '../widgets/auth_primary_button.dart';
 import '../widgets/auth_text_field.dart';
 import '../../../../core/widgets/app_toast.dart';
+import '../../data/auth_models.dart';
 import '../providers/auth_controller.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -68,6 +69,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     onLogin: _handleLogin,
                     onGuestBrowse: _handleGuestBrowse,
                     onGetCode: _handleGetCode,
+                    retryAfterOnFailure: () =>
+                        ref.read(authControllerProvider).smsRetryAfter,
                     onToggleLoginMode: _toggleLoginMode,
                     onTogglePasswordVisibility: () {
                       setState(() {
@@ -134,25 +137,26 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     _showMessage(message, type: AppToastType.error);
   }
 
-  Future<void> _handleGetCode() async {
+  Future<SmsCodeResult?> _handleGetCode() async {
     final phone = _phoneController.text.trim();
     if (phone.length != 11) {
       _showMessage('请输入正确的手机号', type: AppToastType.error);
-      return;
+      return null;
     }
 
-    final expiresIn = await ref
+    final result = await ref
         .read(authControllerProvider.notifier)
         .sendSmsCode(phone: phone, scene: 'login');
-    if (!mounted) return;
-    if (expiresIn == null) {
+    if (!mounted) return null;
+    if (result == null) {
       _showMessage(
         ref.read(authControllerProvider).errorMessage ?? '验证码发送失败，请稍后重试',
         type: AppToastType.error,
       );
-      return;
+      return null;
     }
-    _showMessage('验证码已发送，$expiresIn 秒内有效', type: AppToastType.success);
+    _showMessage('验证码已发送，${result.expiresIn} 秒内有效', type: AppToastType.success);
+    return result;
   }
 
   Future<void> _handleGuestBrowse() async {
@@ -198,6 +202,7 @@ class _LoginFormPanel extends StatelessWidget {
     required this.onLogin,
     required this.onGuestBrowse,
     required this.onGetCode,
+    required this.retryAfterOnFailure,
     required this.onToggleLoginMode,
     required this.onTogglePasswordVisibility,
   });
@@ -210,7 +215,8 @@ class _LoginFormPanel extends StatelessWidget {
   final ValueChanged<bool> onAgreementChanged;
   final VoidCallback onLogin;
   final VoidCallback onGuestBrowse;
-  final VoidCallback onGetCode;
+  final Future<SmsCodeResult?> Function() onGetCode;
+  final int? Function() retryAfterOnFailure;
   final VoidCallback onToggleLoginMode;
   final VoidCallback onTogglePasswordVisibility;
 
@@ -267,7 +273,10 @@ class _LoginFormPanel extends StatelessWidget {
                       ]
                     : [LengthLimitingTextInputFormatter(32)],
                 suffix: loginMode == LoginMode.code
-                    ? AuthCodeButton(onPressed: onGetCode)
+                    ? AuthCodeButton(
+                        onPressed: onGetCode,
+                        retryAfterOnFailure: retryAfterOnFailure,
+                      )
                     : AuthVisibilityButton(
                         isVisible: isPasswordVisible,
                         onPressed: onTogglePasswordVisibility,

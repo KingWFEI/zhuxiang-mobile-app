@@ -9,7 +9,7 @@ import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_empty_view.dart';
-import '../../../../core/widgets/app_error_view.dart';
+import '../../../../core/widgets/app_api_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
 import '../../data/models/bill_model.dart';
 import '../../data/providers/bill_providers.dart';
@@ -52,8 +52,8 @@ class _BillListPageState extends ConsumerState<BillListPage> {
                   child: result.when(
                     loading: () =>
                         const AppLoadingView(message: '正在加载账单'),
-                    error: (error, _) => AppErrorView(
-                      message: '账单加载失败',
+                    error: (error, _) => AppApiErrorView(
+                      error: error,
                       onRetry: () => ref.invalidate(myBillsProvider),
                     ),
                     data: (data) => RefreshIndicator(

@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:zhuxiang_app/app/theme/app_icon.dart';
 import 'package:zhuxiang_app/core/network/api_result.dart';
 import 'package:zhuxiang_app/features/house/data/models/house_detail.dart';
 import 'package:zhuxiang_app/features/house/data/models/house_facility_item.dart';
@@ -11,6 +10,7 @@ import 'package:zhuxiang_app/features/house/data/models/immersive_tour.dart';
 import 'package:zhuxiang_app/features/house/data/providers/house_providers.dart';
 
 import '../../../../app/router/route_names.dart';
+import '../../../../app/theme/app_card_spacing.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
@@ -134,14 +134,9 @@ class _DetailHeaderActions extends ConsumerWidget {
               }
               context.goNamed(RouteNames.search);
             },
-            icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+            icon: const Icon(Icons.arrow_back_ios_new, size: 19),
           ),
           const Spacer(),
-          _HeaderCircleButton(
-            onPressed: () => _showMessage(context, '分享功能暂未接入'),
-            icon: AppIcon.iconNormal(Icons.share_outlined),
-          ),
-          const SizedBox(width: AppSpacing.sm),
           _HeaderCircleButton(
             onPressed: () async {
               final authState = ref.read(authControllerProvider);
@@ -163,21 +158,16 @@ class _DetailHeaderActions extends ConsumerWidget {
               }
             },
             icon: house.isFavorite
-                ? AppIcon.iconNormal(Icons.favorite, color: AppColors.error)
-                : AppIcon.iconNormal(
+                ? const Icon(Icons.favorite, size: 19, color: AppColors.error)
+                : const Icon(
                     Icons.favorite_border,
+                    size: 19,
                     color: AppColors.textPrimary,
                   ),
           ),
         ],
       ),
     );
-  }
-
-  void _showMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
@@ -200,8 +190,8 @@ class _HeaderCircleButton extends StatelessWidget {
         iconSize: 19,
         style: IconButton.styleFrom(
           shape: const CircleBorder(),
-          fixedSize: const Size.square(40),
-          minimumSize: const Size.square(40),
+          fixedSize: const Size.square(36),
+          minimumSize: const Size.square(36),
           padding: EdgeInsets.zero,
         ),
       ),
@@ -252,23 +242,25 @@ class _ImageCarouselState extends State<_ImageCarousel> {
           controller: _controller,
           onPageChanged: (i) => setState(() => _current = i),
           itemCount: images.length,
-          itemBuilder: (context, index) => Image.network(
-            images[index],
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              // debugPrint('_ImageCarouselState load error: $error');
-              // debugPrint('_ImageCarouselState stackTrace: $stackTrace');
-              return Container(
-                color: const Color(0xFFF3E7D8),
-                child: const Center(
-                  child: Icon(
-                    Icons.broken_image,
-                    color: Color(0xFF9CA3AF),
-                    size: 42,
+          itemBuilder: (context, index) => GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _openPreview(context, images, index),
+            child: Image.network(
+              images[index],
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: const Color(0xFFF3E7D8),
+                  child: const Center(
+                    child: Icon(
+                      Icons.broken_image,
+                      color: Color(0xFF9CA3AF),
+                      size: 42,
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
         const IgnorePointer(
@@ -342,6 +334,80 @@ class _ImageCarouselState extends State<_ImageCarousel> {
       ],
     );
   }
+
+  void _openPreview(BuildContext context, List<String> images, int index) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (_) => _ImagePreviewPage(images: images, initialIndex: index),
+      ),
+    );
+  }
+}
+
+class _ImagePreviewPage extends StatefulWidget {
+  const _ImagePreviewPage({required this.images, required this.initialIndex});
+
+  final List<String> images;
+  final int initialIndex;
+
+  @override
+  State<_ImagePreviewPage> createState() => _ImagePreviewPageState();
+}
+
+class _ImagePreviewPageState extends State<_ImagePreviewPage> {
+  late final PageController _controller = PageController(
+    initialPage: widget.initialIndex,
+  );
+  late int _current = widget.initialIndex;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        title: Text('${_current + 1}/${widget.images.length}'),
+        centerTitle: true,
+      ),
+      body: PageView.builder(
+        controller: _controller,
+        itemCount: widget.images.length,
+        onPageChanged: (index) => setState(() => _current = index),
+        itemBuilder: (context, index) {
+          return SizedBox.expand(
+            child: InteractiveViewer(
+              alignment: Alignment.center,
+              minScale: 0.8,
+              maxScale: 4,
+              child: SizedBox.expand(
+                child: Center(
+                  child: Image.network(
+                    widget.images[index],
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, _, _) => const Icon(
+                      Icons.broken_image_outlined,
+                      color: Colors.white54,
+                      size: 48,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
 }
 
 class _DetailContent extends ConsumerWidget {
@@ -362,14 +428,18 @@ class _DetailContent extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _HeroInfoCard(house: house),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppCardSpacing.betweenCards),
           _FacilitiesCard(house: house),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppCardSpacing.betweenCards),
           _ImmersiveTourEntryCard(house: house),
-          _LandlordCard(house: house),
-          const SizedBox(height: AppSpacing.md),
+          // const SizedBox(height: AppCardSpacing.betweenCards),
+          if (house.isPlatformSource)
+            _PlatformServiceCard(house: house)
+          else
+            _LandlordCard(house: house),
+          const SizedBox(height: AppCardSpacing.betweenCards),
           _SmartLifeCard(house: house),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppCardSpacing.betweenCards),
           _DescriptionCard(house: house),
         ],
       ),
@@ -384,7 +454,7 @@ class _HeroInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tags = [if (house.rentType.isNotEmpty) house.rentType, ...house.tags];
+    final tags = house.tags;
     return Container(
       key: const Key('house-detail-floating-info-card'),
       padding: const EdgeInsets.all(15),
@@ -991,6 +1061,449 @@ class _ImmersiveTourEntryCardState
     if (mounted) {
       ref.invalidate(provider);
     }
+  }
+}
+
+class _PlatformServiceCard extends StatelessWidget {
+  const _PlatformServiceCard({required this.house});
+
+  final HouseDetail house;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(AppRadius.card),
+      child: InkWell(
+        key: const Key('platform-service-card'),
+        onTap: () => _showPlatformServices(context),
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF0B5BD3), Color(0xFF2B8EFF)],
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x332067E8),
+                blurRadius: 24,
+                offset: Offset(0, 10),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            child: Stack(
+              children: [
+                const Positioned(
+                  right: -42,
+                  top: -54,
+                  child: _PlatformGlow(size: 150),
+                ),
+                const Positioned(
+                  left: -34,
+                  bottom: -62,
+                  child: _PlatformGlow(size: 120),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.16),
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.24),
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.home_work_rounded,
+                              color: Colors.white,
+                              size: 27,
+                            ),
+                          ),
+                          const SizedBox(width: 13),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  '勿忧管家',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 5),
+                                Text(
+                                  '平台统一运营 · 标准化服务流程',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.82),
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 9,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.verified_rounded,
+                                  color: Color(0xFF176FE5),
+                                  size: 14,
+                                ),
+                                SizedBox(width: 3),
+                                Text(
+                                  '官方直营',
+                                  style: TextStyle(
+                                    color: Color(0xFF176FE5),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 17),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          const _PlatformFeatureChip(
+                            icon: Icons.fact_check_outlined,
+                            label: '官方房源',
+                          ),
+                          const _PlatformFeatureChip(
+                            icon: Icons.support_agent_rounded,
+                            label: '专属管家',
+                          ),
+                          const _PlatformFeatureChip(
+                            icon: Icons.receipt_long_outlined,
+                            label: '流程留痕',
+                          ),
+                          if (house.isSmartLockSupported)
+                            const _PlatformFeatureChip(
+                              icon: Icons.lock_open_rounded,
+                              label: '智能门锁',
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 17),
+                      Container(
+                        height: 1,
+                        color: Colors.white.withValues(alpha: 0.18),
+                      ),
+                      const SizedBox(height: 13),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.shield_outlined,
+                            color: Colors.white.withValues(alpha: 0.9),
+                            size: 18,
+                          ),
+                          const SizedBox(width: 7),
+                          const Expanded(
+                            child: Text(
+                              '查看平台服务保障',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: Colors.white,
+                            size: 14,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showPlatformServices(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _PlatformServiceSheet(house: house),
+    );
+  }
+}
+
+class _PlatformGlow extends StatelessWidget {
+  const _PlatformGlow({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white.withValues(alpha: 0.08),
+      ),
+    );
+  }
+}
+
+class _PlatformFeatureChip extends StatelessWidget {
+  const _PlatformFeatureChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.13),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: Colors.white),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlatformServiceSheet extends StatelessWidget {
+  const _PlatformServiceSheet({required this.house});
+
+  final HouseDetail house;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.86,
+      ),
+      decoration: const BoxDecoration(
+        color: Color(0xFFF6F9FF),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: SingleChildScrollView(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.paddingOf(context).bottom + 20,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
+              decoration: const BoxDecoration(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF0A56C7), Color(0xFF318EFF)],
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.48),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Row(
+                    children: [
+                      Icon(Icons.verified_user_rounded, color: Colors.white),
+                      SizedBox(width: 10),
+                      Text(
+                        '勿忧管家平台服务',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 9),
+                  Text(
+                    '本房源由平台统一运营与服务协调，为租客提供清晰、可追踪的租住流程。',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.86),
+                      height: 1.55,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+              child: Column(
+                children: [
+                  const _PlatformServiceItem(
+                    icon: Icons.domain_verification_outlined,
+                    title: '平台统一管理',
+                    description: '房源信息由平台维护，咨询与预约流程由平台统一协调。',
+                  ),
+                  _PlatformServiceItem(
+                    icon: house.isSmartLockSupported
+                        ? Icons.lock_open_rounded
+                        : Icons.support_agent_rounded,
+                    title: house.isSmartLockSupported ? '灵活看房方式' : '平台管家陪同',
+                    description: house.isSmartLockSupported
+                        ? '符合条件时支持智能门锁自助看房，具体方式与有效时间以预约页为准。'
+                        : '预约确认后，由平台管家提供见面地点与陪同看房说明。',
+                  ),
+                  const _PlatformServiceItem(
+                    icon: Icons.article_outlined,
+                    title: '线上流程留痕',
+                    description: '申请、认证、合同与支付节点均在平台流程中记录，进度清晰可查。',
+                  ),
+                  const _PlatformServiceItem(
+                    icon: Icons.home_repair_service_outlined,
+                    title: '租后服务协同',
+                    description: '入住后的账单、报修与服务记录可继续通过勿忧管家处理。',
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                      child: const Text('了解了'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PlatformServiceItem extends StatelessWidget {
+  const _PlatformServiceItem({
+    required this.icon,
+    required this.title,
+    required this.description,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(17),
+        border: Border.all(color: const Color(0xFFE7EEF8)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D1A4C85),
+            blurRadius: 16,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight,
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: Icon(icon, color: AppColors.primary, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  description,
+                  style: AppTextStyles.bodySmall.copyWith(height: 1.5),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

@@ -1,9 +1,13 @@
 import '../domain/entities/auth_user.dart';
+import 'auth_models.dart';
 
 abstract class AuthRepository {
   AuthUser? get currentUser;
 
-  Future<int> sendSmsCode({required String phone, required String scene});
+  Future<SmsCodeResult> sendSmsCode({
+    required String phone,
+    required String scene,
+  });
 
   Future<AuthUser> loginWithCode({required String phone, required String code});
 

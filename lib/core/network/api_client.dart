@@ -112,6 +112,12 @@ class ApiClient {
     final responseMessage = responseData is Map<String, dynamic>
         ? responseData['message'] as String?
         : null;
+    final responseBodyData = responseData is Map<String, dynamic>
+        ? responseData['data']
+        : null;
+    final retryAfter = responseBodyData is Map<String, dynamic>
+        ? (responseBodyData['retryAfter'] as num?)?.toInt()
+        : null;
 
     if (error.type == DioExceptionType.connectionTimeout ||
         error.type == DioExceptionType.receiveTimeout ||
@@ -155,6 +161,7 @@ class ApiClient {
       type: ApiExceptionType.unknown,
       message: responseMessage ?? error.message ?? 'Unknown network error',
       statusCode: statusCode,
+      retryAfter: retryAfter,
       cause: error,
     );
   }

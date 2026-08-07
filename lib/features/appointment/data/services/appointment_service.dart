@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 
+import '../../../../app/config/app_config.dart';
+import '../../../../app/config/app_env.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_result.dart';
 import '../models/appointment_models.dart';
@@ -13,7 +15,10 @@ class AppointmentService {
     return _apiClient
         .get(
           '/houses/${Uri.encodeComponent(houseId)}/viewing-slots',
-          queryParameters: {'days': 7},
+          queryParameters: {
+            'days': 7,
+            if (AppConfig.currentEnv == AppEnv.dev) 'includeTestSlot': true,
+          },
         )
         .unwrapData(ViewingSlotResult.fromJson);
   }
@@ -24,6 +29,7 @@ class AppointmentService {
     required String contactName,
     required String contactPhone,
     required String remark,
+    bool testSlot = false,
   }) {
     return _apiClient
         .post(
@@ -34,6 +40,7 @@ class AppointmentService {
             'contactName': contactName,
             'contactPhone': contactPhone,
             'remark': remark,
+            if (testSlot) 'testSlot': true,
           },
           options: Options(
             headers: {
@@ -130,7 +137,7 @@ class AppointmentService {
           queryParameters: {
             if (status != null && status.isNotEmpty) 'status': status,
             'page': 1,
-            'pageSize': 100,
+            'pageSize': 20,
           },
         )
         .unwrapValue((data) {

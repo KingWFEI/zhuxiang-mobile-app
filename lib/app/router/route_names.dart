@@ -18,6 +18,7 @@ class RouteNames {
   static const appointment = 'appointment';
   static const realNameAuth = 'realNameAuth';
   static const profile = 'profile';
+  static const rentedHomeDetail = 'rentedHomeDetail';
   static const profileEdit = 'profileEdit';
   static const settings = 'settings';
   static const lease = 'lease';

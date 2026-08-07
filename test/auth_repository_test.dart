@@ -122,7 +122,7 @@ class _FakeAuthService implements AuthService {
     required String phone,
     required String scene,
   }) async {
-    return const SmsCodeResult(expiresIn: 300);
+    return const SmsCodeResult(expiresIn: 300, retryAfter: 60);
   }
 }
 

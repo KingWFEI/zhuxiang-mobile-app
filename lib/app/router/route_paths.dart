@@ -20,6 +20,7 @@ class RoutePaths {
   static const appointment = '/appointment';
   static const realNameAuth = '/real-name-auth';
   static const profile = '/profile';
+  static const rentedHomeDetail = '/profile/rented-homes/:leaseId';
   static const profileEdit = '/profile/edit';
   static const settings = '/profile/settings';
   static const lease = '/leases';

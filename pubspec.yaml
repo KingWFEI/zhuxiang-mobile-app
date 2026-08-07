@@ -57,6 +57,7 @@ dependencies:
   url_launcher: ^6.3.2
   flutter_map: ^7.0.2
   latlong2: ^0.9.1
+  hugeicons: ^1.1.7
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -85,6 +86,10 @@ flutter:
     - assets/immersive_tour_viewer.html
     - assets/pannellum/pannellum.css
     - assets/pannellum/pannellum.js
+    - assets/logo/logo.png
+    - assets/home/home_bk.png
+    - assets/home/Slogan.png
+    - assets/landord/landord_bk.png
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

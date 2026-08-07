@@ -8,6 +8,33 @@ import 'package:zhuxiang_app/features/appointment/data/services/appointment_serv
 import 'package:zhuxiang_app/features/appointment/presentation/pages/landlord_appointment_detail_page.dart';
 
 void main() {
+  testWidgets('房东预约详情支持下拉刷新', (tester) async {
+    final service = _FakeAppointmentService();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [appointmentServiceProvider.overrideWithValue(service)],
+        child: const MaterialApp(
+          home: LandlordAppointmentDetailPage(appointmentId: 'appointment-1'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('landlord-appointment-detail-refresh')),
+      findsOneWidget,
+    );
+    expect(service.landlordDetailRequests, 1);
+
+    await tester.drag(find.byType(ListView), const Offset(0, 320));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(service.landlordDetailRequests, 2);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('landlord reschedule submits a server-provided available slot', (
     tester,
   ) async {
@@ -51,6 +78,7 @@ class _FakeAppointmentService extends AppointmentService {
       .copyWith(hour: 10, minute: 0, second: 0, millisecond: 0, microsecond: 0);
   DateTime? proposedStartAt;
   String? reason;
+  int landlordDetailRequests = 0;
 
   late final AppointmentDetail appointmentDetail = AppointmentDetail(
     id: 'appointment-1',
@@ -86,6 +114,7 @@ class _FakeAppointmentService extends AppointmentService {
 
   @override
   Future<AppointmentDetail> landlordDetail(String appointmentId) async {
+    landlordDetailRequests += 1;
     return appointmentDetail;
   }
 

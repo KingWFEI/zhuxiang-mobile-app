@@ -13,6 +13,8 @@ class House {
     required this.price,
     this.deposit = 0,
     this.paymentMethod = '',
+    this.rentMode = 'WHOLE_RENT',
+    this.rentType = 'LONG_RENT',
     required this.roomType,
     required this.area,
     required this.floor,
@@ -50,6 +52,8 @@ class House {
   final int price;
   final int deposit;
   final String paymentMethod;
+  final String rentMode;
+  final String rentType;
   final String roomType;
   final int area;
   final String floor;
@@ -101,6 +105,8 @@ class House {
       price: json['price'] as int? ?? 0,
       deposit: json['deposit'] as int? ?? 0,
       paymentMethod: json['paymentMethod'] as String? ?? '',
+      rentMode: json['rentMode'] as String? ?? 'WHOLE_RENT',
+      rentType: json['rentType'] as String? ?? 'LONG_RENT',
       roomType: json['roomType'] as String? ?? '',
       area: json['area'] as int? ?? 0,
       floor: json['floor'] as String? ?? '',

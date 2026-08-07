@@ -4,6 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_icon.dart';
+import '../../../../app/theme/app_spacing.dart';
+import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/widgets/app_api_error_view.dart';
 import '../../data/models/appointment_models.dart';
 import '../../data/providers/appointment_providers.dart';
 
@@ -18,6 +22,12 @@ class AppointmentListPage extends ConsumerWidget {
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
+          toolbarHeight: 44,
+          leadingWidth: 80,
+          leading: const _AppointmentBackButton(),
+          actions: const [SizedBox(width: 80)],
+          elevation: 0,
+          titleTextStyle: AppTextStyles.normalPageTitle,
           title: const Text('我的预约'),
           centerTitle: true,
           backgroundColor: AppColors.background,
@@ -32,8 +42,10 @@ class AppointmentListPage extends ConsumerWidget {
         ),
         body: appointments.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) =>
-              _ErrorView(onRetry: () => ref.invalidate(myAppointmentsProvider)),
+          error: (error, _) => AppApiErrorView(
+            error: error,
+            onRetry: () => ref.invalidate(myAppointmentsProvider),
+          ),
           data: (items) => TabBarView(
             children: [
               _AppointmentList(
@@ -70,6 +82,27 @@ class AppointmentListPage extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _AppointmentBackButton extends StatelessWidget {
+  const _AppointmentBackButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        if (context.canPop()) {
+          context.pop();
+          return;
+        }
+        context.goNamed(RouteNames.home);
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        child: AppIcon.iconBack,
       ),
     );
   }
@@ -268,6 +301,7 @@ class _EmptyView extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _ErrorView extends StatelessWidget {
   const _ErrorView({required this.onRetry});
 

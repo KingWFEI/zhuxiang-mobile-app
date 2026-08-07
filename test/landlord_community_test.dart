@@ -70,7 +70,8 @@ void main() {
       location: '重庆市 江北区',
       communityId: 'community-1',
       price: 300000,
-      rentType: 'long_rent',
+      rentMode: 'WHOLE_RENT',
+      rentType: 'LONG_RENT',
       facilityIds: ['facility-1'],
       tagIds: ['tag-1'],
       address: '北滨一路',
@@ -83,6 +84,8 @@ void main() {
     expect(json.containsKey('landlordId'), isFalse);
     expect(json['address'], '北滨一路');
     expect(json['area'], 45.5);
+    expect(json['rentMode'], 'WHOLE_RENT');
+    expect(json['rentType'], 'LONG_RENT');
     expect(json['facilityIds'], ['facility-1']);
     expect(json['tagIds'], ['tag-1']);
     expect(json['isSelfViewingSupported'], isTrue);

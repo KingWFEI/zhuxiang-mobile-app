@@ -4,12 +4,14 @@ class HouseSearchState {
   const HouseSearchState({
     this.keyword = '',
     this.category = '',
+    this.rentMode = '',
     this.region = '',
     this.minPrice = 0,
     this.maxPrice = 0,
     this.roomType = '',
     this.sort = 'default',
     this.activeTags = const <String>{},
+    this.facilityIds = const <String>{},
     this.decoration = '',
     this.orientation = '',
     this.page = 1,
@@ -26,12 +28,14 @@ class HouseSearchState {
 
   final String keyword;
   final String category;
+  final String rentMode;
   final String region;
   final int minPrice;
   final int maxPrice;
   final String roomType;
   final String sort;
   final Set<String> activeTags;
+  final Set<String> facilityIds;
   final String decoration;
   final String orientation;
 
@@ -50,18 +54,29 @@ class HouseSearchState {
 
   bool get hasActiveFilters {
     return category.isNotEmpty ||
+        rentMode.isNotEmpty ||
         region.isNotEmpty ||
         minPrice > 0 ||
         maxPrice > 0 ||
         roomType.isNotEmpty ||
+        facilityIds.isNotEmpty ||
+        activeTags.isNotEmpty ||
+        decoration.isNotEmpty ||
+        orientation.isNotEmpty ||
         sort != 'default';
   }
 
   int get activeFilterCount {
     var count = 0;
     if (region.isNotEmpty) count++;
+    if (rentMode.isNotEmpty) count++;
+    if (category.isNotEmpty) count++;
     if (minPrice > 0 || maxPrice > 0) count++;
     if (roomType.isNotEmpty) count++;
+    if (facilityIds.isNotEmpty) count++;
+    if (activeTags.isNotEmpty) count++;
+    if (decoration.isNotEmpty) count++;
+    if (orientation.isNotEmpty) count++;
     if (sort != 'default') count++;
     return count;
   }
@@ -69,12 +84,14 @@ class HouseSearchState {
   HouseSearchState copyWith({
     String? keyword,
     String? category,
+    String? rentMode,
     String? region,
     int? minPrice,
     int? maxPrice,
     String? roomType,
     String? sort,
     Set<String>? activeTags,
+    Set<String>? facilityIds,
     String? decoration,
     String? orientation,
     int? page,
@@ -92,12 +109,14 @@ class HouseSearchState {
     return HouseSearchState(
       keyword: keyword ?? this.keyword,
       category: category ?? this.category,
+      rentMode: rentMode ?? this.rentMode,
       region: region ?? this.region,
       minPrice: minPrice ?? this.minPrice,
       maxPrice: maxPrice ?? this.maxPrice,
       roomType: roomType ?? this.roomType,
       sort: sort ?? this.sort,
       activeTags: activeTags ?? this.activeTags,
+      facilityIds: facilityIds ?? this.facilityIds,
       decoration: decoration ?? this.decoration,
       orientation: orientation ?? this.orientation,
       page: page ?? this.page,

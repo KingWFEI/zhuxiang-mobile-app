@@ -33,9 +33,19 @@ class LandlordAppointmentDetailPage extends ConsumerWidget {
             child: const Text('加载失败，点击重试'),
           ),
         ),
-        data: (value) => _Body(
-          detail: value,
-          onAction: (action) => _handleAction(context, ref, value, action),
+        data: (value) => RefreshIndicator(
+          key: const Key('landlord-appointment-detail-refresh'),
+          onRefresh: () async {
+            final refresh = ref.refresh(
+              landlordAppointmentDetailProvider(appointmentId).future,
+            );
+            ref.invalidate(landlordAppointmentsProvider);
+            await refresh;
+          },
+          child: _Body(
+            detail: value,
+            onAction: (action) => _handleAction(context, ref, value, action),
+          ),
         ),
       ),
     );
@@ -126,6 +136,9 @@ class _BodyState extends State<_Body> {
   Widget build(BuildContext context) {
     final detail = widget.detail;
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
       padding: const EdgeInsets.all(16),
       children: [
         Container(

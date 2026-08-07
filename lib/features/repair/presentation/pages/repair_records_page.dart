@@ -7,7 +7,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_icon.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
-import '../../../../core/widgets/app_error_view.dart';
+import '../../../../core/widgets/app_api_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
 import '../../application/repair_controller.dart';
 import '../../data/providers/repair_providers.dart';
@@ -64,8 +64,8 @@ class RepairRecordsPage extends ConsumerWidget {
     if (state.errorMessage != null && state.overview == null) {
       return SizedBox(
         height: 420,
-        child: AppErrorView(
-          message: '报修记录加载失败',
+        child: AppApiErrorView(
+          message: state.errorMessage,
           onRetry: ref.read(repairControllerProvider.notifier).load,
         ),
       );

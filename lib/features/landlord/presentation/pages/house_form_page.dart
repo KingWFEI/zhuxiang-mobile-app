@@ -45,7 +45,8 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
   late final _roomTypeCtrl = TextEditingController();
 
   Community? _community;
-  String _rentType = '整租';
+  String _rentMode = 'WHOLE_RENT';
+  String _rentType = 'LONG_RENT';
   String _paymentMethod = '押一付一';
   String _orientation = '';
   String _decoration = '';
@@ -101,10 +102,13 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
           latitude: house.latitude,
         );
       }
+      _rentMode = house.rentMode == 'SHARED_RENT'
+          ? 'SHARED_RENT'
+          : 'WHOLE_RENT';
       _rentType = switch (house.rentType) {
-        'long_rent' || '长租' || '整租' => '整租',
-        'short_rent' || '短租' || '合租' => '合租',
-        _ => '整租',
+        'SHORT_RENT' => 'SHORT_RENT',
+        'HOMESTAY' => 'HOMESTAY',
+        _ => 'LONG_RENT',
       };
       _paymentMethod = _normalizePaymentMethod(house.paymentMethod);
       _roomTypeCtrl.text = house.roomType;
@@ -151,6 +155,7 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
   Widget build(BuildContext context) {
     final facilities = ref.watch(houseFacilitiesProvider);
     final tags = ref.watch(houseTagsProvider);
+    final roomTypes = ref.watch(landlordHouseRoomTypesProvider);
     return Scaffold(
       backgroundColor: AppColors.authBackground,
       appBar: AppBar(
@@ -185,6 +190,8 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
                   children: [
                     _buildTextField(_titleCtrl, '房源标题', hint: '如：采光通透的两居室'),
                     _fieldGap,
+                    _buildRentModePicker(),
+                    _fieldGap,
                     _buildRentTypePicker(),
                     _fieldGap,
                     _fieldRow([
@@ -202,7 +209,7 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
                     _buildPaymentMethodPicker(),
                     _fieldGap,
                     _fieldRow([
-                      _buildTextField(_roomTypeCtrl, '户型', hint: '如：2室1厅1卫'),
+                      _buildRoomTypePicker(roomTypes),
                       _buildTextField(
                         _areaCtrl,
                         '面积（㎡）',
@@ -654,11 +661,48 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
     );
   }
 
+  Widget _buildRentModePicker() {
+    const options = [('WHOLE_RENT', '整租'), ('SHARED_RENT', '合租')];
+    return _buildDropdown('出租方式', _rentMode, options, (v) {
+      setState(() => _rentMode = v);
+    });
+  }
+
   Widget _buildRentTypePicker() {
-    const options = [('整租', '整租'), ('合租', '合租')];
-    return _buildDropdown('出租方式', _rentType, options, (v) {
+    const options = [
+      ('LONG_RENT', '长租'),
+      ('SHORT_RENT', '短租'),
+      ('HOMESTAY', '民宿'),
+    ];
+    return _buildDropdown('租赁类型', _rentType, options, (v) {
       setState(() => _rentType = v);
     });
+  }
+
+  Widget _buildRoomTypePicker(AsyncValue<List<HouseDictionaryItem>> roomTypes) {
+    return roomTypes.when(
+      loading: () => InputDecorator(
+        decoration: _inputDecoration('户型'),
+        child: const LinearProgressIndicator(minHeight: 2),
+      ),
+      error: (_, _) => InkWell(
+        onTap: () => ref.invalidate(landlordHouseRoomTypesProvider),
+        child: InputDecorator(
+          decoration: _inputDecoration('户型'),
+          child: const Text('加载失败，点击重试'),
+        ),
+      ),
+      data: (items) {
+        final options = items.map((item) => (item.id, item.name)).toList();
+        final current = _roomTypeCtrl.text;
+        if (current.isNotEmpty && !options.any((item) => item.$1 == current)) {
+          options.add((current, '$current（已停用）'));
+        }
+        return _buildDropdown('户型', current, options, (value) {
+          setState(() => _roomTypeCtrl.text = value);
+        });
+      },
+    );
   }
 
   Widget _buildPaymentMethodPicker() {
@@ -1201,6 +1245,10 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_roomTypeCtrl.text.trim().isEmpty) {
+      AppToast.show(context, '请选择户型', type: AppToastType.error);
+      return;
+    }
     final community = _community;
     if (community == null || community.id.isEmpty) return;
     final facilityIds = _resolveDictionaryIds(
@@ -1241,6 +1289,7 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
             communityId: community.id,
             price: price,
             deposit: deposit,
+            rentMode: _rentMode,
             rentType: _rentType,
             facilityIds: facilityIds,
             tagIds: tagIds,
@@ -1272,6 +1321,7 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
                 : community.name,
             communityId: community.id,
             price: price,
+            rentMode: _rentMode,
             rentType: _rentType,
             facilityIds: facilityIds,
             tagIds: tagIds,

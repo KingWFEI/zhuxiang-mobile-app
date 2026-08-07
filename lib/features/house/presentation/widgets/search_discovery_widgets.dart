@@ -176,97 +176,6 @@ class SearchHistorySection extends StatelessWidget {
   }
 }
 
-/// 热门搜索快捷入口。
-class HotSearchSection extends StatelessWidget {
-  const HotSearchSection({required this.onItemTap, super.key});
-
-  final ValueChanged<String> onItemTap;
-
-  static const _items = <(String, IconData, Color)>[
-    ('近地铁', Icons.directions_subway_rounded, Color(0xFF438CF6)),
-    ('整租', Icons.home_rounded, Color(0xFF4D8EF7)),
-    ('两居室', Icons.weekend_rounded, Color(0xFF8C67E8)),
-    ('可月付', Icons.calendar_month_rounded, Color(0xFF35B98F)),
-    ('智能门锁', Icons.lock_rounded, Color(0xFFF29B38)),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _SectionHeader(title: '热门搜索'),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            for (var index = 0; index < _items.length; index++) ...[
-              Expanded(
-                child: _HotSearchCard(
-                  label: _items[index].$1,
-                  icon: _items[index].$2,
-                  color: _items[index].$3,
-                  onTap: () => onItemTap(_items[index].$1),
-                ),
-              ),
-              if (index != _items.length - 1)
-                const SizedBox(width: AppSpacing.sm),
-            ],
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _HotSearchCard extends StatelessWidget {
-  const _HotSearchCard({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(AppRadius.xl),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: Column(
-            children: [
-              Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                ),
-                child: Icon(icon, color: color, size: 21),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 10),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 /// 横向热门小区卡片列表，数据由 HouseService 提供。
 class HotCommunitySection extends StatelessWidget {
   const HotCommunitySection({
@@ -379,30 +288,39 @@ class _CommunityCard extends StatelessWidget {
   }
 }
 
-/// 根据当前输入展示关键词组合建议，不展示房源列表。
+/// 展示服务端返回的房源搜索联想。
 class SearchSuggestionSection extends StatelessWidget {
   const SearchSuggestionSection({
     required this.keyword,
+    required this.suggestions,
+    required this.isLoading,
     required this.onItemTap,
     super.key,
   });
 
   final String keyword;
+  final List<String> suggestions;
+  final bool isLoading;
   final ValueChanged<String> onItemTap;
 
   @override
   Widget build(BuildContext context) {
     final normalized = keyword.trim();
     if (normalized.isEmpty) return const SizedBox.shrink();
-    final suffixes = ['近地铁', '两居室 整租', '可月付', '智能门锁'];
+    if (!isLoading && suggestions.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const _SectionHeader(title: '搜索建议'),
-        for (final suffix in suffixes)
+        if (isLoading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+            child: LinearProgressIndicator(minHeight: 2),
+          ),
+        for (final suggestion in suggestions)
           InkWell(
-            onTap: () => onItemTap(normalized),
+            onTap: () => onItemTap(suggestion),
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
               decoration: const BoxDecoration(
@@ -416,17 +334,12 @@ class SearchSuggestionSection extends StatelessWidget {
                     size: 12,
                   ),
                   const SizedBox(width: AppSpacing.md),
-                  Text(
-                    normalized,
-                    style: TextStyle(fontSize: 10, color: AppColors.primary),
-                  ),
-                  const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      suffix,
+                      suggestion,
                       style: TextStyle(
-                        fontSize: 10,
-                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                        color: AppColors.textPrimary,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),

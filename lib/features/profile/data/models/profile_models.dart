@@ -2,7 +2,9 @@
 class CurrentHome {
   const CurrentHome({
     required this.houseId,
+    this.title = '',
     required this.community,
+    this.location = '',
     required this.building,
     required this.unit,
     required this.room,
@@ -12,12 +14,24 @@ class CurrentHome {
     required this.lockStatus,
     this.address = '',
     this.coverImage = '',
+    this.roomType = '',
+    this.area,
+    this.floor = '',
+    this.orientation = '',
+    this.monthlyRent,
+    this.deposit,
+    this.paymentMethod = '',
+    this.leaseStartDate,
+    this.leaseEndDate,
+    this.sourceType = '',
   });
 
   factory CurrentHome.fromJson(Map<String, dynamic> json) {
     return CurrentHome(
       houseId: json['houseId'] as String? ?? '',
+      title: json['title'] as String? ?? '',
       community: json['community'] as String? ?? '',
+      location: json['location'] as String? ?? '',
       building: json['building'] as String? ?? '',
       unit: json['unit'] as String? ?? '',
       room: json['room'] as String? ?? '',
@@ -27,11 +41,23 @@ class CurrentHome {
       lockStatus: json['lockStatus'] as String? ?? 'unknown',
       address: json['address'] as String? ?? '',
       coverImage: json['coverImage']?.toString() ?? '',
+      roomType: json['roomType'] as String? ?? '',
+      area: (json['area'] as num?)?.toInt(),
+      floor: json['floor'] as String? ?? '',
+      orientation: json['orientation'] as String? ?? '',
+      monthlyRent: (json['monthlyRent'] as num?)?.toInt(),
+      deposit: (json['deposit'] as num?)?.toInt(),
+      paymentMethod: json['paymentMethod'] as String? ?? '',
+      leaseStartDate: _parseDate(json['leaseStartDate']),
+      leaseEndDate: _parseDate(json['leaseEndDate']),
+      sourceType: json['sourceType'] as String? ?? '',
     );
   }
 
   final String houseId;
+  final String title;
   final String community;
+  final String location;
   final String building;
   final String unit;
   final String room;
@@ -41,12 +67,59 @@ class CurrentHome {
   final String lockStatus;
   final String address;
   final String coverImage;
+  final String roomType;
+  final int? area;
+  final String floor;
+  final String orientation;
+  final int? monthlyRent;
+  final int? deposit;
+  final String paymentMethod;
+  final DateTime? leaseStartDate;
+  final DateTime? leaseEndDate;
+  final String sourceType;
 
   String get addressLabel => [
-    if (building.isNotEmpty) '${building}栋',
-    if (unit.isNotEmpty) '${unit}单元',
+    if (building.isNotEmpty) '$building栋',
+    if (unit.isNotEmpty) '$unit单元',
     room,
   ].where((e) => e.isNotEmpty).join('');
+
+  String get displayTitle {
+    if (title.isNotEmpty) return title;
+    return [
+      community,
+      addressLabel,
+    ].where((value) => value.isNotEmpty).join(' · ');
+  }
+
+  bool get hasSmartLock =>
+      lockId?.trim().isNotEmpty == true &&
+      !const {'UNBOUND', 'DELETED'}.contains(lockStatus.toUpperCase());
+
+  static DateTime? _parseDate(dynamic value) {
+    final text = value?.toString();
+    return text == null || text.isEmpty ? null : DateTime.tryParse(text);
+  }
+}
+
+class ProfileOverview {
+  const ProfileOverview({
+    required this.favoriteCount,
+    required this.appointmentCount,
+    required this.isVerified,
+  });
+
+  factory ProfileOverview.fromJson(Map<String, dynamic> json) {
+    return ProfileOverview(
+      favoriteCount: (json['favoriteCount'] as num?)?.toInt() ?? 0,
+      appointmentCount: (json['appointmentCount'] as num?)?.toInt() ?? 0,
+      isVerified: json['isVerified'] as bool? ?? false,
+    );
+  }
+
+  final int favoriteCount;
+  final int appointmentCount;
+  final bool isVerified;
 }
 
 /// 门锁展示信息

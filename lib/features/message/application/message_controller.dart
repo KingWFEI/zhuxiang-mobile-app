@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_result.dart';
 import '../data/services/message_service.dart';
 import '../domain/entities/app_message.dart';
+import '../domain/entities/message_realtime_event.dart';
 
 class MessageState {
   const MessageState({
@@ -68,6 +71,8 @@ class MessageController extends StateNotifier<MessageState> {
   static const pageSize = 20;
   final MessageServiceContract _service;
   bool _isRefreshingUnread = false;
+  Timer? _realtimeSyncDebounce;
+  Timer? _realtimeRefreshDebounce;
 
   Future<void> loadInitial() async {
     if (state.isInitialLoading) return;
@@ -87,6 +92,7 @@ class MessageController extends StateNotifier<MessageState> {
     final countsFuture = _service.fetchUnreadCounts();
     final listResult = await listFuture;
     final countsResult = await countsFuture;
+    if (!mounted) return;
 
     final counts = countsResult is ApiSuccess<MessageUnreadCounts>
         ? countsResult.data
@@ -129,6 +135,7 @@ class MessageController extends StateNotifier<MessageState> {
     final countsFuture = _service.fetchUnreadCounts();
     final listResult = await listFuture;
     final countsResult = await countsFuture;
+    if (!mounted) return;
 
     var next = state.copyWith(isRefreshing: false);
     if (countsResult is ApiSuccess<MessageUnreadCounts>) {
@@ -166,10 +173,16 @@ class MessageController extends StateNotifier<MessageState> {
       page: state.page + 1,
       pageSize: pageSize,
     );
+    if (!mounted) return;
     if (result is ApiSuccess<MessagePageData>) {
       final data = result.data;
+      final merged = [...state.messages, ...data.items];
+      final seen = <String>{};
       state = state.copyWith(
-        messages: [...state.messages, ...data.items],
+        messages: [
+          for (final item in merged)
+            if (seen.add(item.id)) item,
+        ],
         page: data.page,
         total: data.total,
         hasMore: data.hasMore,
@@ -183,6 +196,7 @@ class MessageController extends StateNotifier<MessageState> {
   Future<bool> markAsRead(AppMessage message) async {
     if (message.isRead || message.id.isEmpty) return true;
     final result = await _service.markAsRead(message.id);
+    if (!mounted) return false;
     if (result is! ApiSuccess<bool> || !result.data) return false;
     state = state.copyWith(
       messages: [
@@ -199,6 +213,7 @@ class MessageController extends StateNotifier<MessageState> {
     state = state.copyWith(isMutating: true);
     // 后端当前只支持全部消息已读，不支持按分类传 category。
     final result = await _service.markAllAsRead();
+    if (!mounted) return false;
     if (result is! ApiSuccess<bool> || !result.data) {
       state = state.copyWith(isMutating: false);
       return false;
@@ -221,6 +236,7 @@ class MessageController extends StateNotifier<MessageState> {
   }
 
   Future<void> handleDeletedMessage(String id) async {
+    if (!mounted) return;
     state = state.copyWith(
       messages: state.messages.where((item) => item.id != id).toList(),
       total: state.total > 0 ? state.total - 1 : 0,
@@ -232,6 +248,7 @@ class MessageController extends StateNotifier<MessageState> {
     if (state.isMutating) return false;
     state = state.copyWith(isMutating: true);
     final result = await _service.clearReadMessages();
+    if (!mounted) return false;
     if (result is! ApiSuccess<bool> || !result.data) {
       state = state.copyWith(isMutating: false);
       return false;
@@ -246,12 +263,116 @@ class MessageController extends StateNotifier<MessageState> {
     _isRefreshingUnread = true;
     try {
       final result = await _service.fetchUnreadCounts();
-      if (result is ApiSuccess<MessageUnreadCounts>) {
+      if (mounted && result is ApiSuccess<MessageUnreadCounts>) {
         state = state.copyWith(unreadCounts: result.data);
       }
     } finally {
       _isRefreshingUnread = false;
     }
+  }
+
+  Future<void> handleRealtimeConnected() async {
+    if (!mounted) return;
+    if (state.isInitialLoading || state.isRefreshing) return;
+    if (state.messages.isEmpty) {
+      await loadInitial();
+    } else {
+      await refresh();
+    }
+  }
+
+  Future<void> handleRealtimeEvent(MessageRealtimeEvent event) async {
+    if (!mounted) return;
+    if (event.type == 'message.created' && event.message != null) {
+      final message = event.message!;
+      final alreadyExists = state.messages.any((item) => item.id == message.id);
+      final categoryMatches =
+          state.category == null || state.category == message.category;
+      if (!alreadyExists && categoryMatches) {
+        state = state.copyWith(
+          messages: [message, ...state.messages],
+          total: state.total + 1,
+        );
+      }
+      _scheduleRealtimeSync();
+      return;
+    }
+
+    if (event.type != 'messages.changed') {
+      await handleRealtimeConnected();
+      return;
+    }
+
+    switch (event.operation) {
+      case 'read':
+        state = state.copyWith(
+          messages: [
+            for (final item in state.messages)
+              if (item.id == event.messageId)
+                item.copyWith(isRead: true)
+              else
+                item,
+          ],
+        );
+      case 'read_all':
+        state = state.copyWith(
+          messages: [
+            for (final item in state.messages) item.copyWith(isRead: true),
+          ],
+          unreadCounts: const MessageUnreadCounts(),
+        );
+      case 'deleted':
+        final remaining = state.messages
+            .where((item) => item.id != event.messageId)
+            .toList();
+        state = state.copyWith(
+          messages: remaining,
+          total:
+              (state.total -
+                      (remaining.length == state.messages.length ? 0 : 1))
+                  .clamp(0, state.total)
+                  .toInt(),
+        );
+        _scheduleRealtimeRefresh();
+        return;
+      case 'clear_read':
+        final remaining = state.messages.where((item) => !item.isRead).toList();
+        state = state.copyWith(
+          messages: remaining,
+          total: (state.total - (state.messages.length - remaining.length))
+              .clamp(0, state.total)
+              .toInt(),
+        );
+        _scheduleRealtimeRefresh();
+        return;
+      default:
+        await handleRealtimeConnected();
+        return;
+    }
+    _scheduleRealtimeSync();
+  }
+
+  void _scheduleRealtimeSync() {
+    _realtimeSyncDebounce?.cancel();
+    _realtimeSyncDebounce = Timer(
+      const Duration(milliseconds: 300),
+      refreshUnreadCounts,
+    );
+  }
+
+  void _scheduleRealtimeRefresh() {
+    _realtimeRefreshDebounce?.cancel();
+    _realtimeRefreshDebounce = Timer(
+      const Duration(milliseconds: 300),
+      refresh,
+    );
+  }
+
+  @override
+  void dispose() {
+    _realtimeSyncDebounce?.cancel();
+    _realtimeRefreshDebounce?.cancel();
+    super.dispose();
   }
 
   String _friendlyError(String message) {

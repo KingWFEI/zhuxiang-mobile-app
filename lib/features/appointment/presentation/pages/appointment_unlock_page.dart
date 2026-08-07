@@ -68,6 +68,10 @@ class _AppointmentUnlockPageState extends ConsumerState<AppointmentUnlockPage> {
               _CredentialCard(
                 title: '临时开门密码',
                 value: value.passcode,
+                validity: _formatPasscodeValidity(
+                  value.passcodeValidFrom,
+                  value.passcodeValidTo,
+                ),
                 onCopy: () async {
                   await Clipboard.setData(ClipboardData(text: value.passcode));
                   if (context.mounted) {
@@ -146,11 +150,13 @@ class _CredentialCard extends StatelessWidget {
   const _CredentialCard({
     required this.title,
     required this.value,
+    required this.validity,
     required this.onCopy,
   });
 
   final String title;
   final String value;
+  final String validity;
   final VoidCallback onCopy;
 
   @override
@@ -174,13 +180,71 @@ class _CredentialCard extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
+          if (validity.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  const Text(
+                    '密码有效时间',
+                    style: TextStyle(
+                      color: Color(0xFF2563EB),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    validity,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Color(0xFF1E3A5F),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           TextButton.icon(
             onPressed: onCopy,
             icon: const Icon(Icons.copy_rounded),
             label: const Text('复制密码'),
+          ),
+          const Text(
+            '到达门锁后输入密码，并按 # 键确认',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
           ),
         ],
       ),
     );
   }
 }
+
+String _formatPasscodeValidity(DateTime? from, DateTime? to) {
+  if (from == null || to == null) return '';
+  final start = from.toLocal();
+  final end = to.toLocal();
+  final sameDay =
+      start.year == end.year &&
+      start.month == end.month &&
+      start.day == end.day;
+  if (sameDay) {
+    return '${_date(start)} ${_time(start)}–${_time(end)}';
+  }
+  return '${_date(start)} ${_time(start)} 至 ${_date(end)} ${_time(end)}';
+}
+
+String _date(DateTime value) =>
+    '${value.year}-${_two(value.month)}-${_two(value.day)}';
+
+String _time(DateTime value) => '${_two(value.hour)}:${_two(value.minute)}';
+
+String _two(int value) => value.toString().padLeft(2, '0');

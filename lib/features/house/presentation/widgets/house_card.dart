@@ -15,6 +15,7 @@ class HouseCard extends StatelessWidget {
     this.compact = false,
     this.isFavorite,
     this.onFavoriteTap,
+    this.priceFontSize = 12,
   });
 
   final House house;
@@ -22,6 +23,7 @@ class HouseCard extends StatelessWidget {
   final bool compact;
   final bool? isFavorite;
   final VoidCallback? onFavoriteTap;
+  final double priceFontSize;
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +50,7 @@ class HouseCard extends StatelessWidget {
                 house: house,
                 isFavorite: isFavorite ?? house.isFavorite,
                 onFavoriteTap: onFavoriteTap,
+                priceFontSize: priceFontSize,
               ),
       ),
     );
@@ -58,11 +61,13 @@ class _ListContent extends StatelessWidget {
   const _ListContent({
     required this.house,
     required this.isFavorite,
+    required this.priceFontSize,
     this.onFavoriteTap,
   });
 
   final House house;
   final bool isFavorite;
+  final double priceFontSize;
   final VoidCallback? onFavoriteTap;
 
   @override
@@ -72,7 +77,9 @@ class _ListContent extends StatelessWidget {
         final isNarrow = constraints.maxWidth < 340;
 
         // 卡片整体高度
-        final cardHeight = isNarrow ? 112.0 : 104.0;
+        final cardHeight = priceFontSize > 12
+            ? (isNarrow ? 120.0 : 112.0)
+            : (isNarrow ? 112.0 : 104.0);
 
         // 卡片内部 padding
         const padding = 4.0;
@@ -175,14 +182,16 @@ class _ListContent extends StatelessWidget {
                             text: '¥ ${_displayPrice(house.price)}',
                             style: AppTextStyles.titleMedium.copyWith(
                               color: AppColors.primary,
-                              fontSize: 12,
+                              fontSize: priceFontSize,
                               fontWeight: FontWeight.w700,
                             ),
-                            children: const [
+                            children: [
                               TextSpan(
                                 text: ' /月',
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: priceFontSize > 12
+                                      ? 12
+                                      : priceFontSize,
                                   color: AppColors.textSecondary,
                                   fontWeight: FontWeight.w400,
                                 ),

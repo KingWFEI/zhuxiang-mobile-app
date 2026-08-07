@@ -7,8 +7,9 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_icon.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/network/api_exception.dart';
+import '../../../../core/widgets/app_api_error_view.dart';
 import '../../../../core/widgets/app_empty_view.dart';
-import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../house/data/models/house.dart';
@@ -78,7 +79,9 @@ class _FavoriteHousesPageState extends ConsumerState<FavoriteHousesPage> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e is ApiException && e.message.trim().isNotEmpty
+            ? e.message
+            : e.toString();
       });
     }
   }
@@ -132,7 +135,7 @@ class _FavoriteHousesPageState extends ConsumerState<FavoriteHousesPage> {
       return const AppLoadingView(message: '正在加载收藏房源');
     }
     if (_error != null && _houses.isEmpty) {
-      return AppErrorView(
+      return AppApiErrorView(
         message: _error!,
         onRetry: () {
           setState(() => _page = 1);
@@ -233,10 +236,7 @@ class _FavHeader extends StatelessWidget {
             ),
             Expanded(
               child: Center(
-                child: Text(
-                  '我的收藏',
-                  style: AppTextStyles.normalPageTitle,
-                ),
+                child: Text('我的收藏', style: AppTextStyles.normalPageTitle),
               ),
             ),
             const SizedBox(width: 80),

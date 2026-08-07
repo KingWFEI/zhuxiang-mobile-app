@@ -9,6 +9,10 @@ final profileServiceProvider = Provider<ProfileService>((ref) {
   return ProfileService(apiClient);
 });
 
+final profileOverviewProvider = FutureProvider<ProfileOverview>((ref) {
+  return ref.watch(profileServiceProvider).getOverview();
+});
+
 /// 当前所有租约 + 门锁信息
 final currentHomeProvider =
     FutureProvider<({List<CurrentHome> homes, LockInfo? lock})?>((ref) async {

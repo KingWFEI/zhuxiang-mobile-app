@@ -9,6 +9,7 @@ import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/network/api_result.dart';
+import '../../../../core/widgets/app_api_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../data/providers/cs_providers.dart';
@@ -318,6 +319,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
     if (showLoading) {
       return const Center(child: AppLoadingView(message: '加载消息'));
+    }
+    if (async.hasError && msgs.isEmpty && !_historyLoaded) {
+      return AppApiErrorView(
+        error: async.error,
+        onRetry: () => ref.invalidate(_messagesProvider(_effectiveSessionId)),
+      );
     }
     if (msgs.isEmpty && !_isSending) {
       return _welcome();

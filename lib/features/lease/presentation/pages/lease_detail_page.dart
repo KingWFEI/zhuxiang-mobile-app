@@ -9,7 +9,7 @@ import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/network/api_exception.dart';
-import '../../../../core/widgets/app_error_view.dart';
+import '../../../../core/widgets/app_api_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
 import '../../../lock/data/models/tenant_lock_unlock_data.dart';
 import '../../../lock/data/providers/tenant_lock_providers.dart';
@@ -40,7 +40,8 @@ class LeaseDetailPage extends ConsumerWidget {
           constraints: const BoxConstraints(maxWidth: 480),
           child: detail.when(
             loading: () => const AppLoadingView(message: '正在加载租约详情'),
-            error: (error, stackTrace) => AppErrorView(
+            error: (error, stackTrace) => AppApiErrorView(
+              error: error,
               message: '租约详情加载失败',
               onRetry: () => ref.invalidate(leaseDetailProvider(leaseId)),
             ),

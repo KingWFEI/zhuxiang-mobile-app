@@ -106,62 +106,6 @@ class _SearchResultHeaderState extends State<SearchResultHeader> {
   }
 }
 
-/// 搜索结果页的横向快捷条件。
-class SearchResultQuickConditions extends StatelessWidget {
-  const SearchResultQuickConditions({required this.onTap, super.key});
-
-  final ValueChanged<String> onTap;
-
-  static const _items = <(String, IconData, Color)>[
-    ('近地铁', Icons.directions_subway_rounded, Color(0xFF438CF6)),
-    ('可月付', Icons.calendar_month_rounded, Color(0xFF35B98F)),
-    ('智能门锁', Icons.lock_outline_rounded, Color(0xFFF29B38)),
-    ('更多条件', Icons.more_horiz_rounded, Color(0xFF4D8EF7)),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 34,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 14,
-            offset: Offset(0, 5),
-          ),
-        ],
-      ),
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-        itemCount: _items.length,
-        separatorBuilder: (_, _) => Container(
-          width: 1,
-          height: 22,
-          margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          color: AppColors.border,
-        ),
-        itemBuilder: (context, index) {
-          final item = _items[index];
-          return InkWell(
-            onTap: () => onTap(item.$1),
-            child: Row(
-              children: [
-                Icon(item.$2, color: item.$3, size: 14),
-                const SizedBox(width: AppSpacing.sm),
-                Text(item.$1, style: TextStyle(fontSize: 10)),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
 /// 首页和结果页共用的房源数量标题行。
 class HouseListHeader extends StatelessWidget {
   const HouseListHeader({required this.countText, super.key});

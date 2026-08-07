@@ -277,52 +277,6 @@ Finder _textFieldWithHint(String hintText) {
 }
 
 const _testHomeData = HomeData(
-  header: HomeHeaderData(
-    cityName: '测试城市',
-    greeting: '欢迎',
-    subtitle: '',
-    searchPlaceholder: '搜索房源',
-    backgroundImageUrl: '',
-  ),
-  unreadMessageCount: 0,
-  serviceEntries: [
-    ServiceEntry(
-      key: 'lease',
-      title: '我的租约',
-      iconKey: 'lease',
-      targetType: 'route',
-      targetValue: 'lease',
-      requiresLogin: true,
-      enabled: true,
-    ),
-    ServiceEntry(
-      key: 'unlock',
-      title: '开门记录',
-      iconKey: 'lock',
-      targetType: 'route',
-      targetValue: 'unlock_records',
-      requiresLogin: true,
-      enabled: true,
-    ),
-    ServiceEntry(
-      key: 'repair',
-      title: '报修服务',
-      iconKey: 'repair',
-      targetType: 'route',
-      targetValue: 'repairs',
-      requiresLogin: true,
-      enabled: true,
-    ),
-    ServiceEntry(
-      key: 'service',
-      title: '在线客服',
-      iconKey: 'service',
-      targetType: 'route',
-      targetValue: 'customer_service',
-      requiresLogin: false,
-      enabled: true,
-    ),
-  ],
   tabs: [
     HomeTab(key: 'recommended', title: '推荐', sort: 1, enabled: true),
     HomeTab(key: 'short_rent', title: '短租', sort: 2, enabled: true),

@@ -11,7 +11,7 @@ import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../app/router/route_names.dart';
 import '../../../../core/network/api_exception.dart';
-import '../../../../core/widgets/app_error_view.dart';
+import '../../../../core/widgets/app_api_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/app_webview_page.dart';
@@ -95,7 +95,8 @@ class _RealNameAuthPageState extends ConsumerState<RealNameAuthPage> {
             Expanded(
               child: status.when(
         loading: () => const AppLoadingView(message: '正在查询认证状态'),
-        error: (error, stackTrace) => AppErrorView(
+        error: (error, stackTrace) => AppApiErrorView(
+          error: error,
           message: _errorMessage(error),
           onRetry: () {
             _localStatus = null;

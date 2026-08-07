@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,7 +12,7 @@ import '../../data/models/appointment_models.dart';
 import '../../data/providers/appointment_providers.dart';
 import 'appointment_list_page.dart';
 
-class AppointmentDetailPage extends ConsumerWidget {
+class AppointmentDetailPage extends ConsumerStatefulWidget {
   const AppointmentDetailPage({
     required this.appointmentId,
     this.returnHouseId,
@@ -21,8 +23,38 @@ class AppointmentDetailPage extends ConsumerWidget {
   final String? returnHouseId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final detail = ref.watch(appointmentDetailProvider(appointmentId));
+  ConsumerState<AppointmentDetailPage> createState() =>
+      _AppointmentDetailPageState();
+}
+
+class _AppointmentDetailPageState extends ConsumerState<AppointmentDetailPage> {
+  Timer? _accessRefreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _accessRefreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (!mounted) return;
+      final current = ref
+          .read(appointmentDetailProvider(widget.appointmentId))
+          .valueOrNull;
+      if (current?.viewingMode == 'SELF_SERVICE_LOCK' &&
+          (current?.accessStatus == 'PENDING' ||
+              current?.accessStatus == 'PARTIAL')) {
+        ref.invalidate(appointmentDetailProvider(widget.appointmentId));
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _accessRefreshTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final detail = ref.watch(appointmentDetailProvider(widget.appointmentId));
     return PopScope(
       canPop: context.canPop(),
       onPopInvokedWithResult: (didPop, _) {
@@ -44,18 +76,31 @@ class AppointmentDetailPage extends ConsumerWidget {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => Center(
             child: FilledButton.tonal(
-              onPressed: () =>
-                  ref.invalidate(appointmentDetailProvider(appointmentId)),
+              onPressed: () => ref.invalidate(
+                appointmentDetailProvider(widget.appointmentId),
+              ),
               child: const Text('加载失败，点击重试'),
             ),
           ),
-          data: (value) => _DetailBody(
-            detail: value,
-            onAction: (action) => _handleAction(context, ref, value, action),
+          data: (value) => RefreshIndicator(
+            key: const Key('appointment-detail-refresh'),
+            onRefresh: _refreshDetail,
+            child: _DetailBody(
+              detail: value,
+              onAction: (action) => _handleAction(context, ref, value, action),
+            ),
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _refreshDetail() async {
+    final refresh = ref.refresh(
+      appointmentDetailProvider(widget.appointmentId).future,
+    );
+    ref.invalidate(myAppointmentsProvider);
+    await refresh;
   }
 
   void _goBack(BuildContext context) {
@@ -63,7 +108,7 @@ class AppointmentDetailPage extends ConsumerWidget {
       context.pop();
       return;
     }
-    final houseId = returnHouseId?.trim() ?? '';
+    final houseId = widget.returnHouseId?.trim() ?? '';
     if (houseId.isNotEmpty) {
       context.goNamed(
         RouteNames.houseDetail,
@@ -153,6 +198,9 @@ class _DetailBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 36),
       children: [
         _Card(
@@ -221,6 +269,32 @@ class _DetailBody extends StatelessWidget {
             ),
           ),
         ],
+        if (detail.viewingMode != 'SELF_SERVICE_LOCK') ...[
+          const SizedBox(height: 12),
+          _Card(
+            color: const Color(0xFFFFFBEB),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  detail.viewingMode == 'LANDLORD_HOSTED'
+                      ? '房东陪同看房'
+                      : '平台管家陪同看房',
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  detail.status == 'PENDING_CONFIRMATION'
+                      ? '预约正在等待接待方确认，确认后会提供见面地点和看房说明。'
+                      : '请按预约时间到达约定地点，由接待人员陪同进入房源。',
+                ),
+              ],
+            ),
+          ),
+        ],
         if (detail.viewingMode != 'SELF_SERVICE_LOCK' &&
             (detail.meetingPoint.isNotEmpty ||
                 detail.viewingInstruction.isNotEmpty ||
@@ -255,12 +329,35 @@ class _DetailBody extends StatelessWidget {
         if (detail.viewingMode == 'SELF_SERVICE_LOCK') ...[
           const SizedBox(height: 12),
           _Card(
-            child: _InfoRow(
-              label: '开门凭证',
-              value: _accessLabel(detail.accessStatus),
-              valueColor: detail.accessStatus == 'ACTIVE'
-                  ? const Color(0xFF0E9F6E)
-                  : const Color(0xFFD97706),
+            color: const Color(0xFFEFF6FF),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '智能门锁自助看房',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                if (detail.accessValidFrom != null &&
+                    detail.accessValidTo != null)
+                  _InfoRow(
+                    label: '门锁有效时间',
+                    value: _formatDateRange(
+                      detail.accessValidFrom,
+                      detail.accessValidTo,
+                    ),
+                    valueColor: AppColors.primary,
+                  ),
+                _InfoRow(
+                  label: '开门凭证',
+                  value: _accessLabel(detail.accessStatus),
+                  valueColor: detail.accessStatus == 'ACTIVE'
+                      ? const Color(0xFF0E9F6E)
+                      : const Color(0xFFD97706),
+                ),
+                const SizedBox(height: 4),
+                const Text('仅可在门锁有效时间内获取并使用蓝牙钥匙或开门密码。'),
+              ],
             ),
           ),
         ],
