@@ -3,6 +3,9 @@ class ViewingSlot {
     required this.startAt,
     required this.endAt,
     required this.available,
+    this.accessValidFrom,
+    this.accessValidTo,
+    this.testSlot = false,
   });
 
   factory ViewingSlot.fromJson(Map<String, dynamic> json) {
@@ -10,12 +13,18 @@ class ViewingSlot {
       startAt: DateTime.parse(json['startAt'] as String),
       endAt: DateTime.parse(json['endAt'] as String),
       available: json['available'] as bool? ?? false,
+      accessValidFrom: _date(json['accessValidFrom']),
+      accessValidTo: _date(json['accessValidTo']),
+      testSlot: json['testSlot'] as bool? ?? false,
     );
   }
 
   final DateTime startAt;
   final DateTime endAt;
   final bool available;
+  final DateTime? accessValidFrom;
+  final DateTime? accessValidTo;
+  final bool testSlot;
 }
 
 class ViewingSlotDay {
@@ -231,6 +240,8 @@ class AppointmentDetail {
     required this.accessStatus,
     required this.availableActions,
     required this.statusLogs,
+    this.accessValidFrom,
+    this.accessValidTo,
   });
 
   factory AppointmentDetail.fromJson(Map<String, dynamic> json) {
@@ -262,6 +273,8 @@ class AppointmentDetail {
       cancelReason: json['cancelReason'] as String? ?? '',
       checkinCode: json['checkinCode'] as String? ?? '',
       accessStatus: json['accessStatus'] as String? ?? 'NOT_REQUIRED',
+      accessValidFrom: _date(json['accessValidFrom']),
+      accessValidTo: _date(json['accessValidTo']),
       availableActions: (json['availableActions'] as List<dynamic>? ?? const [])
           .whereType<String>()
           .toList(growable: false),
@@ -294,6 +307,8 @@ class AppointmentDetail {
   final String cancelReason;
   final String checkinCode;
   final String accessStatus;
+  final DateTime? accessValidFrom;
+  final DateTime? accessValidTo;
   final List<String> availableActions;
   final List<AppointmentStatusLog> statusLogs;
 }
@@ -308,6 +323,8 @@ class AppointmentAccess {
     required this.lockData,
     required this.passcodeAvailable,
     required this.passcode,
+    this.passcodeValidFrom,
+    this.passcodeValidTo,
   });
 
   factory AppointmentAccess.fromJson(Map<String, dynamic> json) {
@@ -322,6 +339,8 @@ class AppointmentAccess {
       lockData: bluetooth['lockData'] as String? ?? '',
       passcodeAvailable: passcode['available'] as bool? ?? false,
       passcode: passcode['value'] as String? ?? '',
+      passcodeValidFrom: _date(passcode['validFrom']),
+      passcodeValidTo: _date(passcode['validTo']),
     );
   }
 
@@ -333,6 +352,8 @@ class AppointmentAccess {
   final String lockData;
   final bool passcodeAvailable;
   final String passcode;
+  final DateTime? passcodeValidFrom;
+  final DateTime? passcodeValidTo;
 }
 
 DateTime? _date(dynamic value) {

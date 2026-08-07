@@ -8,7 +8,7 @@ import '../../../../app/theme/app_icon.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
-import '../../../../core/widgets/app_error_view.dart';
+import '../../../../core/widgets/app_api_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
 import '../../application/repair_controller.dart';
 import '../../data/providers/repair_providers.dart';
@@ -87,7 +87,7 @@ class RepairServicePage extends ConsumerWidget {
       }
       return SizedBox(
         height: 420,
-        child: AppErrorView(
+        child: AppApiErrorView(
           message: state.errorMessage!,
           onRetry: ref.read(repairControllerProvider.notifier).load,
         ),
@@ -240,10 +240,7 @@ class _RepairHeader extends StatelessWidget {
             ),
             Expanded(
               child: Center(
-                child: Text(
-                  '报修服务',
-                  style: AppTextStyles.normalPageTitle,
-                ),
+                child: Text('报修服务', style: AppTextStyles.normalPageTitle),
               ),
             ),
             const SizedBox(width: 80),

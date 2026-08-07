@@ -60,7 +60,7 @@ class SearchDiscoverySection extends StatelessWidget {
             ),
             const SizedBox(width: AppSpacing.sm),
             Text(
-              '热门搜索',
+              '快捷搜索',
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.w700,

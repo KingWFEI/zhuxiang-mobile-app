@@ -50,7 +50,7 @@ class MessageDetailPage extends StatelessWidget {
                       message.title.isEmpty ? '消息通知' : message.title,
                       style: AppTextStyles.titleLarge.copyWith(
                         fontSize: 20,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.normal,
                       ),
                     ),
                     if (message.createdAt != null) ...[

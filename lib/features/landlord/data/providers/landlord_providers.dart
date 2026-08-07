@@ -49,6 +49,10 @@ final houseTagsProvider = FutureProvider.autoDispose((ref) {
   return ref.watch(landlordHouseServiceProvider).getHouseTags();
 });
 
+final landlordHouseRoomTypesProvider = FutureProvider.autoDispose((ref) {
+  return ref.watch(landlordHouseServiceProvider).getHouseRoomTypes();
+});
+
 final landlordHousesProvider = FutureProvider.autoDispose
     .family<List<LandlordHouseItem>, String?>((ref, status) {
       return ref

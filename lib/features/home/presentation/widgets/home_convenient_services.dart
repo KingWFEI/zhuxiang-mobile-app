@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
@@ -39,7 +40,7 @@ class HomeConvenientServices extends StatelessWidget {
             children: [
               Expanded(
                 child: HomeServiceEntry(
-                  icon: Icons.description_rounded,
+                  icon: HugeIcons.strokeRoundedFile01,
                   label: '我的租约',
                   color: AppColors.primary,
                   onTap: onLeaseTap,
@@ -48,7 +49,7 @@ class HomeConvenientServices extends StatelessWidget {
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: HomeServiceEntry(
-                  icon: Icons.history_rounded,
+                  icon: HugeIcons.strokeRoundedClock01,
                   label: '开门记录',
                   color: AppColors.secondary,
                   onTap: onDoorRecordTap,
@@ -57,7 +58,7 @@ class HomeConvenientServices extends StatelessWidget {
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: HomeServiceEntry(
-                  icon: Icons.home_repair_service_rounded,
+                  icon: HugeIcons.strokeRoundedRepair,
                   label: '报修服务',
                   color: AppColors.warning,
                   onTap: onRepairTap,
@@ -66,7 +67,7 @@ class HomeConvenientServices extends StatelessWidget {
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: HomeServiceEntry(
-                  icon: Icons.support_agent_rounded,
+                  icon: HugeIcons.strokeRoundedCustomerService01,
                   label: '在线客服',
                   color: Color(0xFF7667F8),
                   onTap: onCustomerServiceTap,

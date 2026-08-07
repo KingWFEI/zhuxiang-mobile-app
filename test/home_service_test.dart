@@ -18,16 +18,17 @@ void main() {
             'code': 200,
             'message': 'success',
             'data': {
-              'header': {
-                'cityName': '重庆',
-                'greeting': '晚上好',
-                'subtitle': '找到属于你的安心居住空间',
-                'searchPlaceholder': '搜索房源',
-                'backgroundImageUrl': '',
+              'tabs': [
+                {
+                  'key': 'recommended',
+                  'title': '推荐',
+                  'sort': 1,
+                  'enabled': true,
+                },
+              ],
+              'houseGroups': {
+                'recommended': {'items': <dynamic>[]},
               },
-              'serviceEntries': <dynamic>[],
-              'tabs': <dynamic>[],
-              'houseGroups': <String, dynamic>{},
             },
           },
         ),
@@ -38,20 +39,12 @@ void main() {
 
     expect(result, isA<ApiSuccess<HomeData>>());
     final data = (result as ApiSuccess<HomeData>).data;
-    expect(data.header.cityName, '重庆');
-    expect(data.header.greeting, '晚上好');
+    expect(data.tabs.single.key, 'recommended');
+    expect(data.houseGroups['recommended']!.items, isEmpty);
   });
 
   test('home data filters rented houses from feed groups', () {
     final data = HomeData.fromJson({
-      'header': {
-        'cityName': '重庆',
-        'greeting': '晚上好',
-        'subtitle': '找到安心居住空间',
-        'searchPlaceholder': '搜索房源',
-        'backgroundImageUrl': '',
-      },
-      'serviceEntries': <dynamic>[],
       'tabs': <dynamic>[],
       'houseGroups': {
         'recommended': {

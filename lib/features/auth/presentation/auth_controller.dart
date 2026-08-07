@@ -8,6 +8,7 @@ import '../../../core/storage/token_storage.dart';
 import '../data/auth_repository.dart';
 import '../data/auth_repository_impl.dart';
 import '../data/auth_service.dart';
+import '../data/auth_models.dart';
 import '../domain/auth_usecases.dart';
 import '../domain/entities/auth_user.dart';
 
@@ -64,6 +65,7 @@ class AuthState {
     this.isInitialized = false,
     this.isGuest = false,
     this.errorMessage,
+    this.smsRetryAfter,
   });
 
   /// 当前登录用户，null 表示未登录
@@ -84,6 +86,9 @@ class AuthState {
   /// 最近一次操作的错误消息
   final String? errorMessage;
 
+  /// 服务端拒绝重复发送时返回的剩余冷却秒数
+  final int? smsRetryAfter;
+
   /// 是否已登录
   bool get isLoggedIn => user != null;
 
@@ -100,6 +105,8 @@ class AuthState {
     bool? isGuest,
     String? errorMessage,
     bool clearError = false,
+    int? smsRetryAfter,
+    bool clearSmsRetryAfter = false,
   }) {
     return AuthState(
       user: clearUser ? null : user ?? this.user,
@@ -108,6 +115,9 @@ class AuthState {
       isInitialized: isInitialized ?? this.isInitialized,
       isGuest: isGuest ?? this.isGuest,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
+      smsRetryAfter: clearSmsRetryAfter
+          ? null
+          : smsRetryAfter ?? this.smsRetryAfter,
     );
   }
 }
@@ -189,19 +199,24 @@ class AuthController extends StateNotifier<AuthState> {
   ///
   /// [phone] 手机号，[scene] 使用场景（login / register）。
   /// 返回有效时长（秒），失败返回 null。
-  Future<int?> sendSmsCode({
+  Future<SmsCodeResult?> sendSmsCode({
     required String phone,
     required String scene,
   }) async {
-    state = state.copyWith(isSendingCode: true, clearError: true);
+    state = state.copyWith(
+      isSendingCode: true,
+      clearError: true,
+      clearSmsRetryAfter: true,
+    );
     try {
-      final expiresIn = await _useCases.sendSmsCode(phone: phone, scene: scene);
+      final result = await _useCases.sendSmsCode(phone: phone, scene: scene);
       state = state.copyWith(isSendingCode: false, clearError: true);
-      return expiresIn;
+      return result;
     } catch (error) {
       state = state.copyWith(
         isSendingCode: false,
         errorMessage: _messageFromError(error),
+        smsRetryAfter: error is ApiException ? error.retryAfter : null,
       );
       return null;
     }

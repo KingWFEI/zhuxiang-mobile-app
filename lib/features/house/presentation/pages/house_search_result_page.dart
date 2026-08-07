@@ -6,13 +6,15 @@ import 'package:zhuxiang_app/features/house/data/models/house.dart';
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/location/user_location_provider.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../auth/presentation/providers/auth_controller.dart';
 import '../../application/house_search_notifier.dart';
+import '../../data/models/house_filter_option.dart';
 import '../../data/providers/house_providers.dart';
-import '../widgets/filter_bottom_sheet.dart';
 import '../widgets/house_card.dart';
 import '../widgets/house_filter_bar.dart';
+import '../widgets/house_filter_sheets.dart';
 import '../widgets/house_sort_sheet.dart';
 import '../widgets/search_result_widgets.dart';
 import '../widgets/skeleton_house_list.dart';
@@ -30,7 +32,6 @@ class HouseSearchResultPage extends ConsumerStatefulWidget {
 
 class _HouseSearchResultPageState extends ConsumerState<HouseSearchResultPage> {
   final ScrollController _scrollController = ScrollController();
-  final Set<String> _selectedQuickConditions = <String>{};
 
   @override
   void initState() {
@@ -73,9 +74,11 @@ class _HouseSearchResultPageState extends ConsumerState<HouseSearchResultPage> {
     final notifier = ref.read(houseSearchProvider.notifier);
 
     return PopScope(
-      canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (didPop) return;
+        if (didPop) {
+          ref.read(houseSearchProvider.notifier).reset();
+          return;
+        }
         _goBack();
       },
       child: Scaffold(
@@ -118,24 +121,18 @@ class _HouseSearchResultPageState extends ConsumerState<HouseSearchResultPage> {
                       maxPrice: state.maxPrice,
                       roomType: state.roomType,
                       sort: state.sort,
-                      onRegionTap: _openFilterPage,
-                      onRentTap: _openFilterPage,
-                      onRoomTap: _openFilterPage,
+                      moreActive:
+                          state.decoration.isNotEmpty ||
+                          state.orientation.isNotEmpty ||
+                          state.rentMode.isNotEmpty ||
+                          state.category.isNotEmpty ||
+                          state.facilityIds.isNotEmpty ||
+                          state.activeTags.isNotEmpty,
+                      onRegionTap: _showRegionSheet,
+                      onRentTap: _showRentSheet,
+                      onRoomTap: _showRoomSheet,
                       onSortTap: _showSortSheet,
-                      onMoreTap: _openFilterPage,
-                    ),
-                  ),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.xl,
-                    10,
-                    AppSpacing.xl,
-                    0,
-                  ),
-                  sliver: SliverToBoxAdapter(
-                    child: SearchResultQuickConditions(
-                      onTap: _toggleQuickCondition,
+                      onMoreTap: _showMoreSheet,
                     ),
                   ),
                 ),
@@ -213,51 +210,125 @@ class _HouseSearchResultPageState extends ConsumerState<HouseSearchResultPage> {
     );
   }
 
-  /// 打开全屏筛选页并将有效筛选同步到搜索状态。
-  Future<void> _openFilterPage() async {
-    final selection = await context.pushNamed<HouseFilterSelection>(
-      RouteNames.houseFilter,
+  Future<void> _showRegionSheet() async {
+    final city = ref.read(userLocationProvider).city;
+    if (city.isEmpty) {
+      AppToast.show(context, '请先定位或选择城市');
+      return;
+    }
+    late final List<HouseFilterOption> districts;
+    try {
+      districts = await ref.read(houseDistrictsProvider(city).future);
+    } on Object {
+      if (mounted) AppToast.show(context, '区域加载失败，请稍后重试');
+      return;
+    }
+    if (!mounted) return;
+    final options = <String, String>{'': '不限'};
+    for (final district in districts) {
+      options[district.value] = district.label;
+    }
+    final selected = await showRegionSheet(
+      context,
+      selectedValue: ref.read(houseSearchProvider).region,
+      options: options,
     );
-    if (selection == null || !mounted) return;
+    if (selected == null || !mounted) return;
+    ref.read(houseSearchProvider.notifier).updateRegion(selected);
+  }
+
+  Future<void> _showRentSheet() async {
+    final state = ref.read(houseSearchProvider);
+    final result = await showRentSheet(
+      context,
+      minPrice: state.minPrice,
+      maxPrice: state.maxPrice,
+    );
+    if (result == null || !mounted) return;
     ref
         .read(houseSearchProvider.notifier)
-        .updateFilter(
-          region: selection.region,
-          minPrice: selection.minPrice,
-          maxPrice: selection.maxPrice,
-          roomType: selection.roomType,
-          sort: selection.sort,
+        .updatePriceRange(
+          result.start.round(),
+          result.end >= 1000000 ? 0 : result.end.round(),
         );
   }
 
-  /// 更新排序状态并触发已有搜索逻辑。
+  Future<void> _showRoomSheet() async {
+    late final List<HouseFilterOption> roomTypes;
+    try {
+      roomTypes = await ref.read(houseRoomTypesProvider.future);
+    } on Object {
+      if (mounted) AppToast.show(context, '户型加载失败，请稍后重试');
+      return;
+    }
+    if (!mounted) return;
+    final options = <String, String>{'': '不限'};
+    for (final roomType in roomTypes) {
+      options[roomType.value] = roomType.label;
+    }
+    final selected = await showRoomSheet(
+      context,
+      selectedValue: ref.read(houseSearchProvider).roomType,
+      options: options,
+    );
+    if (selected == null || !mounted) return;
+    ref.read(houseSearchProvider.notifier).updateRoomType(selected);
+  }
+
   Future<void> _showSortSheet() async {
     final current = ref.read(houseSearchProvider);
     final sort = await showHouseSortSheet(context, selectedValue: current.sort);
     if (sort == null || !mounted) return;
     ref
         .read(houseSearchProvider.notifier)
-        .updateFilter(
-          region: current.region,
-          minPrice: current.minPrice,
-          maxPrice: current.maxPrice,
-          roomType: current.roomType,
+        .updateExtraFilters(
           sort: sort,
+          decoration: current.decoration,
+          orientation: current.orientation,
+          rentMode: current.rentMode,
+          rentType: current.category,
+          facilityIds: current.facilityIds,
+          tagIds: current.activeTags,
         );
   }
 
-  /// 快捷条件保留本地选中态，“更多条件”进入全屏筛选页。
-  void _toggleQuickCondition(String condition) {
-    if (condition == '更多条件') {
-      _openFilterPage();
+  Future<void> _showMoreSheet() async {
+    final state = ref.read(houseSearchProvider);
+    late final List<dynamic> dictionaries;
+    try {
+      dictionaries = await Future.wait([
+        ref.read(houseFacilitiesProvider.future),
+        ref.read(houseTagsProvider.future),
+      ]);
+    } on Object {
+      if (mounted) AppToast.show(context, '筛选选项加载失败，请稍后重试');
       return;
     }
-    setState(() {
-      if (!_selectedQuickConditions.add(condition)) {
-        _selectedQuickConditions.remove(condition);
-      }
-    });
-    // TODO: 后续将快捷条件转换为真实接口参数。
+    if (!mounted) return;
+    final result = await showMoreFilterSheet(
+      context,
+      sort: state.sort,
+      decoration: state.decoration,
+      orientation: state.orientation,
+      rentMode: state.rentMode,
+      rentType: state.category,
+      facilityIds: state.facilityIds,
+      tagIds: state.activeTags,
+      facilities: dictionaries[0],
+      tags: dictionaries[1],
+    );
+    if (result == null || !mounted) return;
+    ref
+        .read(houseSearchProvider.notifier)
+        .updateExtraFilters(
+          sort: result.sort,
+          decoration: result.decoration,
+          orientation: result.orientation,
+          rentMode: result.rentMode,
+          rentType: result.rentType,
+          facilityIds: result.facilityIds,
+          tagIds: result.tagIds,
+        );
   }
 
   Future<void> _toggleFavorite(House house) async {
@@ -281,7 +352,7 @@ class _HouseSearchResultPageState extends ConsumerState<HouseSearchResultPage> {
     }
   }
 
-  void _openSearchPage() => context.pushNamed(RouteNames.houseSearch);
+  void _openSearchPage() => _goBack();
 
   void _openDetail(House house) {
     context.pushNamed(
@@ -291,8 +362,12 @@ class _HouseSearchResultPageState extends ConsumerState<HouseSearchResultPage> {
   }
 
   void _goBack() {
-    ref.read(houseSearchProvider.notifier).reset();
-    context.goNamed(RouteNames.search);
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      ref.read(houseSearchProvider.notifier).reset();
+      context.goNamed(RouteNames.houseSearch);
+    }
   }
 }
 

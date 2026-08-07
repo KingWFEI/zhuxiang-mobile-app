@@ -7,7 +7,7 @@ import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
-import '../../../../core/widgets/app_error_view.dart';
+import '../../../../core/widgets/app_api_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
 import '../../data/providers/lease_providers.dart';
 import '../../domain/entities/lease_contract_document.dart';
@@ -30,7 +30,8 @@ class LeaseContractViewPage extends ConsumerWidget {
           constraints: const BoxConstraints(maxWidth: 480),
           child: contract.when(
             loading: () => const AppLoadingView(message: '正在加载电子合同'),
-            error: (error, stackTrace) => AppErrorView(
+            error: (error, stackTrace) => AppApiErrorView(
+              error: error,
               message: '电子合同加载失败',
               onRetry: () => ref.invalidate(leaseContractProvider(leaseId)),
             ),

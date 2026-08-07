@@ -6,7 +6,9 @@ import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/location/user_location_provider.dart';
 import '../../application/house_search_notifier.dart';
+import '../../data/providers/house_providers.dart';
 import '../widgets/filter_bottom_sheet.dart';
 
 /// 参照设计图实现的全屏房源筛选页。
@@ -25,6 +27,7 @@ class _HouseFilterPageState extends ConsumerState<HouseFilterPage> {
   String _orientation = '';
   String _floor = '';
   String _decoration = '';
+  String _rentMode = '';
   String _rentType = '';
   final Set<String> _features = <String>{};
 
@@ -35,10 +38,23 @@ class _HouseFilterPageState extends ConsumerState<HouseFilterPage> {
     _region = current.region;
     _rent = _rentFromState(current.minPrice, current.maxPrice);
     _roomType = current.roomType;
+    _rentMode = current.rentMode;
+    _rentType = current.category;
   }
 
   @override
   Widget build(BuildContext context) {
+    final city = ref.watch(userLocationProvider.select((value) => value.city));
+    final districtOptions = ref.watch(houseDistrictsProvider(city)).valueOrNull;
+    final roomTypeOptions = ref.watch(houseRoomTypesProvider).valueOrNull;
+    final regions = <String, String>{'': '不限'};
+    for (final option in districtOptions ?? const []) {
+      regions[option.value] = option.label;
+    }
+    final roomTypes = <String, String>{'': '不限'};
+    for (final option in roomTypeOptions ?? const []) {
+      roomTypes[option.value] = option.label;
+    }
     return Scaffold(
       backgroundColor: const Color(0xFFF6F9FF),
       body: SafeArea(
@@ -57,13 +73,7 @@ class _HouseFilterPageState extends ConsumerState<HouseFilterPage> {
                   _FilterSection(
                     title: '区域',
                     value: _region,
-                    options: const {
-                      '': '不限',
-                      'yubei': '渝北区',
-                      'jiangbei': '江北区',
-                      'yuzhong': '渝中区',
-                      'more': '更多⌄',
-                    },
+                    options: regions,
                     onSelected: (value) => setState(() => _region = value),
                   ),
                   _FilterSection(
@@ -83,13 +93,7 @@ class _HouseFilterPageState extends ConsumerState<HouseFilterPage> {
                   _FilterSection(
                     title: '户型',
                     value: _roomType,
-                    options: const {
-                      '': '不限',
-                      '1室0厅1卫': '一居',
-                      '2室1厅1卫': '二居',
-                      '3室2厅2卫': '三居',
-                      '4+': '四居及以上',
-                    },
+                    options: roomTypes,
                     onSelected: (value) => setState(() => _roomType = value),
                   ),
                   _FilterSection(
@@ -144,9 +148,24 @@ class _HouseFilterPageState extends ConsumerState<HouseFilterPage> {
                     onSelected: (value) => setState(() => _decoration = value),
                   ),
                   _FilterSection(
-                    title: '租赁方式',
+                    title: '出租方式',
+                    value: _rentMode,
+                    options: const {
+                      '': '不限',
+                      'WHOLE_RENT': '整租',
+                      'SHARED_RENT': '合租',
+                    },
+                    onSelected: (value) => setState(() => _rentMode = value),
+                  ),
+                  _FilterSection(
+                    title: '租赁类型',
                     value: _rentType,
-                    options: const {'': '不限', 'whole': '整租', 'shared': '合租'},
+                    options: const {
+                      '': '不限',
+                      'LONG_RENT': '长租',
+                      'SHORT_RENT': '短租',
+                      'HOMESTAY': '民宿',
+                    },
                     onSelected: (value) => setState(() => _rentType = value),
                   ),
                   _FeatureSection(
@@ -180,6 +199,7 @@ class _HouseFilterPageState extends ConsumerState<HouseFilterPage> {
       _orientation = '';
       _floor = '';
       _decoration = '';
+      _rentMode = '';
       _rentType = '';
       _features.clear();
     });
@@ -190,10 +210,12 @@ class _HouseFilterPageState extends ConsumerState<HouseFilterPage> {
     final prices = _priceRange(_rent);
     context.pop(
       HouseFilterSelection(
-        region: _region == 'more' ? '' : _region,
+        region: _region,
         minPrice: prices.$1,
         maxPrice: prices.$2,
-        roomType: _roomType == '4+' ? '' : _roomType,
+        roomType: _roomType,
+        rentMode: _rentMode,
+        rentType: _rentType,
         sort: ref.read(houseSearchProvider).sort,
       ),
     );
@@ -489,7 +511,7 @@ class _FilterActionBar extends StatelessWidget {
               flex: 2,
               child: FilledButton(
                 onPressed: onConfirm,
-                child: const Text('查看房源（1286套）'),
+                child: const Text('查看房源'),
               ),
             ),
           ],

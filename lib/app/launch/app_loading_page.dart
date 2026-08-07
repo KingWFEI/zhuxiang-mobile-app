@@ -44,7 +44,10 @@ class _AppLoadingPageState extends ConsumerState<AppLoadingPage>
     // 启动阶段并行加载：会话恢复 + 后台定位
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _restoreSession();
-      ref.read(userLocationProvider.notifier).fetch();
+      final location = ref.read(userLocationProvider);
+      if (!location.hasSelection) {
+        ref.read(userLocationProvider.notifier).fetch();
+      }
     });
   }
 

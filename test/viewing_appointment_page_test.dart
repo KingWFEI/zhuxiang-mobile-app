@@ -29,12 +29,13 @@ void main() {
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('选择看房时间'), findsOneWidget);
+    expect(find.text('选择自助看房时间'), findsOneWidget);
     expect(find.text('填写联系信息'), findsOneWidget);
+    expect(find.text('智能门锁自助看房'), findsAtLeastNWidgets(1));
 
     await tester.tap(find.byKey(const Key('appointment-time-11:00')));
     await tester.pump();
-    expect(find.text('11:00'), findsOneWidget);
+    expect(find.text('11:00–12:00'), findsOneWidget);
 
     await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
     await tester.pumpAndSettle();
@@ -72,12 +73,46 @@ void main() {
     expect(find.byKey(const Key('confirm-appointment-button')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('hosted appointment hides smart-lock validity', (tester) async {
+    await tester.pumpWidget(
+      _testApp(
+        service: _FakeAppointmentService(
+          viewingMode: 'LANDLORD_HOSTED',
+          requiresConfirmation: true,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('选择陪同看房时间'), findsOneWidget);
+    expect(find.text('房东陪同看房'), findsAtLeastNWidgets(1));
+    expect(find.text('门锁有效'), findsNothing);
+    expect(find.text('当前预约需接待方确认后生效'), findsOneWidget);
+  });
+
+  testWidgets('development smart-lock house shows next-whole-hour test slot', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _testApp(service: _FakeAppointmentService(includeTestSlot: true)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('appointment-time-test')), findsOneWidget);
+    expect(find.text('测试 · 最近整点'), findsOneWidget);
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -900));
+    await tester.pumpAndSettle();
+    expect(find.text('提交时按服务器下一个最近整点创建'), findsOneWidget);
+  });
 }
 
-Widget _testApp() {
+Widget _testApp({AppointmentService? service}) {
   return ProviderScope(
     overrides: [
-      appointmentServiceProvider.overrideWithValue(_FakeAppointmentService()),
+      appointmentServiceProvider.overrideWithValue(
+        service ?? _FakeAppointmentService(),
+      ),
       houseDetailProvider.overrideWith(
         (ref, houseId) async => const ApiSuccess(_house),
       ),
@@ -89,7 +124,15 @@ Widget _testApp() {
 }
 
 class _FakeAppointmentService extends AppointmentService {
-  _FakeAppointmentService() : super(ApiClient());
+  _FakeAppointmentService({
+    this.viewingMode = 'SELF_SERVICE_LOCK',
+    this.requiresConfirmation = false,
+    this.includeTestSlot = false,
+  }) : super(ApiClient());
+
+  final String viewingMode;
+  final bool requiresConfirmation;
+  final bool includeTestSlot;
 
   @override
   Future<ViewingSlotResult> getViewingSlots(String houseId) async {
@@ -99,23 +142,45 @@ class _FakeAppointmentService extends AppointmentService {
       now.month,
       now.day,
     ).add(const Duration(days: 1));
+    final testStart = DateTime(now.year, now.month, now.day, now.hour + 1);
     return ViewingSlotResult(
       houseId: houseId,
-      viewingMode: 'SELF_SERVICE_LOCK',
-      requiresConfirmation: false,
+      viewingMode: viewingMode,
+      requiresConfirmation: requiresConfirmation,
       dates: [
         ViewingSlotDay(
           date: date,
           slots: [
+            if (includeTestSlot)
+              ViewingSlot(
+                startAt: testStart,
+                endAt: testStart.add(const Duration(hours: 1)),
+                available: true,
+                accessValidFrom: testStart.subtract(
+                  const Duration(minutes: 10),
+                ),
+                accessValidTo: testStart.add(const Duration(minutes: 70)),
+                testSlot: true,
+              ),
             ViewingSlot(
               startAt: DateTime(date.year, date.month, date.day, 10),
               endAt: DateTime(date.year, date.month, date.day, 11),
               available: true,
+              accessValidFrom: DateTime(date.year, date.month, date.day, 9, 50),
+              accessValidTo: DateTime(date.year, date.month, date.day, 11, 10),
             ),
             ViewingSlot(
               startAt: DateTime(date.year, date.month, date.day, 11),
               endAt: DateTime(date.year, date.month, date.day, 12),
               available: true,
+              accessValidFrom: DateTime(
+                date.year,
+                date.month,
+                date.day,
+                10,
+                50,
+              ),
+              accessValidTo: DateTime(date.year, date.month, date.day, 12, 10),
             ),
           ],
         ),

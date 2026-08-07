@@ -41,6 +41,14 @@ class LandlordHouseService {
         .toList();
   }
 
+  Future<List<HouseDictionaryItem>> getHouseRoomTypes() async {
+    final result = await _apiClient.get('/houses/room-types');
+    return _unwrapList(result)
+        .map(HouseDictionaryItem.fromJson)
+        .where((item) => item.id.isNotEmpty && item.name.isNotEmpty)
+        .toList();
+  }
+
   Future<LandlordHouseItem> createHouse(CreateHouseRequest request) async {
     final result = await _apiClient.post(
       '/landlord/houses',

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
+import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../app/theme/app_text_styles.dart';
 
 class HomeServiceEntry extends StatelessWidget {
   const HomeServiceEntry({
@@ -10,12 +13,16 @@ class HomeServiceEntry extends StatelessWidget {
     required this.color,
     super.key,
     this.onTap,
+    this.subtitle,
+    this.forceMonochrome = false,
   });
 
-  final IconData icon;
+  final List<List<dynamic>> icon;
   final String label;
   final Color color;
   final VoidCallback? onTap;
+  final String? subtitle;
+  final bool forceMonochrome;
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +32,7 @@ class HomeServiceEntry extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(
           // horizontal: AppSpacing.sm,
-          vertical: AppSpacing.lg,
+          vertical: AppSpacing.sm,
         ),
         // decoration: BoxDecoration(
         //   color: AppColors.surface,
@@ -35,18 +42,34 @@ class HomeServiceEntry extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: AppSpacing.sm),
+            HugeIcon(
+              icon: icon,
+              color: forceMonochrome ? AppColors.textPrimary : color,
+              size: 24,
+            ),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               label,
-              style: TextStyle(
-                color: const Color.fromARGB(255, 0, 0, 0),
-                fontSize: 11,
-                fontWeight: FontWeight.w400,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
+            if (subtitle != null) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                subtitle!,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textMuted,
+                  fontSize: 10,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ],
         ),
       ),

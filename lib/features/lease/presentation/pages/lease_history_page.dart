@@ -9,7 +9,7 @@ import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
-import '../../../../core/widgets/app_error_view.dart';
+import '../../../../core/widgets/app_api_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
 import '../../application/lease_controller.dart';
 import '../../data/providers/lease_providers.dart';
@@ -80,7 +80,7 @@ class _LeaseHistoryPageState extends ConsumerState<LeaseHistoryPage> {
     if (state.errorMessage != null && state.leases.isEmpty) {
       return SizedBox(
         height: 360,
-        child: AppErrorView(
+        child: AppApiErrorView(
           message: state.errorMessage!,
           onRetry: ref.read(leaseControllerProvider.notifier).load,
         ),

@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zhuxiang_app/core/storage/local_storage.dart';
 import 'package:zhuxiang_app/core/network/api_client.dart';
 import 'package:zhuxiang_app/core/storage/storage_service.dart';
+import 'package:zhuxiang_app/core/location/user_location_provider.dart';
 import 'package:zhuxiang_app/core/network/api_client_provider.dart';
 import 'package:zhuxiang_app/core/network/api_result.dart';
 import 'package:zhuxiang_app/features/house/application/house_search_notifier.dart';
@@ -42,20 +43,25 @@ void main() {
     addTearDown(container.dispose);
 
     final notifier = container.read(houseSearchProvider.notifier);
+    container.read(userLocationProvider.notifier).setManual('重庆市', '');
     notifier.updateKeyword(' 地铁 ');
-    notifier.updateCategory('long_rent');
+    notifier.updateCategory('LONG_RENT');
     notifier.updateFilter(
       region: 'jiangbei',
       minPrice: 100000,
       maxPrice: 500000,
       roomType: '2室1厅1卫',
+      rentMode: 'WHOLE_RENT',
+      rentType: 'LONG_RENT',
       sort: 'price_asc',
     );
     await Future<void>.delayed(const Duration(milliseconds: 350));
 
     expect(service.lastQuery, {
       'keyword': '地铁',
-      'category': 'long_rent',
+      'rentType': 'LONG_RENT',
+      'rentMode': 'WHOLE_RENT',
+      'city': '重庆市',
       'region': 'jiangbei',
       'minPrice': 100000,
       'maxPrice': 500000,

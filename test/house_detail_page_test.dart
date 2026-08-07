@@ -44,9 +44,50 @@ void main() {
     expect(find.text('房屋设施'), findsOneWidget);
     expect(find.byIcon(Icons.wifi_rounded), findsOneWidget);
     expect(find.text('沉浸式看房'), findsOneWidget);
-    expect(find.text('房东信息'), findsOneWidget);
+    expect(find.byKey(const Key('platform-service-card')), findsOneWidget);
+    expect(find.text('勿忧管家 · 平台自营'), findsOneWidget);
+    expect(find.text('房东信息'), findsNothing);
     expect(find.text('智能生活'), findsOneWidget);
     expect(find.text('房源描述'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('平台自营房源展示专属服务介绍卡片', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(_testApp());
+    await tester.pumpAndSettle();
+
+    final platformCard = find.byKey(const Key('platform-service-card'));
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -650));
+    await tester.pumpAndSettle();
+    await tester.tap(platformCard);
+    await tester.pumpAndSettle();
+
+    expect(find.text('勿忧管家平台服务'), findsOneWidget);
+    expect(find.text('平台统一管理'), findsOneWidget);
+    expect(find.text('灵活看房方式'), findsOneWidget);
+    expect(find.text('线上流程留痕'), findsOneWidget);
+    expect(find.text('租后服务协同'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('个人房源保留房东介绍卡片', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(_testApp(house: _landlordHouse));
+    await tester.pumpAndSettle();
+
+    expect(find.text('房东信息'), findsOneWidget);
+    expect(find.text('林先生'), findsOneWidget);
+    expect(find.byKey(const Key('platform-service-card')), findsNothing);
+    expect(find.text('勿忧管家 · 平台自营'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -89,11 +130,11 @@ void main() {
   });
 }
 
-Widget _testApp() {
+Widget _testApp({HouseDetail house = _house}) {
   return ProviderScope(
     overrides: [
       houseDetailProvider.overrideWith(
-        (ref, houseId) async => const ApiSuccess(_house),
+        (ref, houseId) async => ApiSuccess(house),
       ),
       immersiveTourAvailabilityProvider.overrideWith(
         (ref, houseId) async =>
@@ -149,4 +190,31 @@ const _house = HouseDetail(
   isVerified: true,
   rating: 4.9,
   rentedCount: 128,
+);
+
+const _landlordHouse = HouseDetail(
+  id: 'house-landlord',
+  title: '林先生的朝南两居室',
+  coverImage: '',
+  images: [],
+  location: '杭州市 · 余杭区',
+  community: '云栖澜庭',
+  address: '文一西路',
+  price: 320000,
+  paymentMethod: '押一付三',
+  rentType: '整租',
+  roomType: '2室1厅1卫',
+  area: 82,
+  floor: '8/18层',
+  orientation: '朝南',
+  tags: ['房东直租'],
+  facilities: [],
+  description: '个人房东直租房源。',
+  isSmartLockSupported: false,
+  isFavorite: false,
+  metro: '',
+  decoration: '精装修',
+  availableDate: '随时入住',
+  landlordName: '林先生',
+  sourceType: HouseSourceType.landlord,
 );

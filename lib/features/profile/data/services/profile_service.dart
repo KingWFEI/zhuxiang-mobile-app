@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:zhuxiang_app/core/network/api_client.dart';
 import 'package:zhuxiang_app/core/network/api_exception.dart';
+import 'package:zhuxiang_app/core/network/api_result.dart';
 
 import '../models/profile_models.dart';
 
@@ -8,6 +9,11 @@ class ProfileService {
   const ProfileService(this.apiClient);
 
   final ApiClient apiClient;
+
+  Future<ProfileOverview> getOverview() async {
+    final result = await apiClient.get('/profile/overview');
+    return result.unwrapData(ProfileOverview.fromJson);
+  }
 
   /// 获取当前所有生效租约的房源信息，无租约时返回空列表。
   Future<List<CurrentHome>> getCurrentHomes() async {

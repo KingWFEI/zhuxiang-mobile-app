@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
@@ -13,6 +14,7 @@ class HouseFilterBar extends StatelessWidget {
     required this.maxPrice,
     required this.roomType,
     required this.sort,
+    required this.moreActive,
     required this.onRegionTap,
     required this.onRentTap,
     required this.onRoomTap,
@@ -26,6 +28,7 @@ class HouseFilterBar extends StatelessWidget {
   final int maxPrice;
   final String roomType;
   final String sort;
+  final bool moreActive;
   final VoidCallback onRegionTap;
   final VoidCallback onRentTap;
   final VoidCallback onRoomTap;
@@ -45,7 +48,9 @@ class HouseFilterBar extends StatelessWidget {
   String get _rentLabel {
     if (minPrice <= 0 && maxPrice <= 0) return '租金';
     final min = minPrice >= 100 ? '¥${(minPrice / 100).round()}' : '¥$minPrice';
-    final max = maxPrice > 0 ? (maxPrice >= 100 ? '${(maxPrice / 100).round()}' : '$maxPrice') : '不限';
+    final max = maxPrice > 0
+        ? (maxPrice >= 100 ? '${(maxPrice / 100).round()}' : '$maxPrice')
+        : '不限';
     return '$min-$max';
   }
 
@@ -78,69 +83,98 @@ class HouseFilterBar extends StatelessWidget {
       (_rentLabel, minPrice > 0 || maxPrice > 0, onRentTap),
       (_roomLabel, roomType.isNotEmpty, onRoomTap),
       (_sortLabel, sort.isNotEmpty && sort != 'default', onSortTap),
-      ('更多', false, onMoreTap),
+      ('更多', moreActive, onMoreTap),
     ];
 
-    return Row(
-      children: [
-        for (var index = 0; index < items.length; index++) ...[
-          Expanded(
-            child: _FilterButton(
-              label: items[index].$1,
-              active: items[index].$2,
-              onTap: items[index].$3,
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xs,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      child: Row(
+        children: [
+          for (var index = 0; index < items.length; index++) ...[
+            Expanded(
+              child: _FilterButton(
+                index: index,
+                label: items[index].$1,
+                active: items[index].$2,
+                onTap: items[index].$3,
+              ),
             ),
-          ),
-          if (index != items.length - 1) const SizedBox(width: AppSpacing.sm),
+            if (index != items.length - 1) const SizedBox(width: AppSpacing.xs),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
 
 class _FilterButton extends StatelessWidget {
   const _FilterButton({
+    required this.index,
     required this.label,
     required this.active,
     required this.onTap,
   });
 
+  final int index;
   final String label;
   final bool active;
   final VoidCallback onTap;
+
+  List<List<dynamic>> get _icon => switch (index) {
+    0 => HugeIcons.strokeRoundedLocation01,
+    1 => HugeIcons.strokeRoundedMoney01,
+    2 => HugeIcons.strokeRoundedHome01,
+    3 => HugeIcons.strokeRoundedSorting05,
+    _ => HugeIcons.strokeRoundedGridView,
+  };
 
   @override
   Widget build(BuildContext context) {
     final color = active ? AppColors.primary : AppColors.textPrimary;
 
     return Material(
-      color: Colors.white,
+      color: Colors.transparent,
       borderRadius: BorderRadius.circular(AppRadius.lg),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         child: SizedBox(
-          height: 20,
-          child: Row(
+          height: 62,
+          child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    fontSize: 12,
-                    color: color,
-                    fontWeight: FontWeight.w500,
+              HugeIcon(icon: _icon, color: color, size: 22),
+              const SizedBox(height: 3),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Flexible(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        fontSize: 11,
+                        color: color,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(width: 2),
-              Icon(
-                Icons.keyboard_arrow_down_rounded,
-                color: active ? AppColors.primary : AppColors.textSecondary,
-                size: 12,
+                  const SizedBox(width: 1),
+                  Icon(
+                    Icons.arrow_drop_down,
+                    color: active ? AppColors.primary : AppColors.textSecondary,
+                    size: 14,
+                  ),
+                ],
               ),
             ],
           ),

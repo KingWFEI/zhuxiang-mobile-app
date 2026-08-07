@@ -11,6 +11,7 @@ import '../../../../core/storage/local_storage.dart';
 import '../../../../core/storage/storage_service.dart';
 import '../models/hot_community.dart';
 import '../models/house_tag.dart';
+import '../models/house_filter_option.dart';
 import '../services/house_service.dart';
 
 final localStorageProvider = Provider<LocalStorage>((ref) {
@@ -27,8 +28,8 @@ final locallyRentedHouseIdsProvider = StateProvider<Set<String>>((ref) {
 });
 
 /// 获取房源详情信息（autoDispose 确保每次进入详情页都重新请求）
-final houseDetailProvider =
-    FutureProvider.autoDispose.family<ApiResult<HouseDetail>, String>((ref, houseId) async {
+final houseDetailProvider = FutureProvider.autoDispose
+    .family<ApiResult<HouseDetail>, String>((ref, houseId) async {
       final service = ref.watch(houseServiceProvider);
       return service.getHouseDetail(houseId);
     });
@@ -37,6 +38,20 @@ final houseDetailProvider =
 final houseTagsProvider = FutureProvider<List<HouseTag>>((ref) async {
   final service = ref.watch(houseServiceProvider);
   return service.fetchTags();
+});
+
+final houseFacilitiesProvider = FutureProvider<List<HouseTag>>((ref) async {
+  final service = ref.watch(houseServiceProvider);
+  return service.fetchFacilities();
+});
+
+final houseDistrictsProvider =
+    FutureProvider.family<List<HouseFilterOption>, String>((ref, city) {
+      return ref.watch(houseServiceProvider).fetchDistricts(city);
+    });
+
+final houseRoomTypesProvider = FutureProvider<List<HouseFilterOption>>((ref) {
+  return ref.watch(houseServiceProvider).fetchRoomTypes();
 });
 
 final immersiveTourAvailabilityProvider = FutureProvider.autoDispose

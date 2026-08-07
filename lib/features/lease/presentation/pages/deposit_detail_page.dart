@@ -8,7 +8,7 @@ import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_empty_view.dart';
-import '../../../../core/widgets/app_error_view.dart';
+import '../../../../core/widgets/app_api_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
 import '../../data/providers/lease_providers.dart';
 import '../../domain/entities/deposit.dart';
@@ -33,7 +33,8 @@ class DepositDetailPage extends ConsumerWidget {
       ),
       body: result.when(
         loading: () => const AppLoadingView(message: '正在加载押金信息'),
-        error: (error, _) => AppErrorView(
+        error: (error, _) => AppApiErrorView(
+          error: error,
           message: '押金信息加载失败',
           onRetry: () => ref.invalidate(depositDetailProvider(leaseId)),
         ),
@@ -135,11 +136,7 @@ class _AmountSummary extends StatelessWidget {
 }
 
 class _AmountBlock extends StatelessWidget {
-  const _AmountBlock({
-    required this.label,
-    required this.value,
-    this.color,
-  });
+  const _AmountBlock({required this.label, required this.value, this.color});
 
   final String label;
   final String value;
@@ -198,7 +195,9 @@ class _StatusFlow extends StatelessWidget {
                   Expanded(
                     child: Container(
                       height: 2,
-                      color: i <= current ? AppColors.primary : AppColors.border,
+                      color: i <= current
+                          ? AppColors.primary
+                          : AppColors.border,
                     ),
                   ),
                 _StepDot(
@@ -232,8 +231,9 @@ class _StepDot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = active ? AppColors.primary : AppColors.border;
-    final bgColor =
-        active ? AppColors.primary.withValues(alpha: 0.12) : AppColors.background;
+    final bgColor = active
+        ? AppColors.primary.withValues(alpha: 0.12)
+        : AppColors.background;
     final textColor = active ? AppColors.primary : AppColors.textMuted;
 
     return Column(
@@ -324,10 +324,7 @@ class _DeductionTile extends StatelessWidget {
                 ),
                 if (deduction.description.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    deduction.description,
-                    style: AppTextStyles.bodySmall,
-                  ),
+                  Text(deduction.description, style: AppTextStyles.bodySmall),
                 ],
               ],
             ),

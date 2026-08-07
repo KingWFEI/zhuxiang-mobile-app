@@ -8,7 +8,7 @@ import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
-import '../../../../core/widgets/app_error_view.dart';
+import '../../../../core/widgets/app_api_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
 import '../../data/providers/payment_providers.dart';
 import '../../domain/entities/payment_record.dart';
@@ -46,7 +46,7 @@ class PaymentDetailPage extends ConsumerWidget {
                       ),
                       error: (error, _) => SizedBox(
                         height: 360,
-                        child: AppErrorView(
+                        child: AppApiErrorView(
                           message: '支付详情加载失败',
                           onRetry: () =>
                               ref.invalidate(paymentDetailProvider(paymentId)),

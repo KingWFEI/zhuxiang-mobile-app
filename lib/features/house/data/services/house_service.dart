@@ -7,6 +7,7 @@ import '../../../../core/network/api_client.dart';
 import '../../../../shared/models/page_result.dart';
 import '../models/hot_community.dart';
 import '../models/house.dart';
+import '../models/house_filter_option.dart';
 import '../models/house_tag.dart';
 import '../models/immersive_tour.dart';
 
@@ -15,6 +16,84 @@ class HouseService {
   HouseService(this.apiClient);
 
   final ApiClient apiClient;
+
+  Future<List<String>> fetchSearchSuggestions(
+    String keyword, {
+    String? city,
+    int limit = 8,
+  }) async {
+    final normalizedKeyword = keyword.trim();
+    if (normalizedKeyword.isEmpty) return const [];
+    final result = await apiClient.get(
+      '/houses/search-suggestions',
+      queryParameters: {
+        'keyword': normalizedKeyword,
+        if (city != null && city.trim().isNotEmpty) 'city': city.trim(),
+        'limit': limit,
+      },
+    );
+    if (result is ApiSuccess<Response<dynamic>>) {
+      final body = result.data.data;
+      if (body is Map<String, dynamic> && body['data'] is List) {
+        return (body['data'] as List)
+            .map((item) => item.toString().trim())
+            .where((item) => item.isNotEmpty)
+            .toList(growable: false);
+      }
+    }
+    if (result is ApiFailure<Response<dynamic>>) {
+      throw result.error ??
+          ApiException(type: ApiExceptionType.server, message: '获取搜索建议失败');
+    }
+    return const [];
+  }
+
+  Future<List<HouseFilterOption>> fetchDistricts(String city) async {
+    if (city.trim().isEmpty) return const [];
+    final result = await apiClient.get(
+      '/regions/districts',
+      queryParameters: {'city': city.trim()},
+    );
+    return _unwrapOptionList(
+      result,
+      HouseFilterOption.districtFromJson,
+      errorMessage: '获取区域失败',
+    );
+  }
+
+  Future<List<HouseFilterOption>> fetchRoomTypes() async {
+    final result = await apiClient.get('/houses/room-types');
+    return _unwrapOptionList(
+      result,
+      HouseFilterOption.fromJson,
+      errorMessage: '获取户型失败',
+    );
+  }
+
+  List<HouseFilterOption> _unwrapOptionList(
+    ApiResult<Response<dynamic>> result,
+    HouseFilterOption Function(Map<String, dynamic>) converter, {
+    required String errorMessage,
+  }) {
+    if (result is ApiSuccess<Response<dynamic>>) {
+      final body = result.data.data;
+      if (body is Map<String, dynamic>) {
+        final data = body['data'];
+        if (data is List) {
+          return data
+              .whereType<Map>()
+              .map((item) => converter(Map<String, dynamic>.from(item)))
+              .where((item) => item.label.isNotEmpty && item.value.isNotEmpty)
+              .toList(growable: false);
+        }
+      }
+    }
+    if (result is ApiFailure<Response<dynamic>>) {
+      throw result.error ??
+          ApiException(type: ApiExceptionType.server, message: errorMessage);
+    }
+    return const [];
+  }
 
   /// 返回搜索页热门小区（GET /houses/hot-communities）。
   Future<List<HotCommunity>> getHotCommunities() async {
@@ -57,6 +136,25 @@ class HouseService {
     if (result is ApiFailure<Response<dynamic>>) {
       throw result.error ??
           ApiException(type: ApiExceptionType.unknown, message: result.message);
+    }
+    return const [];
+  }
+
+  Future<List<HouseTag>> fetchFacilities() async {
+    final result = await apiClient.get('/houses/facilities');
+    if (result is ApiSuccess<Response<dynamic>>) {
+      final body = result.data.data;
+      if (body is Map<String, dynamic> && body['data'] is List) {
+        return (body['data'] as List)
+            .whereType<Map>()
+            .map((item) => HouseTag.fromJson(Map<String, dynamic>.from(item)))
+            .where((item) => item.label.isNotEmpty && item.value.isNotEmpty)
+            .toList(growable: false);
+      }
+    }
+    if (result is ApiFailure<Response<dynamic>>) {
+      throw result.error ??
+          ApiException(type: ApiExceptionType.server, message: '获取房间设施失败');
     }
     return const [];
   }

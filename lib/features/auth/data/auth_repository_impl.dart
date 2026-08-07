@@ -19,12 +19,11 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthUser? get currentUser => _currentUser;
 
   @override
-  Future<int> sendSmsCode({
+  Future<SmsCodeResult> sendSmsCode({
     required String phone,
     required String scene,
   }) async {
-    final result = await _service.sendSmsCode(phone: phone, scene: scene);
-    return result.expiresIn;
+    return _service.sendSmsCode(phone: phone, scene: scene);
   }
 
   @override

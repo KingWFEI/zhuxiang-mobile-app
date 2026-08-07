@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
@@ -34,7 +35,10 @@ class MessageItem extends StatelessWidget {
         child: const Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.delete_outline, color: Colors.white),
+            HugeIcon(
+              icon: HugeIcons.strokeRoundedDelete02,
+              color: Colors.white,
+            ),
             SizedBox(height: AppSpacing.xs),
             Text('删除', style: TextStyle(color: Colors.white, fontSize: 12)),
           ],
@@ -76,7 +80,6 @@ class MessageItem extends StatelessWidget {
                                 style: const TextStyle(
                                   color: Color(0xFF172236),
                                   fontSize: 16,
-                                  fontWeight: FontWeight.w700,
                                   height: 1.2,
                                 ),
                               ),
@@ -151,7 +154,11 @@ class _MessageIcon extends StatelessWidget {
         clipBehavior: Clip.none,
         children: [
           Center(
-            child: Icon(_messageIcon(message), color: Colors.white, size: 26),
+            child: HugeIcon(
+              icon: _messageIcon(message),
+              color: Colors.white,
+              size: 26,
+            ),
           ),
           if (!message.isRead)
             Positioned(
@@ -198,32 +205,32 @@ class _UnreadDot extends StatelessWidget {
   }
 }
 
-IconData _messageIcon(AppMessage message) {
+List<List<dynamic>> _messageIcon(AppMessage message) {
   final iconKey = message.iconKey?.toLowerCase();
   if (iconKey != null) {
     if (iconKey.contains('contract') || iconKey.contains('lease')) {
-      return Icons.event_available_rounded;
+      return HugeIcons.strokeRoundedCalendar01;
     }
     if (iconKey.contains('bill') || iconKey.contains('wallet')) {
-      return Icons.receipt_long_rounded;
+      return HugeIcons.strokeRoundedReceiptText;
     }
     if (iconKey.contains('lock') || iconKey.contains('door')) {
-      return Icons.shield_rounded;
+      return HugeIcons.strokeRoundedShield01;
     }
     if (iconKey.contains('repair') || iconKey.contains('build')) {
-      return Icons.handyman_rounded;
+      return HugeIcons.strokeRoundedRepair;
     }
     if (iconKey.contains('appointment') || iconKey.contains('event')) {
-      return Icons.campaign_rounded;
+      return HugeIcons.strokeRoundedMegaphone01;
     }
   }
   return switch (message.category) {
-    MessageCategory.appointment => Icons.campaign_rounded,
-    MessageCategory.lease => Icons.event_available_rounded,
-    MessageCategory.bill => Icons.receipt_long_rounded,
-    MessageCategory.repair => Icons.handyman_rounded,
-    MessageCategory.lock => Icons.shield_rounded,
-    MessageCategory.system || null => Icons.home_rounded,
+    MessageCategory.appointment => HugeIcons.strokeRoundedMegaphone01,
+    MessageCategory.lease => HugeIcons.strokeRoundedCalendar01,
+    MessageCategory.bill => HugeIcons.strokeRoundedReceiptText,
+    MessageCategory.repair => HugeIcons.strokeRoundedRepair,
+    MessageCategory.lock => HugeIcons.strokeRoundedShield01,
+    MessageCategory.system || null => HugeIcons.strokeRoundedHome01,
   };
 }
 

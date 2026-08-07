@@ -10,7 +10,7 @@ import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_empty_view.dart';
-import '../../../../core/widgets/app_error_view.dart';
+import '../../../../core/widgets/app_api_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../data/providers/rental_flow_providers.dart';
@@ -69,9 +69,10 @@ class _MyRentOrdersPageState extends ConsumerState<MyRentOrdersPage> {
                               ),
                               error: (error, _) => SizedBox(
                                 height: 320,
-                                child: AppErrorView(
+                                child: AppApiErrorView(
                                   message: '租房订单加载失败，请确认已登录后重试',
-                                  onRetry: () => ref.invalidate(myRentOrdersProvider),
+                                  onRetry: () =>
+                                      ref.invalidate(myRentOrdersProvider),
                                 ),
                               ),
                               data: (items) => _OrderList(
@@ -415,10 +416,7 @@ class _OrdersHeader extends StatelessWidget {
             ),
             Expanded(
               child: Center(
-                child: Text(
-                  '我的订单',
-                  style: AppTextStyles.normalPageTitle,
-                ),
+                child: Text('我的订单', style: AppTextStyles.normalPageTitle),
               ),
             ),
             const SizedBox(width: 80),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../data/models/house_tag.dart';
 
 const _sheetTitleStyle = TextStyle(fontSize: 17, fontWeight: FontWeight.w800);
 
@@ -10,20 +11,17 @@ const _sheetTitleStyle = TextStyle(fontSize: 17, fontWeight: FontWeight.w800);
 Future<String?> showRegionSheet(
   BuildContext context, {
   required String selectedValue,
+  required Map<String, String> options,
 }) {
   return showModalBottomSheet<String>(
     context: context,
     useSafeArea: true,
+    isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (_) => _SingleSelectSheet(
       title: '选择区域',
       selectedValue: selectedValue,
-      options: const {
-        '': '不限',
-        'yubei': '渝北区',
-        'jiangbei': '江北区',
-        'yuzhong': '渝中区',
-      },
+      options: options,
     ),
   );
 }
@@ -46,21 +44,17 @@ Future<RangeValues?> showRentSheet(
 Future<String?> showRoomSheet(
   BuildContext context, {
   required String selectedValue,
+  required Map<String, String> options,
 }) {
   return showModalBottomSheet<String>(
     context: context,
     useSafeArea: true,
+    isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (_) => _SingleSelectSheet(
       title: '选择户型',
       selectedValue: selectedValue,
-      options: const {
-        '': '不限',
-        '1室0厅1卫': '单间',
-        '1室1厅1卫': '一室一厅',
-        '2室1厅1卫': '两室一厅',
-        '3室1厅1卫': '三室一厅',
-      },
+      options: options,
     ),
   );
 }
@@ -71,6 +65,12 @@ Future<HouseExtraFilterSelection?> showMoreFilterSheet(
   required String sort,
   required String decoration,
   required String orientation,
+  required String rentMode,
+  required String rentType,
+  required Set<String> facilityIds,
+  required Set<String> tagIds,
+  required List<HouseTag> facilities,
+  required List<HouseTag> tags,
 }) {
   return showModalBottomSheet<HouseExtraFilterSelection>(
     context: context,
@@ -81,6 +81,12 @@ Future<HouseExtraFilterSelection?> showMoreFilterSheet(
       sort: sort,
       decoration: decoration,
       orientation: orientation,
+      rentMode: rentMode,
+      rentType: rentType,
+      facilityIds: facilityIds,
+      tagIds: tagIds,
+      facilities: facilities,
+      tags: tags,
     ),
   );
 }
@@ -90,11 +96,19 @@ class HouseExtraFilterSelection {
     required this.sort,
     required this.decoration,
     required this.orientation,
+    required this.rentMode,
+    required this.rentType,
+    required this.facilityIds,
+    required this.tagIds,
   });
 
   final String sort;
   final String decoration;
   final String orientation;
+  final String rentMode;
+  final String rentType;
+  final Set<String> facilityIds;
+  final Set<String> tagIds;
 }
 
 // ─── 通用单选列表 ──────────────────────────────────────────────
@@ -122,7 +136,8 @@ class _SingleSelectSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 40, height: 4,
+            width: 40,
+            height: 4,
             decoration: BoxDecoration(
               color: AppColors.border,
               borderRadius: BorderRadius.circular(2),
@@ -134,16 +149,33 @@ class _SingleSelectSheet extends StatelessWidget {
             child: Text(title, style: _sheetTitleStyle),
           ),
           const SizedBox(height: AppSpacing.sm),
-          for (final option in options.entries)
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              title: Text(option.value),
-              trailing: option.key == selectedValue
-                  ? const Icon(Icons.check_rounded, color: AppColors.primary)
-                  : null,
-              onTap: () => Navigator.of(context).pop(option.key),
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height * 0.55,
             ),
+            child: Material(
+              color: Colors.white,
+              child: ListView(
+                shrinkWrap: true,
+                padding: EdgeInsets.zero,
+                children: [
+                  for (final option in options.entries)
+                    ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(option.value),
+                      trailing: option.key == selectedValue
+                          ? const Icon(
+                              Icons.check_rounded,
+                              color: AppColors.primary,
+                            )
+                          : null,
+                      onTap: () => Navigator.of(context).pop(option.key),
+                    ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -188,7 +220,8 @@ class _RentSheetState extends State<_RentSheet> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 40, height: 4,
+            width: 40,
+            height: 4,
             decoration: BoxDecoration(
               color: AppColors.border,
               borderRadius: BorderRadius.circular(2),
@@ -202,7 +235,9 @@ class _RentSheetState extends State<_RentSheet> {
           const SizedBox(height: AppSpacing.sm),
           Text(
             '${_priceLabel(_values.start)} - ${_priceLabel(_values.end)}',
-            style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600),
+            style: AppTextStyles.bodyLarge.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
           ),
           RangeSlider(
             values: _values,
@@ -244,11 +279,23 @@ class _MoreFilterSheet extends StatefulWidget {
     required this.sort,
     required this.decoration,
     required this.orientation,
+    required this.rentMode,
+    required this.rentType,
+    required this.facilityIds,
+    required this.tagIds,
+    required this.facilities,
+    required this.tags,
   });
 
   final String sort;
   final String decoration;
   final String orientation;
+  final String rentMode;
+  final String rentType;
+  final Set<String> facilityIds;
+  final Set<String> tagIds;
+  final List<HouseTag> facilities;
+  final List<HouseTag> tags;
 
   @override
   State<_MoreFilterSheet> createState() => _MoreFilterSheetState();
@@ -258,6 +305,10 @@ class _MoreFilterSheetState extends State<_MoreFilterSheet> {
   late String _sort;
   late String _decoration;
   late String _orientation;
+  late String _rentMode;
+  late String _rentType;
+  late Set<String> _facilityIds;
+  late Set<String> _tagIds;
 
   @override
   void initState() {
@@ -265,6 +316,10 @@ class _MoreFilterSheetState extends State<_MoreFilterSheet> {
     _sort = widget.sort;
     _decoration = widget.decoration;
     _orientation = widget.orientation;
+    _rentMode = widget.rentMode;
+    _rentType = widget.rentType;
+    _facilityIds = widget.facilityIds.toSet();
+    _tagIds = widget.tagIds.toSet();
   }
 
   @override
@@ -274,7 +329,12 @@ class _MoreFilterSheetState extends State<_MoreFilterSheet> {
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.viewInsetsOf(context).bottom + 20),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        12,
+        20,
+        MediaQuery.viewInsetsOf(context).bottom + 20,
+      ),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -282,7 +342,8 @@ class _MoreFilterSheetState extends State<_MoreFilterSheet> {
           children: [
             Center(
               child: Container(
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
                   color: AppColors.border,
                   borderRadius: BorderRadius.circular(2),
@@ -301,7 +362,6 @@ class _MoreFilterSheetState extends State<_MoreFilterSheet> {
                 'price_asc': '低价优先',
                 'price_desc': '高价优先',
                 'latest': '最新',
-                'smart_lock': '智能锁',
               },
               onSelected: (v) => setState(() => _sort = v),
             ),
@@ -312,9 +372,10 @@ class _MoreFilterSheetState extends State<_MoreFilterSheet> {
               value: _decoration,
               options: const {
                 '': '不限',
-                'jingzhuang': '精装',
-                'jianzhuang': '简装',
-                'haohua': '豪装',
+                '精装修': '精装修',
+                '简装修': '简装修',
+                '毛坯': '毛坯',
+                '豪华装修': '豪华装修',
               },
               onSelected: (v) => setState(() => _decoration = v),
             ),
@@ -325,13 +386,58 @@ class _MoreFilterSheetState extends State<_MoreFilterSheet> {
               value: _orientation,
               options: const {
                 '': '不限',
-                'south': '朝南',
-                'north': '朝北',
-                'east': '朝东',
-                'west': '朝西',
+                '朝南': '朝南',
+                '朝北': '朝北',
+                '朝东': '朝东',
+                '朝西': '朝西',
               },
               onSelected: (v) => setState(() => _orientation = v),
             ),
+            const SizedBox(height: AppSpacing.md),
+            _SectionTitle('出租方式'),
+            _ChoiceBar(
+              value: _rentMode,
+              options: const {
+                '': '不限',
+                'WHOLE_RENT': '整租',
+                'SHARED_RENT': '合租',
+              },
+              onSelected: (v) => setState(() => _rentMode = v),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _SectionTitle('租赁类型'),
+            _ChoiceBar(
+              value: _rentType,
+              options: const {
+                '': '不限',
+                'LONG_RENT': '长租',
+                'SHORT_RENT': '短租',
+                'HOMESTAY': '民宿',
+              },
+              onSelected: (v) => setState(() => _rentType = v),
+            ),
+            if (widget.facilities.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.md),
+              _SectionTitle('房间设施'),
+              _MultiChoiceBar(
+                selected: _facilityIds,
+                options: widget.facilities,
+                onSelected: (value) => setState(() {
+                  if (!_facilityIds.add(value)) _facilityIds.remove(value);
+                }),
+              ),
+            ],
+            if (widget.tags.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.md),
+              _SectionTitle('更多'),
+              _MultiChoiceBar(
+                selected: _tagIds,
+                options: widget.tags,
+                onSelected: (value) => setState(() {
+                  if (!_tagIds.add(value)) _tagIds.remove(value);
+                }),
+              ),
+            ],
             const SizedBox(height: AppSpacing.xl),
             SizedBox(
               width: double.infinity,
@@ -342,6 +448,10 @@ class _MoreFilterSheetState extends State<_MoreFilterSheet> {
                     sort: _sort,
                     decoration: _decoration,
                     orientation: _orientation,
+                    rentMode: _rentMode,
+                    rentType: _rentType,
+                    facilityIds: _facilityIds,
+                    tagIds: _tagIds,
                   ),
                 ),
                 child: const Text('确定'),
@@ -362,13 +472,20 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Text(title, style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
+      child: Text(
+        title,
+        style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+      ),
     );
   }
 }
 
 class _ChoiceBar extends StatelessWidget {
-  const _ChoiceBar({required this.value, required this.options, required this.onSelected});
+  const _ChoiceBar({
+    required this.value,
+    required this.options,
+    required this.onSelected,
+  });
   final String value;
   final Map<String, String> options;
   final ValueChanged<String> onSelected;
@@ -385,6 +502,35 @@ class _ChoiceBar extends StatelessWidget {
           onSelected: (_) => onSelected(o.key),
         );
       }).toList(),
+    );
+  }
+}
+
+class _MultiChoiceBar extends StatelessWidget {
+  const _MultiChoiceBar({
+    required this.selected,
+    required this.options,
+    required this.onSelected,
+  });
+
+  final Set<String> selected;
+  final List<HouseTag> options;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.sm,
+      children: options
+          .map(
+            (option) => FilterChip(
+              label: Text(option.label),
+              selected: selected.contains(option.value),
+              onSelected: (_) => onSelected(option.value),
+            ),
+          )
+          .toList(growable: false),
     );
   }
 }

@@ -48,6 +48,8 @@ class UserLocationState {
 
 /// 管理用户 GPS 定位与反向地理编码。
 class UserLocationNotifier extends Notifier<UserLocationState> {
+  int _locationRequestVersion = 0;
+
   @override
   UserLocationState build() {
     // 从本地存储恢复上次选择的城市
@@ -56,22 +58,29 @@ class UserLocationNotifier extends Notifier<UserLocationState> {
     final district = storage.getString(StorageKeys.selectedDistrict) ?? '';
     debugPrint('[LOCATION] build() city=$city district=$district');
     if (city.isNotEmpty) {
-      return UserLocationState(city: city, district: district, hasLocation: true);
+      return UserLocationState(
+        city: city,
+        district: district,
+        hasLocation: true,
+      );
     }
     return const UserLocationState();
   }
 
   /// 请求定位权限并获取当前位置。仅在用户主动触发时调用。
   Future<void> fetch() async {
-    debugPrint('[LOCATION] fetch() started');
+    final requestVersion = ++_locationRequestVersion;
+    debugPrint('[LOCATION] fetch() started version=$requestVersion');
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
       LocationPermission permission = await Geolocator.checkPermission();
+      if (!_isCurrentRequest(requestVersion)) return;
       debugPrint('[LOCATION] permission=$permission');
 
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
+        if (!_isCurrentRequest(requestVersion)) return;
         debugPrint('[LOCATION] after request: permission=$permission');
         if (permission == LocationPermission.denied) {
           debugPrint('[LOCATION] ❌ permission denied');
@@ -89,6 +98,7 @@ class UserLocationNotifier extends Notifier<UserLocationState> {
 
       // 优先用缓存位置（毫秒级），同时发起一次低精度 GPS 用于后续刷新
       final lastPos = await Geolocator.getLastKnownPosition();
+      if (!_isCurrentRequest(requestVersion)) return;
       Position? freshPosition;
       try {
         freshPosition = await Geolocator.getCurrentPosition(
@@ -101,6 +111,8 @@ class UserLocationNotifier extends Notifier<UserLocationState> {
         // GPS 超时不阻塞，后续用缓存
       }
 
+      if (!_isCurrentRequest(requestVersion)) return;
+
       Position position;
       if (freshPosition != null) {
         position = freshPosition;
@@ -112,10 +124,18 @@ class UserLocationNotifier extends Notifier<UserLocationState> {
         state = state.copyWith(isLoading: false, error: '定位超时，请移至开阔地带或手动选择城市');
         return;
       }
-      debugPrint('[LOCATION] position: lat=${position.latitude}, lng=${position.longitude}');
+      debugPrint(
+        '[LOCATION] position: lat=${position.latitude}, lng=${position.longitude}',
+      );
 
-      final address = await _reverseGeocode(position.latitude, position.longitude);
-      debugPrint('[LOCATION] reverse geocode: city=${address.city}, district=${address.district}');
+      final address = await _reverseGeocode(
+        position.latitude,
+        position.longitude,
+      );
+      if (!_isCurrentRequest(requestVersion)) return;
+      debugPrint(
+        '[LOCATION] reverse geocode: city=${address.city}, district=${address.district}',
+      );
 
       if (address.city.isEmpty) {
         debugPrint('[LOCATION] ❌ reverse geocode returned empty, not saving');
@@ -132,12 +152,15 @@ class UserLocationNotifier extends Notifier<UserLocationState> {
       );
       debugPrint('[LOCATION] ✅ state updated: city=${address.city}');
     } on LocationServiceDisabledException {
+      if (!_isCurrentRequest(requestVersion)) return;
       debugPrint('[LOCATION] ❌ GPS service disabled');
       state = state.copyWith(isLoading: false, error: '请开启手机定位服务');
     } on TimeoutException {
+      if (!_isCurrentRequest(requestVersion)) return;
       debugPrint('[LOCATION] ❌ outer timeout');
       state = state.copyWith(isLoading: false, error: '定位超时，请移至开阔地带或手动选择城市');
     } on Exception catch (e) {
+      if (!_isCurrentRequest(requestVersion)) return;
       debugPrint('[LOCATION] ❌ error: $e');
       state = state.copyWith(isLoading: false, error: '定位失败，请检查网络');
     }
@@ -145,9 +168,25 @@ class UserLocationNotifier extends Notifier<UserLocationState> {
 
   /// 手动选择城市，写入本地存储。
   void setManual(String city, String district) {
+    _locationRequestVersion++;
     debugPrint('[LOCATION] setManual city=$city district=$district');
     _saveCity(city, district);
-    state = UserLocationState(city: city, district: district, hasLocation: true);
+    state = UserLocationState(
+      city: city,
+      district: district,
+      hasLocation: true,
+    );
+  }
+
+  bool _isCurrentRequest(int requestVersion) {
+    final current = requestVersion == _locationRequestVersion;
+    if (!current) {
+      debugPrint(
+        '[LOCATION] ignored stale result version=$requestVersion '
+        'current=$_locationRequestVersion',
+      );
+    }
+    return current;
   }
 
   void _saveCity(String city, String district) {
@@ -155,6 +194,8 @@ class UserLocationNotifier extends Notifier<UserLocationState> {
     storage.setString(StorageKeys.selectedCity, city);
     if (district.isNotEmpty) {
       storage.setString(StorageKeys.selectedDistrict, district);
+    } else {
+      unawaited(storage.remove(StorageKeys.selectedDistrict));
     }
   }
 
@@ -182,7 +223,9 @@ class UserLocationNotifier extends Notifier<UserLocationState> {
               city = (data['province'] ?? '').toString();
             }
             final district = (data['district'] ?? '').toString();
-            debugPrint('[LOCATION] reverse geocode success: city=$city district=$district');
+            debugPrint(
+              '[LOCATION] reverse geocode success: city=$city district=$district',
+            );
             return (city: city, district: district);
           }
         }

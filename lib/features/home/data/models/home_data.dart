@@ -2,31 +2,13 @@ import '../../../house/data/models/house.dart';
 import '../../../house/data/models/house_source_type.dart';
 
 class HomeData {
-  final HomeHeaderData header;
-  final int unreadMessageCount;
-  final List<ServiceEntry> serviceEntries;
   final List<HomeTab> tabs;
   final Map<String, HomeHouseGroup> houseGroups;
-  final List<HomeBanner>? advertisements;
 
-  const HomeData({
-    required this.header,
-    required this.unreadMessageCount,
-    required this.serviceEntries,
-    required this.tabs,
-    required this.houseGroups,
-    this.advertisements,
-  });
+  const HomeData({required this.tabs, required this.houseGroups});
 
   factory HomeData.fromJson(Map<String, dynamic> json) {
     return HomeData(
-      header: HomeHeaderData.fromJson(json['header'] as Map<String, dynamic>),
-      unreadMessageCount: json['unreadMessageCount'] as int? ?? 0,
-      serviceEntries:
-          (json['serviceEntries'] as List<dynamic>?)
-              ?.map((e) => ServiceEntry.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
       tabs:
           (json['tabs'] as List<dynamic>?)
               ?.map((e) => HomeTab.fromJson(e as Map<String, dynamic>))
@@ -40,67 +22,6 @@ class HomeData {
             ),
           ) ??
           {},
-      advertisements: (json['advertisements'] as List<dynamic>?)
-          ?.map((e) => HomeBanner.fromJson(e as Map<String, dynamic>))
-          .toList(),
-    );
-  }
-}
-
-class HomeHeaderData {
-  final String cityName;
-  final String greeting;
-  final String subtitle;
-  final String searchPlaceholder;
-  final String backgroundImageUrl;
-
-  const HomeHeaderData({
-    required this.cityName,
-    required this.greeting,
-    required this.subtitle,
-    required this.searchPlaceholder,
-    required this.backgroundImageUrl,
-  });
-
-  factory HomeHeaderData.fromJson(Map<String, dynamic> json) {
-    return HomeHeaderData(
-      cityName: json['cityName'] as String? ?? '',
-      greeting: json['greeting'] as String? ?? '',
-      subtitle: json['subtitle'] as String? ?? '',
-      searchPlaceholder: json['searchPlaceholder'] as String? ?? '',
-      backgroundImageUrl: json['backgroundImageUrl'] as String? ?? '',
-    );
-  }
-}
-
-class ServiceEntry {
-  final String key;
-  final String title;
-  final String iconKey;
-  final String targetType;
-  final String targetValue;
-  final bool requiresLogin;
-  final bool enabled;
-
-  const ServiceEntry({
-    required this.key,
-    required this.title,
-    required this.iconKey,
-    required this.targetType,
-    required this.targetValue,
-    required this.requiresLogin,
-    required this.enabled,
-  });
-
-  factory ServiceEntry.fromJson(Map<String, dynamic> json) {
-    return ServiceEntry(
-      key: json['key'] as String? ?? '',
-      title: json['title'] as String? ?? '',
-      iconKey: json['iconKey'] as String? ?? '',
-      targetType: json['targetType'] as String? ?? '',
-      targetValue: json['targetValue'] as String? ?? '',
-      requiresLogin: json['requiresLogin'] as bool? ?? false,
-      enabled: json['enabled'] as bool? ?? true,
     );
   }
 }
@@ -185,6 +106,8 @@ class HomeHouseItem {
   final String location;
   final String community;
   final int price;
+  final String rentMode;
+  final String rentType;
   final String roomType;
   final int area;
   final String floor;
@@ -210,6 +133,8 @@ class HomeHouseItem {
     required this.location,
     required this.community,
     required this.price,
+    this.rentMode = 'WHOLE_RENT',
+    this.rentType = 'LONG_RENT',
     required this.roomType,
     required this.area,
     required this.floor,
@@ -237,6 +162,8 @@ class HomeHouseItem {
       location: json['location'] as String? ?? '',
       community: json['community'] as String? ?? '',
       price: json['price'] as int? ?? 0,
+      rentMode: json['rentMode'] as String? ?? 'WHOLE_RENT',
+      rentType: json['rentType'] as String? ?? 'LONG_RENT',
       roomType: json['roomType'] as String? ?? '',
       area: json['area'] as int? ?? 0,
       floor: json['floor'] as String? ?? '',
@@ -273,6 +200,8 @@ class HomeHouseItem {
       location: location,
       community: community,
       price: price,
+      rentMode: rentMode,
+      rentType: rentType,
       roomType: roomType,
       area: area,
       floor: floor,
@@ -368,38 +297,6 @@ class HomeAdItem {
       title: json['title'] as String? ?? '',
       description: json['description'] as String? ?? '',
       imageUrl: json['imageUrl'] as String? ?? '',
-      targetType: json['targetType'] as String? ?? '',
-      targetValue: json['targetValue'] as String? ?? '',
-    );
-  }
-}
-
-class HomeBanner {
-  final String id;
-  final String title;
-  final String description;
-  final String imageUrl;
-  final String position;
-  final String targetType;
-  final String targetValue;
-
-  const HomeBanner({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.imageUrl,
-    required this.position,
-    required this.targetType,
-    required this.targetValue,
-  });
-
-  factory HomeBanner.fromJson(Map<String, dynamic> json) {
-    return HomeBanner(
-      id: json['id'] as String? ?? '',
-      title: json['title'] as String? ?? '',
-      description: json['description'] as String? ?? '',
-      imageUrl: json['imageUrl'] as String? ?? '',
-      position: json['position'] as String? ?? '',
       targetType: json['targetType'] as String? ?? '',
       targetValue: json['targetValue'] as String? ?? '',
     );

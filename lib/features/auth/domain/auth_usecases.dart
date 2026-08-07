@@ -1,4 +1,5 @@
 import '../data/auth_repository.dart';
+import '../data/auth_models.dart';
 import 'entities/auth_user.dart';
 
 class AuthUseCases {
@@ -6,7 +7,10 @@ class AuthUseCases {
 
   final AuthRepository _repository;
 
-  Future<int> sendSmsCode({required String phone, required String scene}) {
+  Future<SmsCodeResult> sendSmsCode({
+    required String phone,
+    required String scene,
+  }) {
     return _repository.sendSmsCode(phone: phone, scene: scene);
   }
 

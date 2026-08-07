@@ -12,6 +12,7 @@ class LandlordHouseItem {
     required this.price,
     required this.deposit,
     required this.paymentMethod,
+    required this.rentMode,
     required this.rentType,
     required this.roomType,
     required this.area,
@@ -77,6 +78,7 @@ class LandlordHouseItem {
       price: _int(json['price']),
       deposit: _int(json['deposit']),
       paymentMethod: json['paymentMethod']?.toString() ?? '',
+      rentMode: json['rentMode']?.toString() ?? 'WHOLE_RENT',
       rentType: json['rentType']?.toString() ?? '',
       roomType: json['roomType']?.toString() ?? '',
       area: _double(json['area']) ?? 0,
@@ -128,6 +130,7 @@ class LandlordHouseItem {
   final int price;
   final int deposit;
   final String paymentMethod;
+  final String rentMode;
   final String rentType;
   final String roomType;
   final double area;
@@ -284,6 +287,7 @@ class CreateHouseRequest {
     required this.location,
     required this.communityId,
     required this.price,
+    required this.rentMode,
     required this.rentType,
     required this.facilityIds,
     required this.tagIds,
@@ -311,6 +315,7 @@ class CreateHouseRequest {
   final String location;
   final String communityId;
   final int price;
+  final String rentMode;
   final String rentType;
   final List<String> facilityIds;
   final List<String> tagIds;
@@ -339,6 +344,7 @@ class CreateHouseRequest {
       'location': location,
       'communityId': communityId,
       'price': price,
+      'rentMode': rentMode,
       'rentType': rentType,
       'facilityIds': facilityIds,
       'tagIds': tagIds,
@@ -375,6 +381,7 @@ class UpdateHouseRequest {
     this.location,
     this.communityId,
     this.price,
+    this.rentMode,
     this.rentType,
     this.facilityIds,
     this.tagIds,
@@ -402,6 +409,7 @@ class UpdateHouseRequest {
   final String? location;
   final String? communityId;
   final int? price;
+  final String? rentMode;
   final String? rentType;
   final List<String>? facilityIds;
   final List<String>? tagIds;
@@ -430,6 +438,7 @@ class UpdateHouseRequest {
     _put(map, 'location', location);
     _put(map, 'communityId', communityId);
     _put(map, 'price', price);
+    _put(map, 'rentMode', rentMode);
     _put(map, 'rentType', rentType);
     if (facilityIds != null) map['facilityIds'] = facilityIds;
     if (tagIds != null) map['tagIds'] = tagIds;

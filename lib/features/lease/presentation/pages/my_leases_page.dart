@@ -8,7 +8,7 @@ import '../../../../app/theme/app_icon.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
-import '../../../../core/widgets/app_error_view.dart';
+import '../../../../core/widgets/app_api_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../auth/presentation/providers/auth_controller.dart';
@@ -153,7 +153,7 @@ class _MyLeasesPageState extends ConsumerState<MyLeasesPage>
     if (state.errorMessage != null && state.leases.isEmpty) {
       return SizedBox(
         height: 360,
-        child: AppErrorView(
+        child: AppApiErrorView(
           message: state.errorMessage!,
           onRetry: ref.read(leaseControllerProvider.notifier).load,
         ),

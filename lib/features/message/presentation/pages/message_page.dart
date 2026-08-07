@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 import '../../../../app/router/route_names.dart';
 import '../../../../app/router/app_mode_controller.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/widgets/app_empty_view.dart';
-import '../../../../core/widgets/app_error_view.dart';
+import '../../../../core/widgets/app_api_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
 import '../../../../core/widgets/app_logo.dart';
 import '../../../../core/widgets/app_toast.dart';
@@ -28,31 +29,31 @@ class _MessagePageState extends ConsumerState<MessagePage> {
     _CategoryItem(
       category: MessageCategory.system,
       label: '系统通知',
-      icon: Icons.notifications_rounded,
+      icon: HugeIcons.strokeRoundedNotification01,
       color: Color(0xFF4B9CF6),
     ),
     _CategoryItem(
       category: MessageCategory.appointment,
       label: '活动公告',
-      icon: Icons.campaign_rounded,
+      icon: HugeIcons.strokeRoundedMegaphone01,
       color: Color(0xFFFFA53D),
     ),
     _CategoryItem(
       category: MessageCategory.lease,
       label: '租约提醒',
-      icon: Icons.article_rounded,
+      icon: HugeIcons.strokeRoundedFile01,
       color: Color(0xFF13B96D),
     ),
     _CategoryItem(
       category: MessageCategory.repair,
       label: '服务通知',
-      icon: Icons.handyman_rounded,
+      icon: HugeIcons.strokeRoundedRepair,
       color: Color(0xFF8B6DF6),
     ),
     _CategoryItem(
       category: null,
       label: '全部消息',
-      icon: Icons.forum_rounded,
+      icon: HugeIcons.strokeRoundedChat01,
       color: Color(0xFF2478ED),
     ),
   ];
@@ -94,7 +95,7 @@ class _MessagePageState extends ConsumerState<MessagePage> {
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.pageHorizontal,
-                AppSpacing.lg,
+                0,
                 AppSpacing.pageHorizontal,
                 0,
               ),
@@ -137,7 +138,10 @@ class _MessagePageState extends ConsumerState<MessagePage> {
                   const Spacer(),
                   GestureDetector(
                     onTapDown: (_) => _showMessageMenu(controller),
-                    child: const Icon(Icons.tune_rounded, size: 20),
+                    child: HugeIcon(
+                      icon: HugeIcons.strokeRoundedSettings01,
+                      size: 20,
+                    ),
                   ),
                 ],
               ),
@@ -170,7 +174,7 @@ class _MessagePageState extends ConsumerState<MessagePage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _MenuOption(
-                        icon: Icons.done_all_rounded,
+                        icon: HugeIcons.strokeRoundedCheckmarkCircle02,
                         label: '全部已读',
                         onTap: () {
                           entry.remove();
@@ -179,7 +183,7 @@ class _MessagePageState extends ConsumerState<MessagePage> {
                       ),
                       const Divider(height: 0),
                       _MenuOption(
-                        icon: Icons.delete_sweep_outlined,
+                        icon: HugeIcons.strokeRoundedDelete02,
                         label: '清空已读',
                         onTap: () {
                           entry.remove();
@@ -233,7 +237,7 @@ class _MessagePageState extends ConsumerState<MessagePage> {
     if (state.errorMessage != null && state.messages.isEmpty) {
       return _RefreshableStateView(
         onRefresh: controller.refresh,
-        child: AppErrorView(
+        child: AppApiErrorView(
           message: state.errorMessage!,
           onRetry: controller.loadInitial,
         ),
@@ -398,7 +402,7 @@ class _MenuOption extends StatelessWidget {
     required this.onTap,
   });
 
-  final IconData icon;
+  final List<List<dynamic>> icon;
   final String label;
   final VoidCallback onTap;
 
@@ -410,7 +414,7 @@ class _MenuOption extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            Icon(icon, size: 20),
+            HugeIcon(icon: icon, size: 20),
             const SizedBox(width: AppSpacing.sm),
             Text(label),
           ],
@@ -430,7 +434,7 @@ class _CategoryItem {
 
   final MessageCategory? category;
   final String label;
-  final IconData icon;
+  final List<List<dynamic>> icon;
   final Color color;
 }
 
@@ -478,7 +482,7 @@ class _CategoryTile extends StatelessWidget {
               Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  Icon(item.icon, color: item.color, size: 25),
+                  HugeIcon(icon: item.icon, color: item.color, size: 25),
                   if (unreadCount > 0)
                     Positioned(
                       right: -10,
@@ -586,8 +590,8 @@ class _AnnouncementBanner extends StatelessWidget {
                     ),
                   ),
                 ),
-                const Icon(
-                  Icons.chevron_right_rounded,
+                HugeIcon(
+                  icon: HugeIcons.strokeRoundedArrowRight01,
                   color: Color(0xFF8B97A8),
                 ),
                 const SizedBox(width: 10),

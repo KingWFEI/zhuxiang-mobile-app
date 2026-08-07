@@ -7,7 +7,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
-import '../../../../core/widgets/app_error_view.dart';
+import '../../../../core/widgets/app_api_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
 import '../../data/providers/inspection_providers.dart';
 import '../../data/providers/lease_providers.dart';
@@ -38,7 +38,8 @@ class _MoveOutInspectionPageState extends ConsumerState<MoveOutInspectionPage> {
       appBar: AppBar(title: const Text('退租验房照片')),
       body: lease.when(
         loading: () => const AppLoadingView(message: '正在加载租约信息'),
-        error: (error, stackTrace) => AppErrorView(
+        error: (error, stackTrace) => AppApiErrorView(
+          error: error,
           message: '租约信息加载失败',
           onRetry: () => ref.invalidate(leaseDetailProvider(widget.leaseId)),
         ),
@@ -49,13 +50,14 @@ class _MoveOutInspectionPageState extends ConsumerState<MoveOutInspectionPage> {
 
   Widget _buildInspection(BuildContext context, Lease lease) {
     if (lease.contractId.isEmpty) {
-      return const AppErrorView(message: '当前租约缺少合同信息，无法上传验房照片');
+      return const AppApiErrorView(message: '当前租约缺少合同信息，无法上传验房照片');
     }
 
     final remote = ref.watch(moveOutInspectionProvider(lease.contractId));
     return remote.when(
       loading: () => const AppLoadingView(message: '正在加载验房清单'),
-      error: (error, stackTrace) => AppErrorView(
+      error: (error, stackTrace) => AppApiErrorView(
+        error: error,
         message: '验房清单加载失败',
         onRetry: () =>
             ref.invalidate(moveOutInspectionProvider(lease.contractId)),

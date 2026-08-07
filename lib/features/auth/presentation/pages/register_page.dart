@@ -14,6 +14,7 @@ import '../widgets/auth_agreement_row.dart';
 import '../widgets/auth_page_header.dart';
 import '../widgets/auth_primary_button.dart';
 import '../widgets/auth_text_field.dart';
+import '../../data/auth_models.dart';
 import '../providers/auth_controller.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
@@ -82,6 +83,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     },
                     onRegister: _handleRegister,
                     onGetCode: _handleGetCode,
+                    retryAfterOnFailure: () =>
+                        ref.read(authControllerProvider).smsRetryAfter,
                   ),
                 ),
               ],
@@ -152,24 +155,25 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     _showMessage(message);
   }
 
-  Future<void> _handleGetCode() async {
+  Future<SmsCodeResult?> _handleGetCode() async {
     final phone = _phoneController.text.trim();
     if (phone.length != 11) {
       _showMessage('请输入正确的手机号');
-      return;
+      return null;
     }
 
-    final expiresIn = await ref
+    final result = await ref
         .read(authControllerProvider.notifier)
         .sendSmsCode(phone: phone, scene: 'register');
-    if (!mounted) return;
-    if (expiresIn == null) {
+    if (!mounted) return null;
+    if (result == null) {
       _showMessage(
         ref.read(authControllerProvider).errorMessage ?? '验证码发送失败，请稍后重试',
       );
-      return;
+      return null;
     }
-    _showMessage('验证码已发送，$expiresIn 秒内有效');
+    _showMessage('验证码已发送，${result.expiresIn} 秒内有效');
+    return result;
   }
 
   void _showMessage(String message) {
@@ -203,6 +207,7 @@ class _RegisterFormPanel extends StatelessWidget {
     required this.onConfirmPasswordVisibilityChanged,
     required this.onRegister,
     required this.onGetCode,
+    required this.retryAfterOnFailure,
   });
 
   final TextEditingController nicknameController;
@@ -217,7 +222,8 @@ class _RegisterFormPanel extends StatelessWidget {
   final VoidCallback onPasswordVisibilityChanged;
   final VoidCallback onConfirmPasswordVisibilityChanged;
   final VoidCallback onRegister;
-  final VoidCallback onGetCode;
+  final Future<SmsCodeResult?> Function() onGetCode;
+  final int? Function() retryAfterOnFailure;
 
   @override
   Widget build(BuildContext context) {
@@ -269,7 +275,10 @@ class _RegisterFormPanel extends StatelessWidget {
                   FilteringTextInputFormatter.digitsOnly,
                   LengthLimitingTextInputFormatter(6),
                 ],
-                suffix: AuthCodeButton(onPressed: onGetCode),
+                suffix: AuthCodeButton(
+                  onPressed: onGetCode,
+                  retryAfterOnFailure: retryAfterOnFailure,
+                ),
               ),
               const SizedBox(height: AppSpacing.md),
               AuthTextField(
