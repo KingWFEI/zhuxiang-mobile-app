@@ -56,13 +56,19 @@ class UserLocationNotifier extends Notifier<UserLocationState> {
     final district = storage.getString(StorageKeys.selectedDistrict) ?? '';
     debugPrint('[LOCATION] build() city=$city district=$district');
     if (city.isNotEmpty) {
-      return UserLocationState(city: city, district: district, hasLocation: true);
+      return UserLocationState(
+        city: city,
+        district: district,
+        hasLocation: true,
+      );
     }
     return const UserLocationState();
   }
 
   /// 请求定位权限并获取当前位置。仅在用户主动触发时调用。
   Future<void> fetch() async {
+    // 防止找房页初始化、下拉刷新和手动定位同时触发多个 GPS/逆地理请求。
+    if (state.isLoading) return;
     debugPrint('[LOCATION] fetch() started');
     state = state.copyWith(isLoading: true, clearError: true);
 
@@ -112,10 +118,17 @@ class UserLocationNotifier extends Notifier<UserLocationState> {
         state = state.copyWith(isLoading: false, error: '定位超时，请移至开阔地带或手动选择城市');
         return;
       }
-      debugPrint('[LOCATION] position: lat=${position.latitude}, lng=${position.longitude}');
+      debugPrint(
+        '[LOCATION] position: lat=${position.latitude}, lng=${position.longitude}',
+      );
 
-      final address = await _reverseGeocode(position.latitude, position.longitude);
-      debugPrint('[LOCATION] reverse geocode: city=${address.city}, district=${address.district}');
+      final address = await _reverseGeocode(
+        position.latitude,
+        position.longitude,
+      );
+      debugPrint(
+        '[LOCATION] reverse geocode: city=${address.city}, district=${address.district}',
+      );
 
       if (address.city.isEmpty) {
         debugPrint('[LOCATION] ❌ reverse geocode returned empty, not saving');
@@ -147,7 +160,11 @@ class UserLocationNotifier extends Notifier<UserLocationState> {
   void setManual(String city, String district) {
     debugPrint('[LOCATION] setManual city=$city district=$district');
     _saveCity(city, district);
-    state = UserLocationState(city: city, district: district, hasLocation: true);
+    state = UserLocationState(
+      city: city,
+      district: district,
+      hasLocation: true,
+    );
   }
 
   void _saveCity(String city, String district) {
@@ -182,7 +199,9 @@ class UserLocationNotifier extends Notifier<UserLocationState> {
               city = (data['province'] ?? '').toString();
             }
             final district = (data['district'] ?? '').toString();
-            debugPrint('[LOCATION] reverse geocode success: city=$city district=$district');
+            debugPrint(
+              '[LOCATION] reverse geocode success: city=$city district=$district',
+            );
             return (city: city, district: district);
           }
         }

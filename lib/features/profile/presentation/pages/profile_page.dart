@@ -266,6 +266,7 @@ class _DashboardCard extends ConsumerStatefulWidget {
 
 class _DashboardCardState extends ConsumerState<_DashboardCard> {
   PageController? _pageController;
+  final ValueNotifier<int> _currentPageNotifier = ValueNotifier<int>(0);
 
   static const _menuItems = [
     (Icons.description, '我的租约', AppColors.primary),
@@ -288,6 +289,7 @@ class _DashboardCardState extends ConsumerState<_DashboardCard> {
   @override
   void dispose() {
     _pageController?.dispose();
+    _currentPageNotifier.dispose();
     super.dispose();
   }
 
@@ -317,7 +319,7 @@ class _DashboardCardState extends ConsumerState<_DashboardCard> {
     final lock = data?.lock;
     final hasHomeData = homes.isNotEmpty || data?.lock != null;
     final showCarousel = homes.length > 1;
-    final currentPageNotifier = showCarousel ? (ValueNotifier<int>(0)) : null;
+    final currentPageNotifier = showCarousel ? _currentPageNotifier : null;
 
     return Container(
       decoration: BoxDecoration(

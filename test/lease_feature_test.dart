@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zhuxiang_app/app/router/app_router.dart';
+import 'package:zhuxiang_app/app/router/route_names.dart';
 import 'package:zhuxiang_app/features/lease/data/models/lease_model.dart';
 import 'package:zhuxiang_app/features/lease/data/providers/lease_providers.dart';
 import 'package:zhuxiang_app/features/lease/data/services/lease_service.dart';
@@ -15,6 +17,19 @@ import 'package:zhuxiang_app/features/lock/data/providers/tenant_lock_providers.
 import 'package:zhuxiang_app/features/lock/data/repositories/tenant_lock_repository.dart';
 
 void main() {
+  test('电子合同路由是租约详情的子页面', () {
+    final router = AppRouter.createRouter();
+    addTearDown(router.dispose);
+
+    expect(
+      router.namedLocation(
+        RouteNames.leaseContractView,
+        pathParameters: {'leaseId': 'lease-2026-001'},
+      ),
+      '/leases/lease-2026-001/contract',
+    );
+  });
+
   test('LeaseModel adapts nested backend fields', () {
     final lease = LeaseModel({
       'leaseId': 'lease-api-1',

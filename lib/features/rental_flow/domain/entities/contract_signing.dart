@@ -32,6 +32,9 @@ class ContractSigningStatus {
   final DateTime? signedAt;
 
   bool get isCompleted => contractStatus.toUpperCase() == 'COMPLETED';
+
+  /// 新租房流程中，租客签署完成即可进入支付，无需等待房东签署。
+  bool get readyForPayment => tenantSigned;
 }
 
 class ContractDownload {

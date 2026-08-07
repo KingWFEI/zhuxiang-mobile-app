@@ -59,7 +59,11 @@ class HouseSearchNotifier extends Notifier<HouseSearchState> {
   /// 更新价格范围并搜索。
   void updatePriceRange(int minPrice, int maxPrice) {
     _debounceTimer?.cancel();
-    state = state.copyWith(minPrice: minPrice, maxPrice: maxPrice, clearError: true);
+    state = state.copyWith(
+      minPrice: minPrice,
+      maxPrice: maxPrice,
+      clearError: true,
+    );
     unawaited(search());
   }
 
@@ -117,6 +121,8 @@ class HouseSearchNotifier extends Notifier<HouseSearchState> {
 
   /// 发起搜索请求，支持 forceRefresh 强制刷新。
   Future<void> search({bool forceRefresh = false}) async {
+    // 同一页面初始化期间只允许一个首屏搜索请求，避免 Tab 重建时并发解析多份房源数据。
+    if (!forceRefresh && (state.isLoading || state.isRefreshing)) return;
     final queryState = state.copyWith(page: 1);
     final requestVersion = ++_requestVersion;
 
