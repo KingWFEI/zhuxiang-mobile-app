@@ -20,6 +20,8 @@ class RentOrderModel extends RentOrder {
     required super.status,
     super.createdAt,
     super.updatedAt,
+    super.paymentDeadline,
+    super.prePaymentDeadline,
   });
 
   factory RentOrderModel.fromJson(Map<String, dynamic> json) {
@@ -70,6 +72,17 @@ class RentOrderModel extends RentOrder {
       status: _parseStatus(json['status'] as String?),
       createdAt: _parseDateTime(json['createdAt'] ?? json['created_at']),
       updatedAt: _parseDateTime(json['updatedAt'] ?? json['updated_at']),
+      paymentDeadline: _parseDateTime(
+        json['paymentDeadline'] ??
+            json['payment_deadline'] ??
+            json['paymentExpireAt'] ??
+            json['payment_expire_at'] ??
+            json['paymentDeadlineAt'] ??
+            json['payment_deadline_at'],
+      ),
+      prePaymentDeadline: _parseDateTime(
+        json['prePaymentDeadlineAt'] ?? json['pre_payment_deadline_at'],
+      ),
     );
   }
 
@@ -92,10 +105,18 @@ class RentOrderModel extends RentOrder {
     'status': status.name,
     'createdAt': createdAt?.toIso8601String(),
     'updatedAt': updatedAt?.toIso8601String(),
+    'paymentDeadlineAt': paymentDeadline?.toIso8601String(),
+    'prePaymentDeadlineAt': prePaymentDeadline?.toIso8601String(),
   };
 
   static RentOrderStatus _parseStatus(String? value) {
-    if (value == 'pendingEsign') return RentOrderStatus.pendingSign;
+    if (value == 'pendingLandlordSign') {
+      return RentOrderStatus.pendingLandlordSign;
+    }
+    if (value == 'pendingEsign' || value == 'pendingTenantSign') {
+      return RentOrderStatus.pendingSign;
+    }
+    if (value == 'paymentExpired') return RentOrderStatus.cancelled;
     return RentOrderStatus.values.firstWhere(
       (item) => item.name == value,
       orElse: () => RentOrderStatus.created,

@@ -11,7 +11,6 @@ import '../../../../core/widgets/app_toast.dart';
 import '../../../house/data/models/house_detail.dart';
 import '../../data/providers/rental_flow_providers.dart';
 import '../../data/services/rental_flow_service.dart';
-import '../../domain/entities/rent_order.dart';
 import 'agreement_checkbox.dart';
 
 const List<String> _paymentMethodOptions = ['月付', '季付', '半年付', '年付'];
@@ -33,9 +32,8 @@ class _ConfirmRentSheetState extends ConsumerState<ConfirmRentSheet> {
   int _tenantCount = 1;
 
   int get _monthlyRent => widget.house.price;
-  int get _deposit => widget.house.deposit > 0
-      ? widget.house.deposit
-      : widget.house.price;
+  int get _deposit =>
+      widget.house.deposit > 0 ? widget.house.deposit : widget.house.price;
   int get _serviceFee => 20000;
 
   @override
@@ -264,21 +262,8 @@ class _ConfirmRentSheetState extends ConsumerState<ConfirmRentSheet> {
       return;
     }
 
-    final currentOrder = ref.read(rentalFlowControllerProvider).order;
-    if (currentOrder != null && currentOrder.houseId == widget.house.id) {
-      if (currentOrder.status == RentOrderStatus.completed) {
-        AppToast.show(context, '该房源已完成租住，不能重复发起租约', type: AppToastType.error);
-        return;
-      }
-      if (currentOrder.status != RentOrderStatus.cancelled &&
-          currentOrder.status != RentOrderStatus.created &&
-          currentOrder.status != RentOrderStatus.pendingRealName) {
-        Navigator.pop(context);
-        _goNextStep(currentOrder);
-        return;
-      }
-    }
-
+    // 始终以创建订单接口为准，避免使用 controller 中已过期的订单缓存。
+    // 后端会复用进行中的订单，已取消订单则会创建新订单。
     final order = await ref
         .read(rentalFlowControllerProvider.notifier)
         .createRentOrder(
@@ -307,28 +292,6 @@ class _ConfirmRentSheetState extends ConsumerState<ConfirmRentSheet> {
       RouteNames.leaseContract,
       pathParameters: {'orderId': order.id},
     );
-  }
-
-  void _goNextStep(RentOrder order) {
-    if (order.status == RentOrderStatus.cancelled) {
-      AppToast.show(context, '订单已取消，请重新发起租住申请', type: AppToastType.error);
-      return;
-    }
-
-    final routeName = switch (order.status) {
-      RentOrderStatus.created ||
-      RentOrderStatus.pendingRealName => RouteNames.realNameAuth,
-      RentOrderStatus.pendingContract => RouteNames.leaseContract,
-      RentOrderStatus.pendingPayment => RouteNames.rentalPayment,
-      RentOrderStatus.pendingSign => RouteNames.onlineSign,
-      RentOrderStatus.completed => RouteNames.moveInComplete,
-      RentOrderStatus.cancelled => RouteNames.rentOrders,
-    };
-    if (routeName == RouteNames.realNameAuth) {
-      context.pushNamed(routeName, queryParameters: {'orderId': order.id});
-      return;
-    }
-    context.pushNamed(routeName, pathParameters: {'orderId': order.id});
   }
 }
 

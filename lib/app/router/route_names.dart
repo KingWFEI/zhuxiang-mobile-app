@@ -52,6 +52,7 @@ class RouteNames {
   static const leaseContract = 'leaseContract';
   static const rentalPayment = 'rentalPayment';
   static const onlineSign = 'onlineSign';
+  static const waitingLandlordSign = 'waitingLandlordSign';
   static const moveInComplete = 'moveInComplete';
   static const staffWorkbench = 'staffWorkbench';
   static const staffLockInit = 'staffLockInit';

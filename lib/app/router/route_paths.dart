@@ -27,7 +27,7 @@ class RoutePaths {
   static const leaseHistory = 'history';
   static const depositDetail = 'deposit';
   static const leaseDetail = ':leaseId';
-  static const leaseContractView = '/leases/:leaseId/contract';
+  static const leaseContractView = 'contract';
   static const leaseTerminationApply = '/leases/:leaseId/termination/apply';
   static const moveOutInspection = '/leases/:leaseId/move-out-inspection';
   static const rentOrders = '/rent-orders';
@@ -54,6 +54,8 @@ class RoutePaths {
   static const leaseContract = '/rental-flow/:orderId/contract';
   static const rentalPayment = '/rental-flow/:orderId/payment';
   static const onlineSign = '/rental-flow/:orderId/sign';
+  static const waitingLandlordSign =
+      '/rental-flow/:orderId/waiting-landlord-sign';
   static const moveInComplete = '/rental-flow/:orderId/success';
   static const staff = '/staff';
   static const staffLockInit = '/staff/locks/init';

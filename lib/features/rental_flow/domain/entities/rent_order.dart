@@ -4,6 +4,7 @@ enum RentOrderStatus {
   pendingContract,
   pendingPayment,
   pendingSign,
+  pendingLandlordSign,
   completed,
   cancelled;
 
@@ -14,6 +15,7 @@ enum RentOrderStatus {
       RentOrderStatus.pendingContract => '待确认合同',
       RentOrderStatus.pendingPayment => '待支付',
       RentOrderStatus.pendingSign => '待签约',
+      RentOrderStatus.pendingLandlordSign => '待房东签约',
       RentOrderStatus.completed => '已完成',
       RentOrderStatus.cancelled => '已取消',
     };
@@ -40,6 +42,8 @@ class RentOrder {
     required this.status,
     this.createdAt,
     this.updatedAt,
+    this.paymentDeadline,
+    this.prePaymentDeadline,
   });
 
   final String id;
@@ -60,6 +64,8 @@ class RentOrder {
   final RentOrderStatus status;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final DateTime? paymentDeadline;
+  final DateTime? prePaymentDeadline;
 
   DateTime get endDate => DateTime(
     startDate.year,
@@ -87,6 +93,8 @@ class RentOrder {
       status: status ?? this.status,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      paymentDeadline: paymentDeadline,
+      prePaymentDeadline: prePaymentDeadline,
     );
   }
 }

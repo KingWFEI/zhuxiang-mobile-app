@@ -8,17 +8,13 @@ import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/app_webview_page.dart';
-import '../../../home/data/providers/home_providers.dart';
-import '../../../house/application/house_search_notifier.dart';
-import '../../../house/data/providers/house_providers.dart';
-import '../../../lease/data/providers/lease_providers.dart';
-import '../../../lease/domain/entities/lease.dart';
-import '../../../profile/data/providers/profile_providers.dart';
 import '../../data/providers/rental_flow_providers.dart';
 import '../../domain/entities/contract_signing.dart';
+import '../../domain/entities/rent_order.dart';
 import '../../domain/entities/rental_flow_step.dart';
 import '../widgets/rental_flow_bottom_bar.dart';
 import '../widgets/rental_flow_page_shell.dart';
+import '../widgets/rent_order_deadline_banner.dart';
 
 class OnlineSignPage extends ConsumerStatefulWidget {
   const OnlineSignPage({required this.orderId, super.key});
@@ -58,6 +54,13 @@ class _OnlineSignPageState extends ConsumerState<OnlineSignPage> {
             : _openSigningPage,
       ),
       children: [
+        if (order?.prePaymentDeadline != null) ...[
+          RentOrderDeadlineBanner(
+            order: order!,
+            onExpired: _handleDeadlineExpired,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+        ],
         FlowCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -109,10 +112,27 @@ class _OnlineSignPageState extends ConsumerState<OnlineSignPage> {
     );
   }
 
-  void _load() {
-    ref
-        .read(rentalFlowControllerProvider.notifier)
-        .loadContractPreview(widget.orderId);
+  Future<void> _load() async {
+    final controller = ref.read(rentalFlowControllerProvider.notifier);
+    await controller.loadContractPreview(widget.orderId);
+    if (!mounted ||
+        ref.read(rentalFlowControllerProvider).errorMessage != null) {
+      return;
+    }
+    if (ref.read(rentalFlowControllerProvider).order?.status ==
+        RentOrderStatus.pendingLandlordSign) {
+      context.pushReplacementNamed(
+        RouteNames.waitingLandlordSign,
+        pathParameters: {'orderId': widget.orderId},
+      );
+      return;
+    }
+
+    final status = await controller.refreshContractSigning(widget.orderId);
+    if (!mounted || status == null) return;
+    if (status.readyForPayment) {
+      await _completeFlow();
+    }
   }
 
   Future<void> _openSigningPage() async {
@@ -149,12 +169,19 @@ class _OnlineSignPageState extends ConsumerState<OnlineSignPage> {
     if (mounted) await _refreshStatus(showPendingMessage: true);
   }
 
+  void _handleDeadlineExpired() {
+    ref.invalidate(myRentOrdersProvider);
+    if (!mounted) return;
+    AppToast.show(context, '订单办理超时，房源已释放');
+    context.goNamed(RouteNames.rentOrders);
+  }
+
   Future<void> _refreshStatus({required bool showPendingMessage}) async {
     final status = await ref
         .read(rentalFlowControllerProvider.notifier)
         .refreshContractSigning(widget.orderId);
     if (!mounted || status == null) return;
-    if (status.isCompleted) {
+    if (status.readyForPayment) {
       await _completeFlow();
       return;
     }
@@ -166,50 +193,11 @@ class _OnlineSignPageState extends ConsumerState<OnlineSignPage> {
   Future<void> _completeFlow() async {
     if (_handlingCompletion) return;
     _handlingCompletion = true;
-    final houseId = ref.read(rentalFlowControllerProvider).order?.houseId;
-    if (houseId != null && houseId.isNotEmpty) {
-      ref
-          .read(locallyRentedHouseIdsProvider.notifier)
-          .update((ids) => {...ids, houseId});
-    }
-    ref.invalidate(homeDataProvider);
-    ref.invalidate(houseSearchProvider);
-    ref.invalidate(leaseControllerProvider);
-    ref.invalidate(currentHomeProvider);
-    ref.invalidate(myRentOrdersProvider);
-    final leaseId = await _findCurrentLeaseId(houseId: houseId);
     if (!mounted) return;
-    final router = GoRouter.of(context);
-    router.goNamed(RouteNames.home);
-    router.pushNamed(
-      leaseId == null ? RouteNames.lease : RouteNames.leaseDetail,
-      pathParameters: leaseId == null ? const {} : {'leaseId': leaseId},
+    context.pushReplacementNamed(
+      RouteNames.rentalPayment,
+      pathParameters: {'orderId': widget.orderId},
     );
-  }
-
-  Future<String?> _findCurrentLeaseId({String? houseId}) async {
-    try {
-      final leases = await ref.read(leaseServiceProvider).getMyLeases();
-      Lease? fallback;
-      for (final lease in leases) {
-        if (!lease.isCurrent) continue;
-        fallback ??= lease;
-        if (houseId != null &&
-            houseId.isNotEmpty &&
-            lease.houseId == houseId &&
-            lease.status == LeaseStatus.active) {
-          return lease.id;
-        }
-      }
-      if (houseId != null && houseId.isNotEmpty) {
-        for (final lease in leases) {
-          if (lease.isCurrent && lease.houseId == houseId) return lease.id;
-        }
-      }
-      return fallback?.id;
-    } on Object {
-      return null;
-    }
   }
 }
 

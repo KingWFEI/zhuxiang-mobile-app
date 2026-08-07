@@ -144,6 +144,7 @@ class RoleNavigationConfig {
       RouteNames.leaseContract,
       RouteNames.rentalPayment,
       RouteNames.onlineSign,
+      RouteNames.waitingLandlordSign,
       RouteNames.moveInComplete,
     },
   );

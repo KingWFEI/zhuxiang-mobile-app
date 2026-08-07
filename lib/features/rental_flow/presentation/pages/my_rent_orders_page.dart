@@ -15,6 +15,9 @@ import '../../../../core/widgets/app_loading_view.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../data/providers/rental_flow_providers.dart';
 import '../../domain/entities/rent_order.dart';
+import '../widgets/rent_order_deadline_banner.dart';
+
+const _useGradientOrdersHeader = true;
 
 class MyRentOrdersPage extends ConsumerStatefulWidget {
   const MyRentOrdersPage({super.key});
@@ -81,6 +84,8 @@ class _MyRentOrdersPageState extends ConsumerState<MyRentOrdersPage> {
                                 hidingOrderId: _hidingOrderId,
                                 onCancel: _cancelOrder,
                                 onHide: _hideOrder,
+                                onPaymentExpired: () =>
+                                    ref.invalidate(myRentOrdersProvider),
                               ),
                             ),
                           ),
@@ -173,6 +178,7 @@ class _OrderList extends StatelessWidget {
     required this.hidingOrderId,
     required this.onCancel,
     required this.onHide,
+    required this.onPaymentExpired,
   });
 
   final List<RentOrder> orders;
@@ -180,6 +186,7 @@ class _OrderList extends StatelessWidget {
   final String? hidingOrderId;
   final ValueChanged<RentOrder> onCancel;
   final ValueChanged<RentOrder> onHide;
+  final VoidCallback onPaymentExpired;
 
   @override
   Widget build(BuildContext context) {
@@ -199,6 +206,7 @@ class _OrderList extends StatelessWidget {
             isHiding: hidingOrderId == order.id,
             onCancel: onCancel,
             onHide: onHide,
+            onPaymentExpired: onPaymentExpired,
           ),
           const SizedBox(height: AppSpacing.md),
         ],
@@ -214,6 +222,7 @@ class _RentOrderCard extends StatelessWidget {
     required this.isHiding,
     required this.onCancel,
     required this.onHide,
+    required this.onPaymentExpired,
   });
 
   final RentOrder order;
@@ -221,6 +230,7 @@ class _RentOrderCard extends StatelessWidget {
   final bool isHiding;
   final ValueChanged<RentOrder> onCancel;
   final ValueChanged<RentOrder> onHide;
+  final VoidCallback onPaymentExpired;
 
   @override
   Widget build(BuildContext context) {
@@ -264,6 +274,10 @@ class _RentOrderCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
+          if (_hasActiveDeadline(order)) ...[
+            RentOrderDeadlineBanner(order: order, onExpired: onPaymentExpired),
+            const SizedBox(height: AppSpacing.md),
+          ],
           Row(
             children: [
               if (_canCancel(order.status) || _canHide(order.status)) ...[
@@ -294,9 +308,7 @@ class _RentOrderCard extends StatelessWidget {
                   onPressed: order.status == RentOrderStatus.cancelled
                       ? null
                       : () => _continueOrder(context, order),
-                  child: Text(
-                    order.status == RentOrderStatus.completed ? '查看租约' : '继续办理',
-                  ),
+                  child: Text(_continueOrderLabel(order.status)),
                 ),
               ),
             ],
@@ -313,6 +325,7 @@ class _RentOrderCard extends StatelessWidget {
       RentOrderStatus.pendingContract => RouteNames.leaseContract,
       RentOrderStatus.pendingPayment => RouteNames.rentalPayment,
       RentOrderStatus.pendingSign => RouteNames.onlineSign,
+      RentOrderStatus.pendingLandlordSign => RouteNames.waitingLandlordSign,
       RentOrderStatus.completed => RouteNames.lease,
       RentOrderStatus.cancelled => RouteNames.rentOrders,
     };
@@ -339,10 +352,24 @@ class _RentOrderCard extends StatelessWidget {
 
 bool _canCancel(RentOrderStatus status) {
   return status != RentOrderStatus.completed &&
-      status != RentOrderStatus.cancelled;
+      status != RentOrderStatus.cancelled &&
+      status != RentOrderStatus.pendingLandlordSign;
 }
 
 bool _canHide(RentOrderStatus status) => status == RentOrderStatus.cancelled;
+
+bool _hasActiveDeadline(RentOrder order) {
+  if (order.status == RentOrderStatus.pendingPayment) {
+    return order.paymentDeadline != null;
+  }
+  return switch (order.status) {
+    RentOrderStatus.created ||
+    RentOrderStatus.pendingRealName ||
+    RentOrderStatus.pendingContract ||
+    RentOrderStatus.pendingSign => order.prePaymentDeadline != null,
+    _ => false,
+  };
+}
 
 String _formatOrderTime(DateTime? value) {
   if (value == null) return '--';
@@ -433,7 +460,20 @@ String _rentOrderStatusLabel(RentOrderStatus status) {
     RentOrderStatus.pendingContract => '待确认合同',
     RentOrderStatus.pendingPayment => '待支付',
     RentOrderStatus.pendingSign => '待签约',
+    RentOrderStatus.pendingLandlordSign => '待房东签约',
     RentOrderStatus.completed => '已完成',
     RentOrderStatus.cancelled => '已取消',
+  };
+}
+
+String _continueOrderLabel(RentOrderStatus status) {
+  return switch (status) {
+    RentOrderStatus.created || RentOrderStatus.pendingRealName => '去实名',
+    RentOrderStatus.pendingContract => '确认合同',
+    RentOrderStatus.pendingPayment => '去支付',
+    RentOrderStatus.pendingSign => '去签署',
+    RentOrderStatus.pendingLandlordSign => '查看签约进度',
+    RentOrderStatus.completed => '查看租约',
+    RentOrderStatus.cancelled => '订单已取消',
   };
 }
