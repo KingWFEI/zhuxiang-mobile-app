@@ -3,15 +3,15 @@
 <plist version="1.0">
 <dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>住享需要获取您的位置以便展示所在城市房源</string>
+	<string>勿忧管家需要获取您的位置以便展示所在城市房源</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
-	<string>住享需要使用蓝牙搜索附近门锁并完成一键开锁</string>
+	<string>勿忧管家需要使用蓝牙搜索附近门锁并完成一键开锁</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>住享需要使用蓝牙连接附近的智能门锁</string>
+	<string>勿忧管家需要使用蓝牙连接附近的智能门锁</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Zhuxiang App</string>
+	<string>勿忧管家</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -19,7 +19,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>zhuxiang_app</string>
+	<string>勿忧管家</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

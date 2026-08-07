@@ -9,7 +9,7 @@ class AppConfig {
     currentEnv = env;
   }
 
-  static String get appName => '住享';
+  static String get appName => '勿忧管家';
 
   static String get baseUrl {
     return switch (currentEnv) {

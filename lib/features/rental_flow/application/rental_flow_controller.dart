@@ -41,13 +41,16 @@ class RentalFlowState {
     String? errorMessage,
     bool clearError = false,
     bool clearPayResult = false,
+    bool clearSigningStatus = false,
   }) {
     return RentalFlowState(
       order: order ?? this.order,
       contractPreview: contractPreview ?? this.contractPreview,
       paymentInfo: paymentInfo ?? this.paymentInfo,
       payResult: clearPayResult ? null : (payResult ?? this.payResult),
-      signingStatus: signingStatus ?? this.signingStatus,
+      signingStatus: clearSigningStatus
+          ? null
+          : (signingStatus ?? this.signingStatus),
       isLoading: isLoading ?? this.isLoading,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
@@ -135,7 +138,13 @@ class RentalFlowController extends StateNotifier<RentalFlowState> {
   }
 
   Future<void> loadContractPreview(String orderId) async {
-    state = state.copyWith(isLoading: true, clearError: true);
+    // 签署状态不能跨订单复用。否则上一份合同的“已签署”
+    // 会让新订单误显示双方已签，并误调用 contract-refresh。
+    state = state.copyWith(
+      isLoading: true,
+      clearError: true,
+      clearSigningStatus: true,
+    );
     try {
       final order = await _service.loadRentOrder(orderId);
       final contract = await _service.loadContractPreview(orderId);
@@ -143,6 +152,7 @@ class RentalFlowController extends StateNotifier<RentalFlowState> {
         order: order,
         contractPreview: contract,
         isLoading: false,
+        clearSigningStatus: true,
       );
     } on Object catch (error) {
       state = state.copyWith(
@@ -230,6 +240,25 @@ class RentalFlowController extends StateNotifier<RentalFlowState> {
       state = state.copyWith(signingStatus: status, isSubmitting: false);
       return status;
     } on Object catch (error) {
+      // /sign 尚未调用时，后端会以 404 表示 e签宝流程未创建。
+      // 这是“待发起签署”业务状态，不应变成整页加载错误。
+      if (error is ApiException &&
+          error.statusCode == 404 &&
+          error.message.contains('合同签署流程不存在')) {
+        const notStarted = ContractSigningStatus(
+          contractStatus: 'NOT_STARTED',
+          currentUserSigned: false,
+          lessorSigned: false,
+          tenantSigned: false,
+          downloadAvailable: false,
+        );
+        state = state.copyWith(
+          signingStatus: notStarted,
+          isSubmitting: false,
+          clearError: true,
+        );
+        return notStarted;
+      }
       state = state.copyWith(
         isSubmitting: false,
         errorMessage: _messageFromError(error),

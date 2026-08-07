@@ -99,26 +99,47 @@ class _PageHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 64,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Positioned(
-            left: AppSpacing.sm,
-            child: IconButton(
-              onPressed: () {
-                if (context.canPop()) {
-                  context.pop();
-                  return;
-                }
-                context.goNamed(RouteNames.profile);
-              },
-              icon: AppIcon.iconBack,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.pageHorizontal,
+        AppSpacing.sm,
+        AppSpacing.pageHorizontal,
+        AppSpacing.sm,
+      ),
+      child: SizedBox(
+        height: 44,
+        child: Row(
+          children: [
+            SizedBox(
+              width: 80,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: GestureDetector(
+                  onTap: () {
+                    if (context.canPop()) {
+                      context.pop();
+                      return;
+                    }
+                    context.goNamed(RouteNames.profile);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: AppIcon.iconBack,
+                  ),
+                ),
+              ),
             ),
-          ),
-          Text('支付记录', style: AppTextStyles.titleLarge),
-        ],
+            Expanded(
+              child: Center(
+                child: Text(
+                  '支付记录',
+                  style: AppTextStyles.normalPageTitle,
+                ),
+              ),
+            ),
+            const SizedBox(width: 80),
+          ],
+        ),
       ),
     );
   }

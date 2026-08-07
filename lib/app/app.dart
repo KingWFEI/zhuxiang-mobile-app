@@ -12,7 +12,7 @@ class ZhuxiangApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
     return MaterialApp.router(
-      title: '住享',
+      title: '勿忧管家',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       locale: const Locale('zh', 'CN'),

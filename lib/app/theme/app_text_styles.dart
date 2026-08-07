@@ -30,6 +30,12 @@ class AppTextStyles {
     fontWeight: FontWeight.w700,
   );
 
+  static const normalPageTitle = TextStyle(
+    color: AppColors.textPrimary,
+    fontSize: 20,
+    fontWeight: FontWeight.w400,
+  );
+
   static const titleMedium = TextStyle(
     color: AppColors.textPrimary,
     fontSize: 18,

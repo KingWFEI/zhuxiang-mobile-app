@@ -272,10 +272,12 @@ class _HouseSearchResultPageState extends ConsumerState<HouseSearchResultPage> {
       } else {
         await ref.read(houseServiceProvider).addFavorite(house.id);
       }
-      ref.invalidate(houseSearchProvider);
+      // 刷新时保留当前列表，避免收藏后搜索结果瞬间清空。
+      await ref.read(houseSearchProvider.notifier).refresh();
     } on Object {
-      if (mounted)
+      if (mounted) {
         AppToast.show(context, '操作失败，请稍后重试', type: AppToastType.error);
+      }
     }
   }
 

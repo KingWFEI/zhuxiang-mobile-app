@@ -105,7 +105,7 @@ class _AppLoadingPageState extends ConsumerState<AppLoadingPage>
               fit: StackFit.expand,
               children: [
                 Semantics(
-                  label: '住享社区建筑背景',
+                  label: '勿忧管家社区建筑背景',
                   image: true,
                   child: Image.asset(
                     'assets/app_load_back.png',
@@ -164,7 +164,7 @@ class _BrandLockup extends StatelessWidget {
     final titleSize = (contentWidth * 0.105).clamp(36.0, 50.0);
 
     return Semantics(
-      label: '住享',
+      label: '勿忧管家',
       image: true,
       child: ExcludeSemantics(
         child: Row(
@@ -186,7 +186,7 @@ class _BrandLockup extends StatelessWidget {
                 colors: [Color(0xFF168BFF), Color(0xFF315FEA)],
               ).createShader(bounds),
               child: Text(
-                '住享',
+                '勿忧管家',
                 textScaler: TextScaler.noScaling,
                 style: TextStyle(
                   color: Colors.white,

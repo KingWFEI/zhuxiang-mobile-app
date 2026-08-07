@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_icon.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_empty_view.dart';
@@ -107,11 +108,22 @@ class _FavoriteHousesPageState extends ConsumerState<FavoriteHousesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('我的收藏'),
-        backgroundColor: AppColors.surface,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _FavHeader(
+              onBack: () {
+                if (context.canPop()) {
+                  context.pop();
+                  return;
+                }
+                context.goNamed(RouteNames.profile);
+              },
+            ),
+            Expanded(child: _buildBody()),
+          ],
+        ),
       ),
-      body: _buildBody(),
     );
   }
 
@@ -185,5 +197,52 @@ class _FavoriteHousesPageState extends ConsumerState<FavoriteHousesPage> {
       );
     }
     return const SizedBox.shrink();
+  }
+}
+
+class _FavHeader extends StatelessWidget {
+  const _FavHeader({required this.onBack});
+
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.pageHorizontal,
+        AppSpacing.sm,
+        AppSpacing.pageHorizontal,
+        AppSpacing.sm,
+      ),
+      child: SizedBox(
+        height: 44,
+        child: Row(
+          children: [
+            SizedBox(
+              width: 80,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: GestureDetector(
+                  onTap: onBack,
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: AppIcon.iconBack,
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: Text(
+                  '我的收藏',
+                  style: AppTextStyles.normalPageTitle,
+                ),
+              ),
+            ),
+            const SizedBox(width: 80),
+          ],
+        ),
+      ),
+    );
   }
 }

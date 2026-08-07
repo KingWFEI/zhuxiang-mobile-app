@@ -40,66 +40,61 @@ class _MyRentOrdersPageState extends ConsumerState<MyRentOrdersPage> {
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
-            child: RefreshIndicator(
-              onRefresh: () async => ref.invalidate(myRentOrdersProvider),
-              child: CustomScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: _useGradientOrdersHeader
-                        ? _OrdersHeaderV2(
-                            onBack: () {
-                              if (context.canPop()) {
-                                context.pop();
-                                return;
-                              }
-                              context.goNamed(RouteNames.profile);
-                            },
-                          )
-                        : _OrdersHeader(
-                            onBack: () {
-                              if (context.canPop()) {
-                                context.pop();
-                                return;
-                              }
-                              context.goNamed(RouteNames.profile);
-                            },
+            child: Column(
+              children: [
+                _OrdersHeader(
+                  onBack: () {
+                    if (context.canPop()) {
+                      context.pop();
+                      return;
+                    }
+                    context.goNamed(RouteNames.profile);
+                  },
+                ),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () async => ref.invalidate(myRentOrdersProvider),
+                    child: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
+                        SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.lg,
+                            AppSpacing.lg,
+                            AppSpacing.lg,
+                            108,
                           ),
-                  ),
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.lg,
-                      AppSpacing.lg,
-                      AppSpacing.lg,
-                      108,
-                    ),
-                    sliver: SliverToBoxAdapter(
-                      child: orders.when(
-                        loading: () => const SizedBox(
-                          height: 320,
-                          child: AppLoadingView(message: '正在加载租房订单'),
-                        ),
-                        error: (error, _) => SizedBox(
-                          height: 320,
-                          child: AppErrorView(
-                            message: '租房订单加载失败，请确认已登录后重试',
-                            onRetry: () => ref.invalidate(myRentOrdersProvider),
+                          sliver: SliverToBoxAdapter(
+                            child: orders.when(
+                              loading: () => const SizedBox(
+                                height: 320,
+                                child: AppLoadingView(message: '正在加载租房订单'),
+                              ),
+                              error: (error, _) => SizedBox(
+                                height: 320,
+                                child: AppErrorView(
+                                  message: '租房订单加载失败，请确认已登录后重试',
+                                  onRetry: () =>
+                                      ref.invalidate(myRentOrdersProvider),
+                                ),
+                              ),
+                              data: (items) => _OrderList(
+                                orders: items,
+                                cancellingOrderId: _cancellingOrderId,
+                                hidingOrderId: _hidingOrderId,
+                                onCancel: _cancelOrder,
+                                onHide: _hideOrder,
+                                onPaymentExpired: () =>
+                                    ref.invalidate(myRentOrdersProvider),
+                              ),
+                            ),
                           ),
                         ),
-                        data: (items) => _OrderList(
-                          orders: items,
-                          cancellingOrderId: _cancellingOrderId,
-                          hidingOrderId: _hidingOrderId,
-                          onCancel: _cancelOrder,
-                          onHide: _hideOrder,
-                          onPaymentExpired: () =>
-                              ref.invalidate(myRentOrdersProvider),
-                        ),
-                      ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -415,70 +410,6 @@ class _StatusChip extends StatelessWidget {
   }
 }
 
-class _OrdersHeaderV2 extends StatelessWidget {
-  const _OrdersHeaderV2({required this.onBack});
-
-  final VoidCallback onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 150,
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.xl,
-        AppSpacing.lg,
-        AppSpacing.xl,
-        AppSpacing.lg,
-      ),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFF4FAFF), Color(0xFFE7F3FF)],
-        ),
-        borderRadius: BorderRadius.vertical(
-          bottom: Radius.circular(AppRadius.xxl),
-        ),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: -AppSpacing.lg,
-            left: -AppSpacing.xl,
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              child: IconButton(onPressed: onBack, icon: AppIcon.iconBack),
-            ),
-          ),
-          Positioned(
-            right: -54,
-            bottom: -54,
-            child: Opacity(
-              opacity: 0.42,
-              child: Image.asset('assets/home_bk.png', width: 300),
-            ),
-          ),
-          Positioned.fill(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                SizedBox(height: AppSpacing.lg),
-                Text(
-                  '我的订单',
-                  style: AppTextStyles.titleLarge.copyWith(fontSize: 28),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text('查看租房流程进度，继续未完成的订单', style: AppTextStyles.bodyMedium),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _OrdersHeader extends StatelessWidget {
   const _OrdersHeader({required this.onBack});
 
@@ -486,42 +417,38 @@ class _OrdersHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 132,
+    return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.lg,
-        AppSpacing.lg,
-        AppSpacing.lg,
+        AppSpacing.pageHorizontal,
+        AppSpacing.sm,
+        AppSpacing.pageHorizontal,
+        AppSpacing.sm,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(
-          bottom: Radius.circular(AppRadius.card),
-        ),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: -AppSpacing.sm,
-            left: -AppSpacing.md,
-            child: IconButton(onPressed: onBack, icon: AppIcon.iconBack),
-          ),
-          Positioned.fill(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text(
-                  '我的订单',
-                  style: AppTextStyles.titleLarge.copyWith(fontSize: 28),
+      child: SizedBox(
+        height: 44,
+        child: Row(
+          children: [
+            SizedBox(
+              width: 80,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: GestureDetector(
+                  onTap: onBack,
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: AppIcon.iconBack,
+                  ),
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                Text('查看租房流程进度，继续未完成的订单', style: AppTextStyles.bodyMedium),
-              ],
+              ),
             ),
-          ),
-        ],
+            Expanded(
+              child: Center(
+                child: Text('我的订单', style: AppTextStyles.normalPageTitle),
+              ),
+            ),
+            const SizedBox(width: 80),
+          ],
+        ),
       ),
     );
   }

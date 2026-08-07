@@ -46,6 +46,7 @@ class RouteNames {
   static const customerServiceChat = 'customerServiceChat';
   static const viewingAppointment = 'viewingAppointment';
   static const viewingDetail = 'viewingDetail';
+  static const appointmentUnlock = 'appointmentUnlock';
   static const rentalApplication = 'rentalApplication';
   static const leaseContract = 'leaseContract';
   static const rentalPayment = 'rentalPayment';
@@ -61,10 +62,13 @@ class RouteNames {
   static const landlordHouseCreate = 'landlordHouseCreate';
   static const landlordHouseEdit = 'landlordHouseEdit';
   static const landlordContracts = 'landlordContracts';
+  static const landlordAppointments = 'landlordAppointments';
+  static const landlordAppointmentDetail = 'landlordAppointmentDetail';
   static const landlordContractDetail = 'landlordContractDetail';
   static const landlordContractWebview = 'landlordContractWebview';
   static const landlordContractResult = 'landlordContractResult';
   static const landlordProfile = 'landlordProfile';
+  static const landlordProfileEdit = 'landlordProfileEdit';
   static const userAgreement = 'userAgreement';
   static const privacyPolicy = 'privacyPolicy';
   static const favoriteHouses = 'favoriteHouses';

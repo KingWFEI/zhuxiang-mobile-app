@@ -33,7 +33,7 @@ void main() {
     expect(find.text('服务通知'), findsOneWidget);
     expect(find.text('全部消息'), findsOneWidget);
     expect(find.text('公告'), findsOneWidget);
-    expect(find.text('住享管家'), findsWidgets);
+    expect(find.text('勿忧管家'), findsWidgets);
     expect(find.text('账单通知'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
@@ -46,7 +46,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('账单通知'), findsOneWidget);
-    expect(find.text('住享管家'), findsNothing);
+    expect(find.text('勿忧管家'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }
@@ -55,7 +55,7 @@ class _FakeMessageService implements MessageServiceContract {
   static const _messages = [
     AppMessage(
       id: 'system-1',
-      title: '住享管家',
+      title: '勿忧管家',
       content: '您的报修工单已被接单，请保持电话畅通',
       category: MessageCategory.system,
       isRead: false,

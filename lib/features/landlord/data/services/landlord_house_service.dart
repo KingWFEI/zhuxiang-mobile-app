@@ -74,6 +74,17 @@ class LandlordHouseService {
     return LandlordHouseItem.fromJson(data);
   }
 
+  Future<void> deleteHouse(String houseId) async {
+    final result = await _apiClient.delete('/landlord/houses/$houseId');
+    final deleted = await result.unwrapValue<bool>((data) => data == true);
+    if (!deleted) {
+      throw const ApiException(
+        type: ApiExceptionType.server,
+        message: '房源删除失败',
+      );
+    }
+  }
+
   Future<String> uploadImage(String filePath, String fileName) async {
     final formData = FormData.fromMap({
       'file': await MultipartFile.fromFile(filePath, filename: fileName),
@@ -86,7 +97,28 @@ class LandlordHouseService {
     return data['url']?.toString() ?? '';
   }
 
+  Future<PropertyCertificateInfo> uploadPropertyCertificate(
+    String houseId,
+    String filePath,
+    String fileName,
+  ) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath, filename: fileName),
+    });
+    final result = await _apiClient.post(
+      '/landlord/houses/$houseId/property-certificate',
+      data: formData,
+    );
+    return PropertyCertificateInfo.fromJson(_unwrap(result));
+  }
+
   Map<String, dynamic> _unwrap(ApiResult<Response<dynamic>> result) {
+    if (result case ApiFailure<Response<dynamic>>(
+      :final message,
+      :final error,
+    )) {
+      _throwApiFailure(message, error);
+    }
     if (result case ApiSuccess<Response<dynamic>>(:final data)) {
       final body = data.data;
       if (body is Map<String, dynamic>) {
@@ -105,6 +137,12 @@ class LandlordHouseService {
   }
 
   List<Map<String, dynamic>> _unwrapList(ApiResult<Response<dynamic>> result) {
+    if (result case ApiFailure<Response<dynamic>>(
+      :final message,
+      :final error,
+    )) {
+      _throwApiFailure(message, error);
+    }
     if (result case ApiSuccess<Response<dynamic>>(:final data)) {
       final body = data.data;
       if (body is Map<String, dynamic>) {
@@ -129,5 +167,14 @@ class LandlordHouseService {
       }
     }
     throw const ApiException(type: ApiExceptionType.server, message: '请求失败');
+  }
+
+  Never _throwApiFailure(String message, Object? error) {
+    if (error is ApiException) throw error;
+    throw ApiException(
+      type: ApiExceptionType.unknown,
+      message: message.trim().isEmpty ? '请求失败' : message,
+      cause: error,
+    );
   }
 }

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_toast.dart';
+import '../../../../core/widgets/app_webview_page.dart';
 import '../../data/providers/rental_flow_providers.dart';
 import '../../domain/entities/contract_signing.dart';
 import '../../domain/entities/rent_order.dart';
@@ -25,30 +25,13 @@ class OnlineSignPage extends ConsumerStatefulWidget {
   ConsumerState<OnlineSignPage> createState() => _OnlineSignPageState();
 }
 
-class _OnlineSignPageState extends ConsumerState<OnlineSignPage>
-    with WidgetsBindingObserver {
-  bool _waitingForBrowserReturn = false;
+class _OnlineSignPageState extends ConsumerState<OnlineSignPage> {
   bool _handlingCompletion = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && _waitingForBrowserReturn) {
-      _waitingForBrowserReturn = false;
-      _refreshStatus(showPendingMessage: false);
-    }
   }
 
   @override
@@ -166,24 +149,24 @@ class _OnlineSignPageState extends ConsumerState<OnlineSignPage>
     }
 
     final signUrl = entry.signUrl;
-    final uri = signUrl == null ? null : Uri.tryParse(signUrl);
-    if (uri == null || !uri.hasScheme) {
+    if (signUrl == null || !AppWebViewPage.supportsUrl(signUrl)) {
       AppToast.show(context, '未获取到有效的签署页面', type: AppToastType.error);
       return;
     }
 
-    _waitingForBrowserReturn = true;
-    bool launched;
     try {
-      launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => AppWebViewPage(title: '合同签署', initialUrl: signUrl),
+        ),
+      );
     } on Object {
-      launched = false;
+      if (mounted) {
+        AppToast.show(context, '签署页面打开失败', type: AppToastType.error);
+      }
+      return;
     }
-    if (!mounted) return;
-    if (!launched) {
-      _waitingForBrowserReturn = false;
-      AppToast.show(context, '签署页面打开失败', type: AppToastType.error);
-    }
+    if (mounted) await _refreshStatus(showPendingMessage: true);
   }
 
   void _handleDeadlineExpired() {
@@ -246,7 +229,7 @@ class _SignStatusRow extends StatelessWidget {
 }
 
 String _statusHint(ContractSigningStatus? status) {
-  if (status == null) return '点击“去签署”后将打开 e签宝官方签署页面。';
+  if (status == null) return '点击“去签署”后将在 App 内打开 e签宝官方签署页面。';
   if (status.isCompleted) return '合同已完成签署。';
   if (status.currentUserSigned) return '你已完成签署，正在等待另一方签署。';
   return '合同尚未完成，请继续前往 e签宝签署。';

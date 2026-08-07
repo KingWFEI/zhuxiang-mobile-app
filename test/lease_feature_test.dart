@@ -214,7 +214,7 @@ class _FakeTenantLockRepository implements TenantLockRepositoryContract {
       smartLockId: 'smart-lock-001',
       houseName: '3栋2单元1201',
       room: '1201',
-      lockName: '住享智能门锁',
+      lockName: '勿忧管家智能门锁',
       lockMac: '58:6F:C7:93:B6:E7',
       lockData: 'tenant-lock-data',
       ttlockKeyId: 987654,
