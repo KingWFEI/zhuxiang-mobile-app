@@ -23,10 +23,14 @@ class CustomerServiceApi {
     return _mapSingle(result, EnterSessionResponse.fromJson);
   }
 
-  Future<ApiResult<List<CsSession>>> getSessions(
-      {int page = 1, int pageSize = 20}) async {
-    final result = await _apiClient.get('$_base/sessions',
-        queryParameters: {'page': page, 'pageSize': pageSize});
+  Future<ApiResult<List<CsSession>>> getSessions({
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final result = await _apiClient.get(
+      '$_base/sessions',
+      queryParameters: {'page': page, 'pageSize': pageSize},
+    );
     return _mapPage(result, CsSession.fromJson);
   }
 
@@ -37,21 +41,24 @@ class CustomerServiceApi {
 
   Future<ApiResult<void>> closeSession(String sessionId) async {
     final result = await _apiClient.post('$_base/sessions/$sessionId/close');
-    if (result case ApiFailure(:final message))
+    if (result case ApiFailure(:final message)) {
       return ApiFailure(message: message);
+    }
     return const ApiSuccess(null);
   }
 
-  Future<ApiResult<void>> submitFeedback(
-      {required String messageId,
-      required String type,
-      String? comment}) async {
+  Future<ApiResult<void>> submitFeedback({
+    required String messageId,
+    required String type,
+    String? comment,
+  }) async {
     final result = await _apiClient.post(
       '$_base/messages/$messageId/feedback',
       data: {'feedbackType': type, 'comment': comment},
     );
-    if (result case ApiFailure(:final message))
+    if (result case ApiFailure(:final message)) {
       return ApiFailure(message: message);
+    }
     return const ApiSuccess(null);
   }
 
@@ -61,6 +68,7 @@ class CustomerServiceApi {
     required String sessionId,
     required String message,
   }) async* {
+    final requestId = 'cs_${DateTime.now().microsecondsSinceEpoch}';
     try {
       // 用 Dio 直接发请求（receiveTimeout=0 确保长连接不中途断开）
       final response = await _apiClient.dio.post(
@@ -69,15 +77,13 @@ class CustomerServiceApi {
         options: Options(
           responseType: ResponseType.stream,
           receiveTimeout: Duration.zero,
-          headers: {'Accept': 'text/event-stream'},
+          headers: {'Accept': 'text/event-stream', 'X-Request-Id': requestId},
         ),
       );
 
       final stream = response.data;
       if (stream is! ResponseBody) {
-        yield SseEvent(
-            event: 'error',
-            data: jsonEncode({'message': '响应异常'}));
+        yield SseEvent(event: 'error', data: jsonEncode({'message': '响应异常'}));
         return;
       }
 
@@ -107,24 +113,27 @@ class CustomerServiceApi {
       }
     } on DioException catch (e) {
       yield SseEvent(
-          event: 'error',
-          data: jsonEncode({'message': e.message ?? '连接失败'}));
+        event: 'error',
+        data: jsonEncode({'message': e.message ?? '连接失败'}),
+      );
     } catch (e) {
-      yield SseEvent(
-          event: 'error',
-          data: jsonEncode({'message': '连接异常'}));
+      yield SseEvent(event: 'error', data: jsonEncode({'message': '连接异常'}));
     }
   }
 
   // ── 内部解析 ──
 
   ApiResult<T> _mapSingle<T>(
-      ApiResult<Response> result, T Function(Map<String, dynamic>) parser) {
+    ApiResult<Response> result,
+    T Function(Map<String, dynamic>) parser,
+  ) {
     return _unwrap(result, (data) => parser(Map<String, dynamic>.from(data)));
   }
 
   ApiResult<List<T>> _mapList<T>(
-      ApiResult<Response> result, T Function(Map<String, dynamic>) parser) {
+    ApiResult<Response> result,
+    T Function(Map<String, dynamic>) parser,
+  ) {
     return _unwrap(result, (data) {
       if (data is List) {
         return data.map((e) => parser(Map<String, dynamic>.from(e))).toList();
@@ -134,7 +143,9 @@ class CustomerServiceApi {
   }
 
   ApiResult<List<T>> _mapPage<T>(
-      ApiResult<Response> result, T Function(Map<String, dynamic>) parser) {
+    ApiResult<Response> result,
+    T Function(Map<String, dynamic>) parser,
+  ) {
     return _unwrap(result, (data) {
       final map = Map<String, dynamic>.from(data);
       final items = map['items'];
@@ -146,7 +157,9 @@ class CustomerServiceApi {
   }
 
   ApiResult<T> _unwrap<T>(
-      ApiResult<Response> result, T Function(dynamic data) parser) {
+    ApiResult<Response> result,
+    T Function(dynamic data) parser,
+  ) {
     if (result case ApiFailure(:final message, :final error)) {
       return ApiFailure<T>(message: message, error: error);
     }
@@ -155,8 +168,7 @@ class CustomerServiceApi {
       if (body is! Map) return ApiFailure<T>(message: '响应格式错误');
       final code = body['code'];
       if (code != 200) {
-        return ApiFailure<T>(
-            message: body['message']?.toString() ?? '请求失败');
+        return ApiFailure<T>(message: body['message']?.toString() ?? '请求失败');
       }
       return ApiSuccess(parser(body['data']));
     } on Object catch (e) {
