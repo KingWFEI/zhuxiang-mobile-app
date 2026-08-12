@@ -5,6 +5,7 @@ class ApiException implements Exception {
     required this.type,
     required this.message,
     this.statusCode,
+    this.businessCode,
     this.retryAfter,
     this.cause,
   });
@@ -12,11 +13,12 @@ class ApiException implements Exception {
   final ApiExceptionType type;
   final String message;
   final int? statusCode;
+  final String? businessCode;
   final int? retryAfter;
   final Object? cause;
 
   @override
   String toString() {
-    return 'ApiException(type: $type, statusCode: $statusCode, retryAfter: $retryAfter, message: $message)';
+    return 'ApiException(type: $type, statusCode: $statusCode, businessCode: $businessCode, retryAfter: $retryAfter, message: $message)';
   }
 }

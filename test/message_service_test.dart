@@ -6,6 +6,21 @@ import 'package:zhuxiang_app/features/message/data/services/message_service.dart
 import 'package:zhuxiang_app/features/message/domain/entities/app_message.dart';
 
 void main() {
+  test('退款成功消息在账单分类中保留 none 动作和订单目标', () {
+    final message = AppMessage.fromJson({
+      'id': 'message-refund-1',
+      'category': 'bill',
+      'title': '退款成功',
+      'content': '租房订单退款已原路退回，退款金额为2800.00元。',
+      'isRead': false,
+      'actionType': 'none',
+      'actionTarget': 'order-1',
+    });
+
+    expect(message.category, MessageCategory.bill);
+    expect(message.actionType, 'none');
+    expect(message.actionTarget, 'order-1');
+  });
   test(
     'fetchMessages uses backend path and exact query parameter names',
     () async {

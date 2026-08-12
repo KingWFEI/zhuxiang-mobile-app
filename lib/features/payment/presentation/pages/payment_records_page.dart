@@ -426,6 +426,8 @@ Color _statusColor(PaymentRecordStatus status) {
     PaymentRecordStatus.pending => AppColors.warning,
     PaymentRecordStatus.success => AppColors.secondary,
     PaymentRecordStatus.failed => AppColors.error,
+    PaymentRecordStatus.refundPending => AppColors.warning,
+    PaymentRecordStatus.refundFailed => AppColors.error,
     PaymentRecordStatus.refunded => AppColors.primary,
   };
 }

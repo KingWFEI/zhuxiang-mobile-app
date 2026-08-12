@@ -88,9 +88,16 @@ class RentalFlowService {
   }
 
   Future<RentOrder> cancelRentOrder(String orderId) async {
+    final previousStatus = _orders[orderId]?.status;
     final result = await _apiClient.post('/rent-orders/$orderId/cancel');
     final order = await result.unwrapData(RentOrderModel.fromJson);
-    _orders[order.id] = order;
+    if (previousStatus == RentOrderStatus.created ||
+        previousStatus == RentOrderStatus.pendingRealName ||
+        previousStatus == RentOrderStatus.pendingContract) {
+      _orders.remove(orderId);
+    } else {
+      _orders[order.id] = order;
+    }
     return order;
   }
 

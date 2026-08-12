@@ -50,11 +50,12 @@ class _WaitingLandlordSignPageState
     final order = state.order;
     final signing = state.signingStatus;
     final completed = signing?.isCompleted == true;
+    final platformHouse = order?.isPlatformSource == true;
 
     return Scaffold(
       backgroundColor: AppColors.authBackground,
       appBar: AppBar(
-        title: const Text('等待房东签约'),
+        title: Text(platformHouse ? '合同签约结果' : '等待房东签约'),
         centerTitle: true,
         backgroundColor: AppColors.authBackground,
         surfaceTintColor: Colors.transparent,
@@ -71,9 +72,15 @@ class _WaitingLandlordSignPageState
                 120,
               ),
               children: [
-                _ResultHeader(completed: completed),
+                _ResultHeader(
+                  completed: completed,
+                  platformHouse: platformHouse,
+                ),
                 const SizedBox(height: AppSpacing.xl),
-                _ProgressCard(completed: completed),
+                _ProgressCard(
+                  completed: completed,
+                  platformHouse: platformHouse,
+                ),
                 const SizedBox(height: AppSpacing.lg),
                 _OrderCard(
                   houseName: order?.houseName ?? '租住房源',
@@ -112,9 +119,10 @@ class _WaitingLandlordSignPageState
 }
 
 class _ResultHeader extends StatelessWidget {
-  const _ResultHeader({required this.completed});
+  const _ResultHeader({required this.completed, required this.platformHouse});
 
   final bool completed;
+  final bool platformHouse;
 
   @override
   Widget build(BuildContext context) {
@@ -135,13 +143,25 @@ class _ResultHeader extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.lg),
         Text(
-          completed ? '房东已完成签约' : '支付成功，等待房东签约',
+          platformHouse
+              ? completed
+                    ? '合同签署已完成'
+                    : '支付成功，平台正在确认合同'
+              : completed
+              ? '房东已完成签约'
+              : '支付成功，等待房东签约',
           textAlign: TextAlign.center,
           style: AppTextStyles.titleLarge,
         ),
         const SizedBox(height: AppSpacing.sm),
         Text(
-          completed ? '双方签署已完成，租赁合同正式生效。' : '合同已经发送给房东。房东签署完成后，租赁合同将正式生效。',
+          platformHouse
+              ? completed
+                    ? '平台企业印章已自动加盖，租赁合同正式生效。'
+                    : '租客签署及支付已完成，平台正在自动加盖企业印章，请稍候。'
+              : completed
+              ? '双方签署已完成，租赁合同正式生效。'
+              : '合同已经发送给房东。房东签署完成后，租赁合同将正式生效。',
           textAlign: TextAlign.center,
           style: AppTextStyles.bodyMedium.copyWith(
             color: AppColors.textSecondary,
@@ -153,9 +173,10 @@ class _ResultHeader extends StatelessWidget {
 }
 
 class _ProgressCard extends StatelessWidget {
-  const _ProgressCard({required this.completed});
+  const _ProgressCard({required this.completed, required this.platformHouse});
 
   final bool completed;
+  final bool platformHouse;
 
   @override
   Widget build(BuildContext context) {
@@ -166,7 +187,11 @@ class _ProgressCard extends StatelessWidget {
           const _ProgressLine(done: true),
           const _ProgressItem(label: '首笔费用支付成功', done: true),
           _ProgressLine(done: completed),
-          _ProgressItem(label: '房东完成合同签署', done: completed, active: !completed),
+          _ProgressItem(
+            label: platformHouse ? '平台企业自动盖章' : '房东完成合同签署',
+            done: completed,
+            active: !completed,
+          ),
           _ProgressLine(done: completed),
           _ProgressItem(label: '租赁合同正式生效', done: completed),
         ],

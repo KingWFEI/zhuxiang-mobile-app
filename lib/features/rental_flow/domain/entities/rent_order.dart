@@ -5,6 +5,9 @@ enum RentOrderStatus {
   pendingPayment,
   pendingSign,
   pendingLandlordSign,
+  refundPending,
+  refunded,
+  refundFailed,
   completed,
   cancelled;
 
@@ -16,6 +19,9 @@ enum RentOrderStatus {
       RentOrderStatus.pendingPayment => '待支付',
       RentOrderStatus.pendingSign => '待签约',
       RentOrderStatus.pendingLandlordSign => '待房东签约',
+      RentOrderStatus.refundPending => '退款处理中',
+      RentOrderStatus.refunded => '已退款',
+      RentOrderStatus.refundFailed => '退款异常',
       RentOrderStatus.completed => '已完成',
       RentOrderStatus.cancelled => '已取消',
     };
@@ -40,6 +46,7 @@ class RentOrder {
     required this.serviceFee,
     required this.firstPaymentAmount,
     required this.status,
+    this.sourceType = '',
     this.createdAt,
     this.updatedAt,
     this.paymentDeadline,
@@ -62,10 +69,13 @@ class RentOrder {
   final int serviceFee;
   final int firstPaymentAmount;
   final RentOrderStatus status;
+  final String sourceType;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final DateTime? paymentDeadline;
   final DateTime? prePaymentDeadline;
+
+  bool get isPlatformSource => sourceType.toUpperCase() == 'PLATFORM';
 
   DateTime get endDate => DateTime(
     startDate.year,
@@ -91,6 +101,7 @@ class RentOrder {
       serviceFee: serviceFee,
       firstPaymentAmount: firstPaymentAmount,
       status: status ?? this.status,
+      sourceType: sourceType,
       createdAt: createdAt,
       updatedAt: updatedAt,
       paymentDeadline: paymentDeadline,

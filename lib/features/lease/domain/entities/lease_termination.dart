@@ -14,6 +14,15 @@ class LeaseTerminationAttachment {
   }
 }
 
+class RescissionActionLink {
+  const RescissionActionLink({required this.action, required this.url});
+
+  final String action;
+  final String url;
+
+  bool get isAuthorization => action == 'authorize';
+}
+
 class TerminationCheck {
   const TerminationCheck({
     required this.canApply,
@@ -78,8 +87,11 @@ class TerminationApplication {
     return TerminationApplication(
       id: _string(json, ['id', 'applicationId']),
       applicationNo: _string(json, ['applicationNo', 'application_no']),
-      status: _string(json, ['status'], fallback: 'pending_review'),
-      statusText: _string(json, ['statusText', 'status_text'], fallback: '待审核'),
+      status: _string(json, ['status'], fallback: 'pending_photos'),
+      statusText: _string(json, [
+        'statusText',
+        'status_text',
+      ], fallback: '待上传验房照片'),
     );
   }
 

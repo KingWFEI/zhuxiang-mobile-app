@@ -26,6 +26,7 @@ abstract class LeaseServiceContract {
     String leaseId,
     Map<String, dynamic> body,
   );
+  Future<RescissionActionLink> getRescissionSignUrl(String applicationId);
 }
 
 class LeaseService implements LeaseServiceContract {
@@ -102,6 +103,35 @@ class LeaseService implements LeaseServiceContract {
     return _withFallback(
       () => _applyTermination(leaseId, body),
       () => _fallback.applyTermination(leaseId, body),
+    );
+  }
+
+  @override
+  Future<RescissionActionLink> getRescissionSignUrl(
+    String applicationId,
+  ) async {
+    final response = await _request(
+      () => _apiClient.post(
+        '/leases/termination-applications/$applicationId/rescission-sign-url',
+      ),
+    );
+    final payload = _payload(response.data);
+    if (payload is! Map<String, dynamic>) {
+      throw const ApiException(
+        type: ApiExceptionType.server,
+        message: '解约签署链接数据格式错误',
+      );
+    }
+    final url = _string(payload, ['signUrl', 'url', 'shortUrl']);
+    if (url.isEmpty) {
+      throw const ApiException(
+        type: ApiExceptionType.server,
+        message: '未获取到解约协议签署链接',
+      );
+    }
+    return RescissionActionLink(
+      action: _string(payload, ['action'], fallback: 'sign'),
+      url: url,
     );
   }
 
@@ -572,6 +602,17 @@ class MockLeaseService implements LeaseServiceContract {
       applicationNo: 'TZ202606290001',
       status: 'pending_review',
       statusText: '待审核',
+    );
+  }
+
+  @override
+  Future<RescissionActionLink> getRescissionSignUrl(
+    String applicationId,
+  ) async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    return RescissionActionLink(
+      action: 'sign',
+      url: 'https://example.com/mock-rescission-sign/$applicationId',
     );
   }
 }

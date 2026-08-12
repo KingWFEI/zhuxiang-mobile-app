@@ -17,8 +17,6 @@ import '../../data/providers/rental_flow_providers.dart';
 import '../../domain/entities/rent_order.dart';
 import '../widgets/rent_order_deadline_banner.dart';
 
-const _useGradientOrdersHeader = true;
-
 class MyRentOrdersPage extends ConsumerStatefulWidget {
   const MyRentOrdersPage({super.key});
 
@@ -103,11 +101,28 @@ class _MyRentOrdersPageState extends ConsumerState<MyRentOrdersPage> {
   }
 
   Future<void> _cancelOrder(RentOrder order) async {
+    final needsRefund = order.status == RentOrderStatus.pendingLandlordSign;
+    final discardsDraft =
+        order.status == RentOrderStatus.created ||
+        order.status == RentOrderStatus.pendingRealName ||
+        order.status == RentOrderStatus.pendingContract;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('取消订单'),
-        content: Text('确认取消「${order.houseName}」的租房订单吗？'),
+        title: Text(
+          needsRefund
+              ? '取消并退款'
+              : discardsDraft
+              ? '取消租住申请'
+              : '取消订单',
+        ),
+        content: Text(
+          needsRefund
+              ? '订单已支付。确认取消「${order.houseName}」并将支付款原路退回吗？'
+              : discardsDraft
+              ? '确认退出「${order.houseName}」的办理流程吗？签署前草稿不会保留。'
+              : '确认取消「${order.houseName}」的租房订单吗？',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -115,7 +130,7 @@ class _MyRentOrdersPageState extends ConsumerState<MyRentOrdersPage> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('确认取消'),
+            child: Text(needsRefund ? '确认退款' : '确认取消'),
           ),
         ],
       ),
@@ -124,10 +139,20 @@ class _MyRentOrdersPageState extends ConsumerState<MyRentOrdersPage> {
 
     setState(() => _cancellingOrderId = order.id);
     try {
-      await ref.read(rentalFlowServiceProvider).cancelRentOrder(order.id);
+      final updated = await ref
+          .read(rentalFlowServiceProvider)
+          .cancelRentOrder(order.id);
       ref.invalidate(myRentOrdersProvider);
       if (!mounted) return;
-      AppToast.show(context, '订单已取消', type: AppToastType.success);
+      AppToast.show(
+        context,
+        updated.status == RentOrderStatus.refundPending
+            ? '退款申请已提交，支付款将原路退回'
+            : discardsDraft
+            ? '租住申请已取消，房源已恢复原始状态'
+            : '订单已取消',
+        type: AppToastType.success,
+      );
     } on Object {
       if (!mounted) return;
       AppToast.show(context, '取消订单失败，请稍后重试', type: AppToastType.error);
@@ -254,7 +279,10 @@ class _RentOrderCard extends StatelessWidget {
                   style: AppTextStyles.titleMedium.copyWith(fontSize: 16),
                 ),
               ),
-              _StatusChip(status: order.status),
+              _StatusChip(
+                status: order.status,
+                isPlatform: order.isPlatformSource,
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -278,6 +306,33 @@ class _RentOrderCard extends StatelessWidget {
             RentOrderDeadlineBanner(order: order, onExpired: onPaymentExpired),
             const SizedBox(height: AppSpacing.md),
           ],
+          if (order.status == RentOrderStatus.refundPending ||
+              order.status == RentOrderStatus.refunded ||
+              order.status == RentOrderStatus.refundFailed) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: AppColors.primaryLight,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: Text(
+                switch (order.status) {
+                  RentOrderStatus.refundPending => '房东未签署合同，退款正在原路退回',
+                  RentOrderStatus.refunded => '退款已原路退回',
+                  RentOrderStatus.refundFailed => '退款异常，请联系客服',
+                  _ => '',
+                },
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: order.status == RentOrderStatus.refundFailed
+                      ? AppColors.error
+                      : AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
           Row(
             children: [
               if (_canCancel(order.status) || _canHide(order.status)) ...[
@@ -296,21 +351,21 @@ class _RentOrderCard extends StatelessWidget {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () => context.pushNamed(
-                    RouteNames.houseDetail,
-                    pathParameters: {'houseId': order.houseId},
+                    RouteNames.rentOrderDetail,
+                    pathParameters: {'orderId': order.id},
                   ),
-                  child: const Text('查看房源'),
+                  child: const Text('订单详情'),
                 ),
               ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: FilledButton(
-                  onPressed: order.status == RentOrderStatus.cancelled
-                      ? null
-                      : () => _continueOrder(context, order),
-                  child: Text(_continueOrderLabel(order.status)),
+              if (!_isContinueDisabled(order.status)) ...[
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () => _continueOrder(context, order),
+                    child: Text(_continueOrderLabel(order)),
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ],
@@ -326,6 +381,9 @@ class _RentOrderCard extends StatelessWidget {
       RentOrderStatus.pendingPayment => RouteNames.rentalPayment,
       RentOrderStatus.pendingSign => RouteNames.onlineSign,
       RentOrderStatus.pendingLandlordSign => RouteNames.waitingLandlordSign,
+      RentOrderStatus.refundPending ||
+      RentOrderStatus.refunded ||
+      RentOrderStatus.refundFailed => RouteNames.rentOrders,
       RentOrderStatus.completed => RouteNames.lease,
       RentOrderStatus.cancelled => RouteNames.rentOrders,
     };
@@ -346,6 +404,9 @@ class _RentOrderCard extends StatelessWidget {
     if (isHiding) return '删除中';
     if (isCancelling) return '取消中';
     if (_canHide(order.status)) return '删除记录';
+    if (order.status == RentOrderStatus.pendingLandlordSign) {
+      return '取消并退款';
+    }
     return '取消订单';
   }
 }
@@ -353,10 +414,19 @@ class _RentOrderCard extends StatelessWidget {
 bool _canCancel(RentOrderStatus status) {
   return status != RentOrderStatus.completed &&
       status != RentOrderStatus.cancelled &&
-      status != RentOrderStatus.pendingLandlordSign;
+      status != RentOrderStatus.refundPending &&
+      status != RentOrderStatus.refunded &&
+      status != RentOrderStatus.refundFailed;
 }
 
-bool _canHide(RentOrderStatus status) => status == RentOrderStatus.cancelled;
+bool _canHide(RentOrderStatus status) =>
+    status == RentOrderStatus.cancelled || status == RentOrderStatus.refunded;
+
+bool _isContinueDisabled(RentOrderStatus status) =>
+    status == RentOrderStatus.cancelled ||
+    status == RentOrderStatus.refundPending ||
+    status == RentOrderStatus.refunded ||
+    status == RentOrderStatus.refundFailed;
 
 bool _hasActiveDeadline(RentOrder order) {
   if (order.status == RentOrderStatus.pendingPayment) {
@@ -381,15 +451,17 @@ String _formatOrderTime(DateTime? value) {
 String _twoDigits(int value) => value.toString().padLeft(2, '0');
 
 class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.status});
+  const _StatusChip({required this.status, required this.isPlatform});
 
   final RentOrderStatus status;
+  final bool isPlatform;
 
   @override
   Widget build(BuildContext context) {
     final isActive =
         status != RentOrderStatus.completed &&
-        status != RentOrderStatus.cancelled;
+        status != RentOrderStatus.cancelled &&
+        status != RentOrderStatus.refunded;
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm,
@@ -400,7 +472,7 @@ class _StatusChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Text(
-        _rentOrderStatusLabel(status),
+        _rentOrderStatusLabel(status, isPlatform: isPlatform),
         style: AppTextStyles.bodySmall.copyWith(
           color: isActive ? AppColors.primary : AppColors.textSecondary,
           fontWeight: FontWeight.w700,
@@ -454,25 +526,35 @@ class _OrdersHeader extends StatelessWidget {
   }
 }
 
-String _rentOrderStatusLabel(RentOrderStatus status) {
+String _rentOrderStatusLabel(
+  RentOrderStatus status, {
+  required bool isPlatform,
+}) {
   return switch (status) {
     RentOrderStatus.created || RentOrderStatus.pendingRealName => '待实名',
     RentOrderStatus.pendingContract => '待确认合同',
     RentOrderStatus.pendingPayment => '待支付',
     RentOrderStatus.pendingSign => '待签约',
-    RentOrderStatus.pendingLandlordSign => '待房东签约',
-    RentOrderStatus.completed => '已完成',
+    RentOrderStatus.pendingLandlordSign => isPlatform ? '平台盖章中' : '待房东签约',
+    RentOrderStatus.refundPending => '退款处理中',
+    RentOrderStatus.refunded => '退款成功',
+    RentOrderStatus.refundFailed => '退款异常，请联系客服',
+    RentOrderStatus.completed => '租约已生成',
     RentOrderStatus.cancelled => '已取消',
   };
 }
 
-String _continueOrderLabel(RentOrderStatus status) {
-  return switch (status) {
+String _continueOrderLabel(RentOrder order) {
+  return switch (order.status) {
     RentOrderStatus.created || RentOrderStatus.pendingRealName => '去实名',
     RentOrderStatus.pendingContract => '确认合同',
     RentOrderStatus.pendingPayment => '去支付',
     RentOrderStatus.pendingSign => '去签署',
-    RentOrderStatus.pendingLandlordSign => '查看签约进度',
+    RentOrderStatus.pendingLandlordSign =>
+      order.isPlatformSource ? '查看合同状态' : '查看签约进度',
+    RentOrderStatus.refundPending => '退款处理中',
+    RentOrderStatus.refunded => '退款已完成',
+    RentOrderStatus.refundFailed => '请联系客服',
     RentOrderStatus.completed => '查看租约',
     RentOrderStatus.cancelled => '订单已取消',
   };

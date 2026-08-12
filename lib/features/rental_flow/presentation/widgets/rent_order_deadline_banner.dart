@@ -93,7 +93,13 @@ class _RentOrderDeadlineBannerState extends State<RentOrderDeadlineBanner> {
       RentOrderStatus.pendingContract => '确认合同',
       RentOrderStatus.pendingSign => '完成签署',
       RentOrderStatus.pendingPayment => '完成支付',
-      _ => '继续办理',
+      RentOrderStatus.pendingLandlordSign =>
+        widget.order.isPlatformSource ? '等待平台确认合同' : '等待房东签署',
+      RentOrderStatus.refundPending => '等待退款完成',
+      RentOrderStatus.refunded => '退款已完成',
+      RentOrderStatus.refundFailed => '联系平台处理退款',
+      RentOrderStatus.completed => '查看租约',
+      RentOrderStatus.cancelled => '重新申请',
     };
 
     return Container(

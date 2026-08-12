@@ -29,18 +29,43 @@ final landlordContractServiceProvider = Provider<LandlordContractService>((
   return LandlordContractService(ref.watch(apiClientProvider));
 });
 
+class LandlordPendingSignCounts {
+  const LandlordPendingSignCounts({
+    required this.contracts,
+    required this.terminations,
+  });
+
+  final int contracts;
+  final int terminations;
+  int get total => contracts + terminations;
+}
+
+final landlordPendingSignCountsProvider =
+    FutureProvider.autoDispose<LandlordPendingSignCounts>((ref) async {
+      final userId = ref.watch(
+        authControllerProvider.select((state) => state.user?.id),
+      );
+      if (userId == null || userId.isEmpty) {
+        return const LandlordPendingSignCounts(contracts: 0, terminations: 0);
+      }
+      final service = ref.watch(landlordContractServiceProvider);
+      final pages = await Future.wait([
+        service.getPendingContracts(page: 1, pageSize: 1),
+        // 需要实际解析并过滤无申请编号的后端占位数据，不能只相信 total。
+        service.getPendingTerminations(page: 1, pageSize: 20),
+      ]);
+      return LandlordPendingSignCounts(
+        contracts: (pages[0] as dynamic).total as int,
+        terminations: (pages[1] as dynamic).total as int,
+      );
+    });
+
 final landlordPendingContractCountProvider = FutureProvider.autoDispose<int>((
   ref,
 ) async {
-  final userId = ref.watch(
-    authControllerProvider.select((state) => state.user?.id),
-  );
-  if (userId == null || userId.isEmpty) return 0;
-
-  final page = await ref
-      .watch(landlordContractServiceProvider)
-      .getPendingContracts(page: 1, pageSize: 1);
-  return page.total;
+  return ref
+      .watch(landlordPendingSignCountsProvider.future)
+      .then((v) => v.total);
 });
 
 final communityServiceProvider = Provider<CommunityService>((ref) {

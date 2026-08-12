@@ -16,7 +16,7 @@ class LandlordWorkbenchPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final count = ref.watch(landlordPendingContractCountProvider).valueOrNull;
+    final counts = ref.watch(landlordPendingSignCountsProvider).valueOrNull;
     final appointments = ref.watch(landlordAppointmentsProvider).valueOrNull;
     final pendingAppointments = appointments
         ?.where((item) => item.status == 'PENDING_CONFIRMATION')
@@ -27,7 +27,7 @@ class LandlordWorkbenchPage extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () async {
           await Future.wait([
-            ref.refresh(landlordPendingContractCountProvider.future),
+            ref.refresh(landlordPendingSignCountsProvider.future),
             ref.refresh(landlordAppointmentsProvider.future),
           ]);
         },
@@ -57,8 +57,12 @@ class LandlordWorkbenchPage extends ConsumerWidget {
             _WorkbenchEntry(
               icon: Icons.draw_outlined,
               title: '合同签署',
-              subtitle: '查看并签署待处理的租赁合同',
-              badge: count != null && count > 0 ? '$count份待签' : null,
+              subtitle: counts == null
+                  ? '签署租赁合同和解约协议'
+                  : '租赁合同 ${counts.contracts}份 · 解约协议 ${counts.terminations}份',
+              badge: counts != null && counts.total > 0
+                  ? '${counts.total}份待签'
+                  : null,
               onTap: () => context.pushNamed(RouteNames.landlordContracts),
             ),
           ],

@@ -221,10 +221,7 @@ class _HouseAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final reserved =
-        house.status.toLowerCase() == 'reserved' ||
-        house.rentAvailability.toLowerCase() == 'reserved';
-    if (!reserved) {
+    if (!house.isRentLocked) {
       return _ActionButton(label: '立即租用', onTap: onTap);
     }
     if (house.activeOrderBelongsToMe) {

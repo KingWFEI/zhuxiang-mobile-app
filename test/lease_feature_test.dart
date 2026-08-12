@@ -7,6 +7,7 @@ import 'package:zhuxiang_app/features/lease/data/models/lease_model.dart';
 import 'package:zhuxiang_app/features/lease/data/providers/lease_providers.dart';
 import 'package:zhuxiang_app/features/lease/data/services/lease_service.dart';
 import 'package:zhuxiang_app/features/lease/domain/entities/deposit.dart';
+import 'package:zhuxiang_app/features/lease/domain/entities/inspection.dart';
 import 'package:zhuxiang_app/features/lease/domain/entities/lease.dart';
 import 'package:zhuxiang_app/features/lease/domain/entities/lease_contract_document.dart';
 import 'package:zhuxiang_app/features/lease/domain/entities/lease_termination.dart';
@@ -17,6 +18,38 @@ import 'package:zhuxiang_app/features/lock/data/providers/tenant_lock_providers.
 import 'package:zhuxiang_app/features/lock/data/repositories/tenant_lock_repository.dart';
 
 void main() {
+  test('退租验房清单过滤管理端禁用项', () {
+    final inspection = MoveOutInspection.fromJson({
+      'contractId': 'contract-1',
+      'status': 'DRAFT',
+      'rooms': [
+        {
+          'roomCode': 'living-room',
+          'roomName': '客厅',
+          'items': [
+            {
+              'itemCode': 'sofa',
+              'itemName': '沙发',
+              'enabled': false,
+              'required': true,
+              'minPhotoCount': 2,
+            },
+            {
+              'itemCode': 'wall',
+              'itemName': '墙面',
+              'enabled': true,
+              'required': true,
+              'minPhotoCount': 1,
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(inspection.rooms.single.items, hasLength(1));
+    expect(inspection.rooms.single.items.single.itemCode, 'wall');
+  });
+
   test('电子合同路由是租约详情的子页面', () {
     final router = AppRouter.createRouter();
     addTearDown(router.dispose);
@@ -333,6 +366,16 @@ class _FakeLeaseService implements LeaseServiceContract {
       applicationNo: 'TZ202606290001',
       status: 'pending_review',
       statusText: '待审核',
+    );
+  }
+
+  @override
+  Future<RescissionActionLink> getRescissionSignUrl(
+    String applicationId,
+  ) async {
+    return RescissionActionLink(
+      action: 'sign',
+      url: 'https://example.com/rescission/$applicationId',
     );
   }
 }

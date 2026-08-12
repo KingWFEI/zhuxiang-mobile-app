@@ -29,6 +29,7 @@ class RouteNames {
   static const leaseTerminationApply = 'leaseTerminationApply';
   static const moveOutInspection = 'moveOutInspection';
   static const rentOrders = 'rentOrders';
+  static const rentOrderDetail = 'rentOrderDetail';
   static const paymentRecords = 'paymentRecords';
   static const paymentDetail = 'paymentDetail';
   static const bill = 'bill';
@@ -66,6 +67,7 @@ class RouteNames {
   static const landlordAppointments = 'landlordAppointments';
   static const landlordAppointmentDetail = 'landlordAppointmentDetail';
   static const landlordContractDetail = 'landlordContractDetail';
+  static const landlordTerminationDetail = 'landlordTerminationDetail';
   static const landlordContractWebview = 'landlordContractWebview';
   static const landlordContractResult = 'landlordContractResult';
   static const landlordProfile = 'landlordProfile';

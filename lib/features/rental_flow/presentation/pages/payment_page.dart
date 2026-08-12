@@ -74,7 +74,9 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
         const SizedBox(height: AppSpacing.lg),
         if (payment != null)
           RentFeeDetailCard(
+            amount: payment.amount,
             monthlyRent: payment.monthlyRent,
+            paymentMonths: payment.paymentMonths,
             deposit: payment.deposit,
             serviceFee: payment.serviceFee,
           ),
@@ -132,8 +134,13 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
         .submitPayment(widget.orderId, selected, channel);
     if (!mounted || result == null) return;
 
-    // 支付宝 H5 支付 → 打开 WebView
-    if (result.needWebView) {
+    // 支付宝只有在明确拿到 H5 地址后才能打开支付页；地址缺失时停留当前页，
+    // 不能落入 mock 分支并误跳到等待房东签约。
+    if (channel == 'alipay') {
+      if (!result.needWebView) {
+        AppToast.show(context, '支付页面获取失败，请稍后重试', type: AppToastType.error);
+        return;
+      }
       final paid = await Navigator.push<bool>(
         context,
         MaterialPageRoute(
@@ -154,7 +161,12 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
       return;
     }
 
-    // mock 支付 → 进入等待房东签约页
+    if (channel != 'mock') {
+      AppToast.show(context, '暂不支持该支付方式', type: AppToastType.error);
+      return;
+    }
+
+    // 只有明确的 mock 支付才直接进入等待房东签约页。
     ref.invalidate(myRentOrdersProvider);
     context.pushReplacementNamed(
       RouteNames.waitingLandlordSign,

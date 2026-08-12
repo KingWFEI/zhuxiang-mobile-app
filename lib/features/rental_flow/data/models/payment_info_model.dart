@@ -5,6 +5,7 @@ class PaymentInfoModel extends PaymentInfo {
     required super.orderId,
     required super.amount,
     required super.monthlyRent,
+    required super.paymentMonths,
     required super.deposit,
     required super.serviceFee,
     required super.paymentMethods,
@@ -20,6 +21,9 @@ class PaymentInfoModel extends PaymentInfo {
       monthlyRent: _centsToYuan(
         json['monthlyRent'] as num? ?? json['monthly_rent'] as num? ?? 0,
       ),
+      paymentMonths:
+          (json['paymentMonths'] as num? ?? json['payment_months'] as num? ?? 1)
+              .toInt(),
       deposit: _centsToYuan(json['deposit'] as num? ?? 0),
       serviceFee: _centsToYuan(
         json['serviceFee'] as num? ?? json['service_fee'] as num? ?? 0,

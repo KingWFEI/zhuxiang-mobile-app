@@ -3,6 +3,7 @@ class PaymentInfo {
     required this.orderId,
     required this.amount,
     required this.monthlyRent,
+    required this.paymentMonths,
     required this.deposit,
     required this.serviceFee,
     required this.paymentMethods,
@@ -14,6 +15,7 @@ class PaymentInfo {
   final String orderId;
   final int amount;
   final int monthlyRent;
+  final int paymentMonths;
   final int deposit;
   final int serviceFee;
   final List<String> paymentMethods;
@@ -26,6 +28,7 @@ class PaymentInfo {
       orderId: orderId,
       amount: amount,
       monthlyRent: monthlyRent,
+      paymentMonths: paymentMonths,
       deposit: deposit,
       serviceFee: serviceFee,
       paymentMethods: paymentMethods,

@@ -346,7 +346,7 @@ String formatLeaseDate(DateTime value) {
 }
 
 String formatLeaseMoney(int amount) {
-  final yuan = amount >= 100000 ? amount / 100 : amount.toDouble();
+  final yuan = amount / 100;
   return yuan == yuan.roundToDouble()
       ? yuan.toInt().toString()
       : yuan.toStringAsFixed(2);
