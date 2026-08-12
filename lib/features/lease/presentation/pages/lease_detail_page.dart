@@ -9,6 +9,7 @@ import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/network/api_exception.dart';
+import '../../../../core/widgets/app_webview_page.dart';
 import '../../../../core/widgets/app_api_error_view.dart';
 import '../../../../core/widgets/app_loading_view.dart';
 import '../../../lock/data/models/tenant_lock_unlock_data.dart';
@@ -105,6 +106,13 @@ class LeaseDetailPage extends ConsumerWidget {
         .getCurrentTermination(lease.id);
     if (!context.mounted) return;
     if (current != null) {
+      if (current.status == 'rescission_pending' ||
+          current.status == 'rescission_signing') {
+        final goSign = await _showRescissionSigningDialog(context, current);
+        if (!context.mounted || !goSign) return;
+        await _openRescissionSigningPage(context, ref, current);
+        return;
+      }
       var shouldUploadInspection = false;
       if (lease.contractId.isNotEmpty) {
         try {
@@ -134,6 +142,103 @@ class LeaseDetailPage extends ConsumerWidget {
       RouteNames.leaseTerminationApply,
       pathParameters: {'leaseId': lease.id},
     );
+  }
+
+  Future<bool> _showRescissionSigningDialog(
+    BuildContext context,
+    TerminationApplication application,
+  ) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(
+              application.status == 'rescission_pending'
+                  ? '电子解约待办理'
+                  : '解约协议待签署',
+            ),
+            content: Text(
+              application.status == 'rescission_pending'
+                  ? '退租申请（${application.applicationNo}）已完成验房和退款，请继续办理e签宝授权及合同解约。'
+                  : '退租申请（${application.applicationNo}）已完成验房和退款，请签署电子合同解约协议。双方签署完成后，退租流程才会正式结束。',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('稍后处理'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(
+                  application.status == 'rescission_pending' ? '继续办理' : '去签署',
+                ),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
+  Future<void> _openRescissionSigningPage(
+    BuildContext context,
+    WidgetRef ref,
+    TerminationApplication application,
+  ) async {
+    try {
+      final actionLink = await ref
+          .read(leaseServiceProvider)
+          .getRescissionSignUrl(application.id);
+      if (!context.mounted) return;
+      if (!AppWebViewPage.supportsUrl(actionLink.url)) {
+        throw const ApiException(
+          type: ApiExceptionType.server,
+          message: '解约协议签署地址无效',
+        );
+      }
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => AppWebViewPage(
+            title: actionLink.isAuthorization ? '授权电子解约' : '签署解约协议',
+            initialUrl: actionLink.url,
+            allowCamera: true,
+          ),
+        ),
+      );
+      if (!context.mounted) return;
+      if (actionLink.isAuthorization) {
+        final nextAction = await ref
+            .read(leaseServiceProvider)
+            .getRescissionSignUrl(application.id);
+        if (!context.mounted) return;
+        if (!nextAction.isAuthorization &&
+            AppWebViewPage.supportsUrl(nextAction.url)) {
+          await Navigator.of(context).push<void>(
+            MaterialPageRoute(
+              builder: (_) => AppWebViewPage(
+                title: '签署解约协议',
+                initialUrl: nextAction.url,
+                allowCamera: true,
+              ),
+            ),
+          );
+        } else if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('授权尚未完成，完成后请再次点击退租申请继续办理')),
+          );
+        }
+      }
+      if (!context.mounted) return;
+      ref.invalidate(leaseDetailProvider(leaseId));
+    } on ApiException catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } on Object {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('打开解约协议失败，请稍后重试')));
+    }
   }
 
   Future<bool> _showExistingTerminationDialog(

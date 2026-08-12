@@ -18,6 +18,7 @@ class RentOrderModel extends RentOrder {
     required super.serviceFee,
     required super.firstPaymentAmount,
     required super.status,
+    super.sourceType,
     super.createdAt,
     super.updatedAt,
     super.paymentDeadline,
@@ -70,6 +71,8 @@ class RentOrderModel extends RentOrder {
             0,
       ),
       status: _parseStatus(json['status'] as String?),
+      sourceType:
+          json['sourceType'] as String? ?? json['source_type'] as String? ?? '',
       createdAt: _parseDateTime(json['createdAt'] ?? json['created_at']),
       updatedAt: _parseDateTime(json['updatedAt'] ?? json['updated_at']),
       paymentDeadline: _parseDateTime(
@@ -103,6 +106,7 @@ class RentOrderModel extends RentOrder {
     'serviceFee': serviceFee,
     'firstPaymentAmount': firstPaymentAmount,
     'status': status.name,
+    'sourceType': sourceType,
     'createdAt': createdAt?.toIso8601String(),
     'updatedAt': updatedAt?.toIso8601String(),
     'paymentDeadlineAt': paymentDeadline?.toIso8601String(),

@@ -26,6 +26,7 @@ import '../../features/house/presentation/pages/immersive_tour_page.dart';
 import '../../features/landlord/presentation/pages/house_form_page.dart';
 import '../../features/landlord/presentation/pages/house_list_page.dart';
 import '../../features/landlord/presentation/pages/contract_detail_page.dart';
+import '../../features/landlord/presentation/pages/termination_detail_page.dart';
 import '../../features/landlord/presentation/pages/contract_list_page.dart';
 import '../../features/landlord/presentation/pages/contract_sign_result_page.dart';
 import '../../features/landlord/presentation/pages/contract_webview_page.dart';
@@ -62,6 +63,7 @@ import '../../features/repair/presentation/pages/repair_service_page.dart';
 import '../../features/rental_flow/presentation/pages/lease_contract_page.dart';
 import '../../features/rental_flow/presentation/pages/move_in_complete_page.dart';
 import '../../features/rental_flow/presentation/pages/my_rent_orders_page.dart';
+import '../../features/rental_flow/presentation/pages/rent_order_detail_page.dart';
 import '../../features/rental_flow/presentation/pages/online_sign_page.dart';
 import '../../features/rental_flow/presentation/pages/payment_page.dart';
 import '../../features/rental_flow/presentation/pages/waiting_landlord_sign_page.dart';
@@ -407,7 +409,13 @@ class AppRouter {
         path: RoutePaths.landlordContractDetail,
         builder: (context, state) => LandlordContractDetailPage(
           orderId: state.pathParameters['orderId'] ?? '',
-          signImmediately: state.uri.queryParameters['sign'] == '1',
+        ),
+      ),
+      GoRoute(
+        name: RouteNames.landlordTerminationDetail,
+        path: RoutePaths.landlordTerminationDetail,
+        builder: (context, state) => LandlordTerminationDetailPage(
+          applicationId: state.pathParameters['applicationId'] ?? '',
         ),
       ),
       GoRoute(
@@ -488,6 +496,12 @@ class AppRouter {
         name: RouteNames.rentOrders,
         path: RoutePaths.rentOrders,
         builder: (context, state) => const MyRentOrdersPage(),
+      ),
+      GoRoute(
+        name: RouteNames.rentOrderDetail,
+        path: RoutePaths.rentOrderDetail,
+        builder: (context, state) =>
+            RentOrderDetailPage(orderId: state.pathParameters['orderId'] ?? ''),
       ),
       GoRoute(
         name: RouteNames.paymentRecords,

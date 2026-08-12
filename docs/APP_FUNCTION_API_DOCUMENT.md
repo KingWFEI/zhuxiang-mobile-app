@@ -168,6 +168,28 @@
 | POST | `/files/upload` | 上传退租补充材料照片 | `multipart/form-data`：`bizType=lease_termination`、`file` | `url`、`type`、`name` |
 | POST | `/app/contracts/{contractId}/termination/apply` | 提交退租申请 | `LeaseTerminationRequest` | `id`、`applicationNo`、`status`、`statusText` |
 
+房东工作台解约签署接口：
+
+| 方法 | 路径 | App 功能 | 请求参数 | 成功数据 |
+| --- | --- | --- | --- | --- |
+| GET | `/landlord/termination-applications/pending-sign` | 查询待房东签署的解约协议 | `page`、`pageSize` | `items`、`page`、`pageSize`、`hasMore`、`total` |
+| GET | `/landlord/termination-applications/{applicationId}` | 查询解约协议详情 | `applicationId` | 解约申请、原合同、房源、租客及结算信息 |
+| POST | `/landlord/termination-applications/{applicationId}/rescission-sign-url` | 获取房东授权或签署链接 | `applicationId` | `action`、`signUrl`、`status`、`currentUserSigned`、`completed` |
+| POST | `/landlord/termination-applications/{applicationId}/refresh` | 刷新解约协议签署状态 | `applicationId` | `status`、`currentUserSigned`、`completed` |
+
+- 房东工作台“合同签署”的待签数量为租赁合同与解约协议数量之和。
+- 待签列表用“租赁合同 / 解约协议”标签区分业务类型，解约协议以 `applicationId` 作为操作标识。
+
+房东拒绝租赁合同签署：
+
+| 方法 | 路径 | App 功能 | 请求参数 | 成功数据 |
+| --- | --- | --- | --- | --- |
+| POST | `/landlord/contracts/{orderId}/reject` | 房东拒签并触发原路退款 | `reason`（去除首尾空格，必填，最多500字） | `null` |
+
+- 仅 `orderStatus=pendingLandlordSign`、房东未签且合同未签署/取消/过期时显示“签署合同”和“拒绝签署”。
+- 拒签成功后重新查询服务端合同状态并刷新待签列表；409 冲突或请求超时时也重新查询，避免使用本地状态推断结果。
+- `refundPending`、`refunded`、`refundFailed`、`completed` 状态不允许再次签署或拒签。
+
 退租申请请求体：
 
 ```json

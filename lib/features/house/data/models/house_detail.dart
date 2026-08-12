@@ -158,7 +158,7 @@ class HouseDetail {
       responseDescription: json['responseDescription'] as String? ?? '',
       isRented: _parseRented(json),
       rentAvailability:
-          '${json['rentAvailability'] ?? json['rent_availability'] ?? json['status'] ?? ''}',
+          '${json['rentAvailability'] ?? json['rent_availability'] ?? ''}',
       activeOrderId:
           '${json['activeOrderId'] ?? json['active_order_id'] ?? ''}',
       activeOrderBelongsToMe: _parseActiveOrderBelongsToMe(json),
@@ -189,32 +189,11 @@ bool _parseRented(Map<String, dynamic> json) {
 
   final leaseStatus = json['leaseStatus']?.toString().toLowerCase();
   if (leaseStatus == 'active') return true;
-
-  final text = [
-    json['status'],
-    json['houseStatus'],
-    json['rentStatus'],
-    json['availabilityStatus'],
-    json['availableStatus'],
-  ].whereType<Object>().map((value) => value.toString().toLowerCase());
-
-  if (text.any(
-    const {
-      'rented',
-      'leased',
-      'occupied',
-      'unavailable',
-      'inactive',
-      'locked',
-      '已出租',
-      '已租',
-      '出租中',
-      '已入住',
-      '不可租',
-    }.contains,
-  )) {
-    return true;
-  }
+  final rentAvailability =
+      (json['rentAvailability'] ?? json['rent_availability'])
+          ?.toString()
+          .toLowerCase();
+  if (rentAvailability == 'rented') return true;
 
   final leaseId = json['leaseId'] ?? json['currentLeaseId'];
   return leaseId != null && leaseId.toString().trim().isNotEmpty;

@@ -70,6 +70,7 @@ class InspectionItem {
   const InspectionItem({
     required this.itemCode,
     required this.itemName,
+    required this.enabled,
     required this.required,
     required this.minPhotoCount,
     required this.photos,
@@ -79,6 +80,7 @@ class InspectionItem {
 
   final String itemCode;
   final String itemName;
+  final bool enabled;
   final bool required;
   final int minPhotoCount;
   final List<InspectionPhoto> photos;
@@ -89,6 +91,7 @@ class InspectionItem {
     return InspectionItem(
       itemCode: itemCode,
       itemName: itemName,
+      enabled: enabled,
       required: required,
       minPhotoCount: minPhotoCount,
       photos: photos ?? this.photos,
@@ -102,7 +105,8 @@ class InspectionItem {
     return InspectionItem(
       itemCode: _string(json, ['itemCode', 'item_code', 'code']),
       itemName: _string(json, ['itemName', 'item_name', 'name']),
-      required: json['required'] as bool? ?? json['enabled'] as bool? ?? false,
+      enabled: json['enabled'] as bool? ?? true,
+      required: json['required'] as bool? ?? false,
       minPhotoCount: _integer(
         json['minPhotoCount'] ?? json['min_photo_count'],
         fallback: 1,
@@ -145,6 +149,7 @@ List<InspectionRoom> _rooms(Object? value) => value is List
     ? value
           .whereType<Map<String, dynamic>>()
           .map(InspectionRoom.fromJson)
+          .where((room) => room.items.isNotEmpty)
           .toList()
     : const [];
 
@@ -152,6 +157,7 @@ List<InspectionItem> _items(Object? value) => value is List
     ? value
           .whereType<Map<String, dynamic>>()
           .map(InspectionItem.fromJson)
+          .where((item) => item.enabled)
           .toList()
     : const [];
 

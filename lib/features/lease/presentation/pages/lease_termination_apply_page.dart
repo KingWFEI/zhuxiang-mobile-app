@@ -89,7 +89,7 @@ class _LeaseTerminationApplyPageState
           AppSpacing.xxl,
         ),
         children: [
-          _NoticeCard(message: '退租申请提交后不会立即终止合同，需等待管家审核、验房和费用结算。'),
+          _NoticeCard(message: '退租申请提交后请上传验房照片，线下验房、费用结算、退款和合同解约完成后才会结束租约。'),
           const SizedBox(height: AppSpacing.md),
           _CardSection(
             title: '租约信息',
@@ -306,7 +306,9 @@ class _LeaseTerminationApplyPageState
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('申请已提交'),
-          content: Text('退租申请已进入${application.statusText}，管家会尽快审核并联系你安排后续流程。'),
+          content: Text(
+            '退租申请已进入${application.statusText}，请继续上传退租验房照片。完成线下验房和费用结算后将办理退款及合同解约。',
+          ),
           actions: [
             FilledButton(
               onPressed: () => Navigator.pop(context),

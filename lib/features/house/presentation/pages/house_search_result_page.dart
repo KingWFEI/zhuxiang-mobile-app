@@ -182,10 +182,8 @@ class _HouseSearchResultPageState extends ConsumerState<HouseSearchResultPage> {
                           isFavorite: house.isFavorite,
                           onFavoriteTap: () => _toggleFavorite(house),
                           onTap:
-                              house.activeOrderBelongsToMe ||
-                                  (house.status.toLowerCase() != 'reserved' &&
-                                      house.rentAvailability.toLowerCase() !=
-                                          'reserved')
+                              !house.isRentLocked ||
+                                  house.activeOrderBelongsToMe
                               ? () => _openDetail(house)
                               : null,
                         );

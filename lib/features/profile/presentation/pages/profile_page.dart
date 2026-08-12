@@ -686,18 +686,15 @@ class _ProfileDashboardState extends ConsumerState<_ProfileDashboard> {
   }
 }
 
-Future<void> _showRoleSwitchTransition(BuildContext context) {
-  return showGeneralDialog<void>(
+Future<void> _showRoleSwitchTransition(BuildContext context) async {
+  BuildContext? overlayContext;
+  final dialogFuture = showGeneralDialog<void>(
     context: context,
     barrierDismissible: false,
     barrierColor: Colors.transparent,
     transitionDuration: const Duration(milliseconds: 500),
     pageBuilder: (dialogContext, _, _) {
-      Future<void>.delayed(const Duration(milliseconds: 500), () {
-        if (dialogContext.mounted) {
-          Navigator.of(dialogContext).pop();
-        }
-      });
+      overlayContext = dialogContext;
       return const _RoleSwitchOverlay();
     },
     transitionBuilder: (_, animation, _, child) {
@@ -707,6 +704,16 @@ Future<void> _showRoleSwitchTransition(BuildContext context) {
       );
     },
   );
+
+  // pageBuilder may run more than once. Scheduling the pop inside it queues
+  // multiple pops and can remove the last GoRouter page after the dialog is
+  // already gone. Keep one timer for the lifetime of this dialog instead.
+  await Future<void>.delayed(const Duration(milliseconds: 500));
+  final currentOverlayContext = overlayContext;
+  if (currentOverlayContext != null && currentOverlayContext.mounted) {
+    Navigator.of(currentOverlayContext).pop();
+  }
+  await dialogFuture;
 }
 
 class _RoleSwitchOverlay extends StatelessWidget {

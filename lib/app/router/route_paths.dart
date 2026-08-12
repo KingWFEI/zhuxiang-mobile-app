@@ -31,6 +31,7 @@ class RoutePaths {
   static const leaseTerminationApply = '/leases/:leaseId/termination/apply';
   static const moveOutInspection = '/leases/:leaseId/move-out-inspection';
   static const rentOrders = '/rent-orders';
+  static const rentOrderDetail = '/rent-orders/:orderId';
   static const paymentRecords = '/payments';
   static const paymentDetail = '/payments/:paymentId';
   static const bill = '/bill';
@@ -71,6 +72,8 @@ class RoutePaths {
   static const landlordAppointmentDetail =
       '/landlord/appointments/:appointmentId';
   static const landlordContractDetail = '/landlord/contracts/:orderId';
+  static const landlordTerminationDetail =
+      '/landlord/termination-applications/:applicationId';
   static const landlordContractWebview = '/landlord/contracts/:orderId/sign';
   static const landlordContractResult =
       '/landlord/contracts/:orderId/sign-result';

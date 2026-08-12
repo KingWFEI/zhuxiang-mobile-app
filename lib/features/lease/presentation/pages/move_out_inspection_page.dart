@@ -109,8 +109,8 @@ class _MoveOutInspectionPageState extends ConsumerState<MoveOutInspectionPage> {
           const SizedBox(height: AppSpacing.md),
         ],
         if (inspection.rooms.isEmpty)
-          const _EmptyCard(message: '管理端暂未配置退租验房清单'),
-        if (!locked && inspection.rooms.isNotEmpty) ...[
+          const _EmptyCard(message: '管理端未启用需要拍照的验房项目，本次无需上传照片'),
+        if (!locked) ...[
           const SizedBox(height: AppSpacing.sm),
           SizedBox(
             height: 48,
@@ -122,7 +122,13 @@ class _MoveOutInspectionPageState extends ConsumerState<MoveOutInspectionPage> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.cloud_upload_outlined),
-              label: Text(_isSubmitting ? '正在提交' : '提交验房照片'),
+              label: Text(
+                _isSubmitting
+                    ? '正在提交'
+                    : inspection.rooms.isEmpty
+                    ? '确认无需上传并提交'
+                    : '提交验房照片',
+              ),
             ),
           ),
         ],
@@ -232,7 +238,9 @@ class _MoveOutInspectionPageState extends ConsumerState<MoveOutInspectionPage> {
     final missing = [
       for (final room in inspection.rooms)
         for (final item in room.items)
-          if (item.required && item.photos.length < item.minPhotoCount)
+          if (item.enabled &&
+              item.required &&
+              item.photos.length < item.minPhotoCount)
             '${room.roomName}-${item.itemName}',
     ];
     if (missing.isNotEmpty) {

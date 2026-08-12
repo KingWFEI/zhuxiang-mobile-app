@@ -112,6 +112,9 @@ class ApiClient {
     final responseMessage = responseData is Map<String, dynamic>
         ? responseData['message'] as String?
         : null;
+    final businessCode = responseData is Map<String, dynamic>
+        ? responseData['code']?.toString()
+        : null;
     final responseBodyData = responseData is Map<String, dynamic>
         ? responseData['data']
         : null;
@@ -126,6 +129,7 @@ class ApiClient {
         type: ApiExceptionType.timeout,
         message: 'Request timeout',
         statusCode: statusCode,
+        businessCode: businessCode,
         cause: error,
       );
     }
@@ -135,6 +139,7 @@ class ApiClient {
         type: ApiExceptionType.unauthorized,
         message: responseMessage ?? 'Unauthorized request',
         statusCode: statusCode,
+        businessCode: businessCode,
         cause: error,
       );
     }
@@ -144,6 +149,7 @@ class ApiClient {
         type: ApiExceptionType.server,
         message: responseMessage ?? 'Server error',
         statusCode: statusCode,
+        businessCode: businessCode,
         cause: error,
       );
     }
@@ -161,6 +167,7 @@ class ApiClient {
       type: ApiExceptionType.unknown,
       message: responseMessage ?? error.message ?? 'Unknown network error',
       statusCode: statusCode,
+      businessCode: businessCode,
       retryAfter: retryAfter,
       cause: error,
     );

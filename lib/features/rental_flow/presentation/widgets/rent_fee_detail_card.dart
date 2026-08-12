@@ -6,19 +6,23 @@ import '../../../../app/theme/app_text_styles.dart';
 
 class RentFeeDetailCard extends StatelessWidget {
   const RentFeeDetailCard({
+    required this.amount,
     required this.monthlyRent,
+    required this.paymentMonths,
     required this.deposit,
     required this.serviceFee,
     this.title = '费用明细',
     super.key,
   });
 
+  final int amount;
   final int monthlyRent;
+  final int paymentMonths;
   final int deposit;
   final int serviceFee;
   final String title;
 
-  int get total => monthlyRent + deposit + serviceFee;
+  int get firstRent => monthlyRent * paymentMonths;
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +33,7 @@ class RentFeeDetailCard extends StatelessWidget {
           Text(title, style: AppTextStyles.titleMedium.copyWith(fontSize: 16)),
           const SizedBox(height: AppSpacing.md),
           _FeeRow(label: '月租金', amount: monthlyRent),
+          _FeeRow(label: '首期租金（$paymentMonths个月）', amount: firstRent),
           _FeeRow(label: '押金', amount: deposit),
           _FeeRow(label: '服务费', amount: serviceFee),
           const Divider(height: 24),
@@ -40,7 +45,7 @@ class RentFeeDetailCard extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                '￥$total',
+                '￥$amount',
                 style: AppTextStyles.titleLarge.copyWith(
                   color: AppColors.primary,
                 ),

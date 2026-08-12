@@ -2,12 +2,16 @@ enum PaymentRecordStatus {
   pending,
   success,
   failed,
+  refundPending,
+  refundFailed,
   refunded;
 
   String get label => switch (this) {
     PaymentRecordStatus.pending => '待支付',
     PaymentRecordStatus.success => '支付成功',
     PaymentRecordStatus.failed => '支付失败',
+    PaymentRecordStatus.refundPending => '退款处理中',
+    PaymentRecordStatus.refundFailed => '退款异常',
     PaymentRecordStatus.refunded => '已退款',
   };
 

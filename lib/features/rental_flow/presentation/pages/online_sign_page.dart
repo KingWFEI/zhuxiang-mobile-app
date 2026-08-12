@@ -40,6 +40,7 @@ class _OnlineSignPageState extends ConsumerState<OnlineSignPage> {
     final order = state.order;
     final contract = state.contractPreview;
     final signing = state.signingStatus;
+    final platformHouse = order?.isPlatformSource == true;
     return RentalFlowPageShell(
       title: '在线签约',
       step: RentalFlowStep.onlineSign,
@@ -95,12 +96,14 @@ class _OnlineSignPageState extends ConsumerState<OnlineSignPage> {
               ),
               const SizedBox(height: AppSpacing.sm),
               _SignStatusRow(
-                label: '房东',
+                label: platformHouse ? '平台企业印章' : '房东',
                 signed: signing?.lessorSigned == true,
+                signedLabel: platformHouse ? '已自动盖章' : '已签署',
+                pendingLabel: platformHouse ? '自动盖章中' : '待签署',
               ),
               const SizedBox(height: AppSpacing.md),
               Text(
-                _statusHint(signing),
+                _statusHint(signing, platformHouse: platformHouse),
                 style: AppTextStyles.bodySmall.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -186,7 +189,10 @@ class _OnlineSignPageState extends ConsumerState<OnlineSignPage> {
       return;
     }
     if (showPendingMessage) {
-      AppToast.show(context, _statusHint(status));
+      final platformHouse =
+          ref.read(rentalFlowControllerProvider).order?.isPlatformSource ==
+          true;
+      AppToast.show(context, _statusHint(status, platformHouse: platformHouse));
     }
   }
 
@@ -202,10 +208,17 @@ class _OnlineSignPageState extends ConsumerState<OnlineSignPage> {
 }
 
 class _SignStatusRow extends StatelessWidget {
-  const _SignStatusRow({required this.label, required this.signed});
+  const _SignStatusRow({
+    required this.label,
+    required this.signed,
+    this.signedLabel = '已签署',
+    this.pendingLabel = '待签署',
+  });
 
   final String label;
   final bool signed;
+  final String signedLabel;
+  final String pendingLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -220,7 +233,7 @@ class _SignStatusRow extends StatelessWidget {
         const SizedBox(width: AppSpacing.sm),
         Expanded(child: Text(label, style: AppTextStyles.bodyMedium)),
         Text(
-          signed ? '已签署' : '待签署',
+          signed ? signedLabel : pendingLabel,
           style: AppTextStyles.bodyMedium.copyWith(color: color),
         ),
       ],
@@ -228,10 +241,17 @@ class _SignStatusRow extends StatelessWidget {
   }
 }
 
-String _statusHint(ContractSigningStatus? status) {
+String _statusHint(
+  ContractSigningStatus? status, {
+  required bool platformHouse,
+}) {
   if (status == null) return '点击“去签署”后将在 App 内打开 e签宝官方签署页面。';
-  if (status.isCompleted) return '合同已完成签署。';
-  if (status.currentUserSigned) return '你已完成签署，正在等待另一方签署。';
+  if (status.isCompleted) {
+    return platformHouse ? '租客签署和平台企业盖章均已完成。' : '合同已完成签署。';
+  }
+  if (status.currentUserSigned) {
+    return platformHouse ? '你已完成签署，平台正在自动加盖企业印章。' : '你已完成签署，正在等待另一方签署。';
+  }
   return '合同尚未完成，请继续前往 e签宝签署。';
 }
 

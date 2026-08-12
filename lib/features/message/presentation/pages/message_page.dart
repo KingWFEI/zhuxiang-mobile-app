@@ -45,6 +45,12 @@ class _MessagePageState extends ConsumerState<MessagePage> {
       color: Color(0xFF13B96D),
     ),
     _CategoryItem(
+      category: MessageCategory.bill,
+      label: '账单/支付',
+      icon: HugeIcons.strokeRoundedInvoice03,
+      color: Color(0xFFEF8F27),
+    ),
+    _CategoryItem(
       category: MessageCategory.repair,
       label: '服务通知',
       icon: HugeIcons.strokeRoundedRepair,
@@ -323,6 +329,21 @@ class _MessagePageState extends ConsumerState<MessagePage> {
       }
     }
     if (!mounted) return;
+    final target = message.actionTarget;
+    final isOrderMessage =
+        target != null &&
+        target.isNotEmpty &&
+        (message.category == MessageCategory.bill ||
+            message.actionType == 'order' ||
+            message.actionType == 'rent_order');
+    if (isOrderMessage) {
+      // 当前租房订单以统一列表承载详情；兼容后端暂时下发 actionType=none。
+      context.pushNamed(
+        RouteNames.rentOrderDetail,
+        pathParameters: {'orderId': target},
+      );
+      return;
+    }
     if (message.actionType == 'appointment' &&
         message.actionTarget != null &&
         message.actionTarget!.isNotEmpty) {

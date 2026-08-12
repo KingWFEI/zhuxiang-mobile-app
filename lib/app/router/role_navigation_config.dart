@@ -100,6 +100,7 @@ class RoleNavigationConfig {
       RouteNames.leaseContractView,
       RouteNames.leaseTerminationApply,
       RouteNames.rentOrders,
+      RouteNames.rentOrderDetail,
       RouteNames.paymentRecords,
       RouteNames.paymentDetail,
       // 门锁
@@ -212,6 +213,7 @@ class RoleNavigationConfig {
       RouteNames.landlordAppointments,
       RouteNames.landlordAppointmentDetail,
       RouteNames.landlordContractDetail,
+      RouteNames.landlordTerminationDetail,
       RouteNames.landlordContractWebview,
       RouteNames.landlordContractResult,
       RouteNames.landlordProfile,

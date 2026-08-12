@@ -15,19 +15,16 @@ import '../../data/models/landlord_contract.dart';
 import '../../data/providers/landlord_providers.dart';
 
 class LandlordContractDetailPage extends ConsumerStatefulWidget {
-  const LandlordContractDetailPage({
-    required this.orderId,
-    this.signImmediately = false,
-    super.key,
-  });
+  const LandlordContractDetailPage({required this.orderId, super.key});
 
   final String orderId;
-  final bool signImmediately;
 
   @override
   ConsumerState<LandlordContractDetailPage> createState() =>
       _LandlordContractDetailPageState();
 }
+
+enum _RejectDialogResult { rejectedSuccessfully, refreshRequired }
 
 class _LandlordContractDetailPageState
     extends ConsumerState<LandlordContractDetailPage>
@@ -36,10 +33,12 @@ class _LandlordContractDetailPageState
   Object? _error;
   bool _loading = true;
   bool _signing = false;
+  bool _rejecting = false;
   bool _refreshing = false;
   bool _openedSigner = false;
   bool _showManualRefresh = false;
-  bool _autoSignHandled = false;
+
+  bool get _operationInProgress => _signing || _rejecting;
 
   @override
   void initState() {
@@ -73,10 +72,6 @@ class _LandlordContractDetailPageState
           .getDetail(widget.orderId);
       if (!mounted) return;
       setState(() => _detail = detail);
-      if (widget.signImmediately && !_autoSignHandled && detail.canSign) {
-        _autoSignHandled = true;
-        WidgetsBinding.instance.addPostFrameCallback((_) => _sign());
-      }
     } catch (error) {
       if (!mounted) return;
       if (_isForbidden(error)) {
@@ -94,7 +89,7 @@ class _LandlordContractDetailPageState
       error is ApiException && error.statusCode == 403;
 
   Future<void> _sign() async {
-    if (_signing || _detail?.canSign != true) return;
+    if (_operationInProgress || _detail?.canSign != true) return;
     setState(() {
       _signing = true;
       _showManualRefresh = false;
@@ -138,6 +133,165 @@ class _LandlordContractDetailPageState
     } finally {
       if (mounted) setState(() => _signing = false);
     }
+  }
+
+  Future<void> _showRejectDialog() async {
+    if (_operationInProgress || _detail?.canSign != true) return;
+    final controller = TextEditingController();
+    String? validationError;
+    var submitting = false;
+    var dialogClosedBySubmit = false;
+    final result = await showDialog<_RejectDialogResult>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          Future<void> submit() async {
+            final reason = controller.text.trim();
+            if (reason.isEmpty) {
+              setDialogState(() => validationError = '请填写拒签原因');
+              return;
+            }
+            if (reason.length > 500) {
+              setDialogState(() => validationError = '拒签原因不能超过500字');
+              return;
+            }
+            setDialogState(() {
+              submitting = true;
+              validationError = null;
+            });
+            if (mounted) setState(() => _rejecting = true);
+            try {
+              await ref
+                  .read(landlordContractServiceProvider)
+                  .reject(widget.orderId, reason);
+              if (!mounted || !dialogContext.mounted) return;
+              dialogClosedBySubmit = true;
+              Navigator.of(
+                dialogContext,
+              ).pop(_RejectDialogResult.rejectedSuccessfully);
+            } catch (error) {
+              if (!mounted || !dialogContext.mounted) return;
+              final apiError = error is ApiException ? error : null;
+              final message = _rejectErrorMessage(apiError);
+              AppToast.show(this.context, message, type: AppToastType.error);
+              // 冲突和超时退出弹窗后再刷新详情，避免刷新父页面时销毁弹窗状态。
+              if (apiError?.statusCode == 409 ||
+                  apiError?.type == ApiExceptionType.timeout) {
+                dialogClosedBySubmit = true;
+                Navigator.of(
+                  dialogContext,
+                ).pop(_RejectDialogResult.refreshRequired);
+              }
+            } finally {
+              // 弹窗已经 pop 后不能再 setDialogState，否则会在退场动画中触发红屏。
+              if (!dialogClosedBySubmit && dialogContext.mounted) {
+                setDialogState(() => submitting = false);
+              }
+            }
+          }
+
+          return PopScope(
+            canPop: !submitting,
+            child: AlertDialog(
+              title: const Text('拒绝签署'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight,
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                      child: const Text(
+                        '拒绝签署后，该合同将终止，租客已支付款项将原路退回，房源将重新开放。此操作不可撤销。',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    TextField(
+                      controller: controller,
+                      enabled: !submitting,
+                      maxLength: 500,
+                      maxLines: 5,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        labelText: '拒签原因（必填）',
+                        hintText: '例如：合同信息无法确认',
+                        errorText: validationError,
+                        alignLabelWithHint: true,
+                      ),
+                      onChanged: (_) {
+                        if (validationError != null) {
+                          setDialogState(() => validationError = null);
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: submitting
+                      ? null
+                      : () => Navigator.of(dialogContext).pop(),
+                  child: const Text('取消'),
+                ),
+                FilledButton(
+                  onPressed: submitting ? null : submit,
+                  child: submitting
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text('确认拒绝'),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+    controller.dispose();
+    if (mounted) setState(() => _rejecting = false);
+
+    if (result == _RejectDialogResult.rejectedSuccessfully && mounted) {
+      AppToast.show(context, '已拒绝签署，退款正在处理', type: AppToastType.success);
+      ref.invalidate(landlordPendingSignCountsProvider);
+      // 返回“合同签署/待我签署”列表，列表页面会重新拉取并移除该订单。
+      Navigator.of(context).pop(true);
+      return;
+    }
+    if (result == _RejectDialogResult.refreshRequired && mounted) {
+      await _load();
+    }
+  }
+
+  String _rejectErrorMessage(ApiException? error) {
+    if (error == null) return '拒绝签署失败，请稍后重试';
+    if (error.type == ApiExceptionType.timeout) {
+      return '请求结果暂未确认，请刷新合同状态';
+    }
+    if (error.statusCode == 403) return '无权操作该合同';
+    if (error.statusCode == 409) {
+      return switch (error.businessCode) {
+        'ORDER_STATUS_INVALID' => '当前订单状态已发生变化，请刷新后重试',
+        'LEASE_ALREADY_EXISTS' => '租约已经生成，无法拒绝签署',
+        'ORDER_RESERVATION_LOST' => '房源占用已失效，请刷新订单',
+        _ => error.message.isEmpty ? '订单状态冲突，请刷新后重试' : error.message,
+      };
+    }
+    return error.message.isEmpty ? '拒绝签署失败，请稍后重试' : error.message;
   }
 
   Future<void> _pollStatus() async {
@@ -197,7 +351,7 @@ class _LandlordContractDetailPageState
   bool _handleStatus(ContractSignStatus status) {
     if (!status.currentUserSigned && !status.completed) return false;
     _showManualRefresh = false;
-    ref.invalidate(landlordPendingContractCountProvider);
+    ref.invalidate(landlordPendingSignCountsProvider);
     context.pushReplacementNamed(
       RouteNames.landlordContractResult,
       pathParameters: {'orderId': widget.orderId},
@@ -260,6 +414,8 @@ class _LandlordContractDetailPageState
         _section('签署状态', [
           _row('租客', detail.tenantSigned ? '已签署' : '待签署'),
           _row('房东', detail.lessorSigned ? '已签署' : '待我签署'),
+          if (detail.operationStatusLabel.isNotEmpty)
+            _row('订单状态', detail.operationStatusLabel),
           if (detail.lessorSigned && !detail.tenantSigned)
             const Padding(
               padding: EdgeInsets.only(top: AppSpacing.sm),
@@ -362,15 +518,34 @@ class _LandlordContractDetailPageState
                       const SizedBox(width: AppSpacing.md),
                       Expanded(
                         child: FilledButton(
-                          onPressed: _signing || _refreshing ? null : _sign,
+                          onPressed: _operationInProgress || _refreshing
+                              ? null
+                              : _sign,
                           child: Text(_signing ? '正在发起…' : '重新发起'),
                         ),
                       ),
                     ],
                   )
-                : FilledButton(
-                    onPressed: _signing || _refreshing ? null : _sign,
-                    child: Text(_signing ? '正在发起签署…' : '确认并签署'),
+                : Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _operationInProgress || _refreshing
+                              ? null
+                              : _showRejectDialog,
+                          child: Text(_rejecting ? '正在拒签…' : '拒绝签署'),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: _operationInProgress || _refreshing
+                              ? null
+                              : _sign,
+                          child: Text(_signing ? '正在发起签署…' : '签署合同'),
+                        ),
+                      ),
+                    ],
                   )
           : OutlinedButton(
               onPressed: _refreshing ? null : _refreshStatus,

@@ -29,7 +29,8 @@ final activeRentOrdersProvider = FutureProvider.autoDispose<List<RentOrder>>((
       .where(
         (order) =>
             order.status != RentOrderStatus.completed &&
-            order.status != RentOrderStatus.cancelled,
+            order.status != RentOrderStatus.cancelled &&
+            order.status != RentOrderStatus.refunded,
       )
       .toList(growable: false);
 });
