@@ -105,23 +105,13 @@ void main() {
       'leaseId': 'lease-api-terminated',
       'contractId': 'contract-api-terminated',
       'houseName': '中央公园1栋1201',
+      'startDate': '2025-03-01',
+      'endDate': '2026-02-28',
       'leaseStatus': 'terminated',
     }).toEntity();
 
     expect(lease.status, LeaseStatus.checkedOut);
     expect(lease.isCurrent, isFalse);
-  });
-
-  test('mock lease service supports termination application', () async {
-    final service = MockLeaseService();
-    final before = await service.getMyLeases();
-    expect(before.where((lease) => lease.isCurrent), hasLength(1));
-
-    final application = await service.applyTermination('lease-2026-001', {
-      'reason': '个人原因',
-    });
-    expect(application.applicationNo, isNotEmpty);
-    expect(application.status, 'pending_review');
   });
 
   testWidgets('my leases page renders only lease cards and history states', (
@@ -335,7 +325,7 @@ class _FakeLeaseService implements LeaseServiceContract {
     required String fileName,
   }) async {
     return LeaseTerminationAttachment(
-      url: 'mock://lease-termination/$fileName',
+      url: 'https://example.test/lease-termination/$fileName',
       type: 'image',
       name: fileName,
     );

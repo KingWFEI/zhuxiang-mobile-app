@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:zhuxiang_app/core/network/image_url_resolver.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
@@ -304,7 +305,7 @@ class _HouseCard extends StatelessWidget {
                                 ),
                               )
                             : Image.network(
-                                house.coverImage,
+                                resolveImageUrl(house.coverImage),
                                 fit: BoxFit.cover,
                                 errorBuilder: (_, _, _) => Container(
                                   color: AppColors.primarySoft,

@@ -28,9 +28,9 @@ class HouseSearchNotifier extends Notifier<HouseSearchState> {
     return const HouseSearchState();
   }
 
-  /// 初始化：加载搜索历史和热门关键词，随后执行一次默认搜索。
+  /// 初始化搜索历史后执行一次默认搜索。
   Future<void> initialize() async {
-    await Future.wait([loadSearchHistory(), loadHotKeywords()]);
+    await loadSearchHistory();
     await search();
   }
 
@@ -214,13 +214,12 @@ class HouseSearchNotifier extends Notifier<HouseSearchState> {
     }
   }
 
-  /// 重置搜索状态，保留搜索历史和热门关键词后重新搜索。
+  /// 重置搜索状态，保留搜索历史后重新搜索。
   void reset() {
     _debounceTimer?.cancel();
     _requestVersion++;
     final history = state.searchHistory;
-    final hotKeywords = state.hotKeywords;
-    state = HouseSearchState(searchHistory: history, hotKeywords: hotKeywords);
+    state = HouseSearchState(searchHistory: history);
     unawaited(search());
   }
 
@@ -247,12 +246,6 @@ class HouseSearchNotifier extends Notifier<HouseSearchState> {
   Future<void> clearSearchHistory() async {
     await ref.read(searchHistoryProvider.notifier).clearHistory();
     state = state.copyWith(searchHistory: const []);
-  }
-
-  /// 加载热门搜索关键词列表。
-  Future<void> loadHotKeywords() async {
-    final keywords = ref.read(hotKeywordsProvider);
-    state = state.copyWith(hotKeywords: keywords);
   }
 
   Future<PageResult<House>> _searchHouses(HouseSearchState queryState) async {

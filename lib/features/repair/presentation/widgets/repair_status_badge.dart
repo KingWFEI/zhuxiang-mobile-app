@@ -21,6 +21,7 @@ class RepairStatusBadge extends StatelessWidget {
       RepairStatus.pendingReview => const Color(0xFF7667F8),
       RepairStatus.completed => AppColors.success,
       RepairStatus.cancelled => AppColors.textMuted,
+      RepairStatus.unknown => AppColors.textMuted,
     };
     return Container(
       padding: const EdgeInsets.symmetric(

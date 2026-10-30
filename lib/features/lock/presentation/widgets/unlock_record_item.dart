@@ -129,6 +129,7 @@ IconData unlockMethodIcon(UnlockMethod method) {
     UnlockMethod.password => Icons.password_rounded,
     UnlockMethod.admin => Icons.admin_panel_settings_outlined,
     UnlockMethod.system => Icons.settings_suggest_outlined,
+    UnlockMethod.unknown => Icons.help_outline_rounded,
   };
 }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:zhuxiang_app/core/network/image_url_resolver.dart';
 
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -323,7 +324,7 @@ class _HouseSummary extends StatelessWidget {
                     ),
                   )
                 : Image.network(
-                    house.coverImage,
+                    resolveImageUrl(house.coverImage),
                     width: 76,
                     height: 76,
                     fit: BoxFit.cover,

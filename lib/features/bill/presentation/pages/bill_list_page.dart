@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:zhuxiang_app/core/network/image_url_resolver.dart';
 
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -50,8 +51,7 @@ class _BillListPageState extends ConsumerState<BillListPage> {
                 ),
                 Expanded(
                   child: result.when(
-                    loading: () =>
-                        const AppLoadingView(message: '正在加载账单'),
+                    loading: () => const AppLoadingView(message: '正在加载账单'),
                     error: (error, _) => AppApiErrorView(
                       error: error,
                       onRetry: () => ref.invalidate(myBillsProvider),
@@ -116,10 +116,7 @@ class _BillListPageState extends ConsumerState<BillListPage> {
       children: data.pendingBills.map((bill) {
         return Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.md),
-          child: _BillCard(
-            bill: bill,
-            onPay: () => _payBill(context, bill),
-          ),
+          child: _BillCard(bill: bill, onPay: () => _payBill(context, bill)),
         );
       }).toList(),
     );
@@ -142,7 +139,7 @@ class _BillListPageState extends ConsumerState<BillListPage> {
   void _payBill(BuildContext context, BillModel bill) async {
     final result = await ref
         .read(billServiceProvider)
-        .payBill(bill.id, 'mock');
+        .payBill(bill.id, 'alipay');
 
     if (result.needWebView) {
       if (!context.mounted) return;
@@ -162,13 +159,10 @@ class _BillListPageState extends ConsumerState<BillListPage> {
       return;
     }
 
-    // mock 支付完成
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('支付成功')),
-      );
-      ref.invalidate(myBillsProvider);
-    }
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('未获取到有效支付页面，请稍后重试')));
   }
 }
 
@@ -213,7 +207,11 @@ class _BillSegment extends StatelessWidget {
 }
 
 class _SegTab extends StatelessWidget {
-  const _SegTab({required this.label, required this.selected, required this.onTap});
+  const _SegTab({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
@@ -278,7 +276,7 @@ class _BillCard extends StatelessWidget {
                   height: 56,
                   child: bill.houseImageUrl.isNotEmpty
                       ? Image.network(
-                          bill.houseImageUrl,
+                          resolveImageUrl(bill.houseImageUrl),
                           fit: BoxFit.cover,
                           errorBuilder: (_, e, s) => Container(
                             color: const Color(0xFFF0F0F0),
@@ -329,8 +327,8 @@ class _BillCard extends StatelessWidget {
                       color: isActive
                           ? AppColors.primary
                           : isScheduled
-                              ? AppColors.textPrimary
-                              : AppColors.textMuted,
+                          ? AppColors.textPrimary
+                          : AppColors.textMuted,
                     ),
                   ),
                   if (bill.overdueAmount > 0)
@@ -352,9 +350,7 @@ class _BillCard extends StatelessWidget {
               width: double.infinity,
               child: FilledButton(
                 onPressed: onPay,
-                child: Text(
-                  bill.isOverdue ? '立即补缴' : '立即支付',
-                ),
+                child: Text(bill.isOverdue ? '立即补缴' : '立即支付'),
               ),
             ),
           ],
@@ -369,7 +365,9 @@ class _BillCard extends StatelessWidget {
 
   static String _yuan(int fen) {
     final yuan = fen / 100.0;
-    return yuan == yuan.toInt() ? yuan.toInt().toString() : yuan.toStringAsFixed(2);
+    return yuan == yuan.toInt()
+        ? yuan.toInt().toString()
+        : yuan.toStringAsFixed(2);
   }
 }
 
@@ -406,10 +404,7 @@ class _BillHeader extends StatelessWidget {
             ),
             Expanded(
               child: Center(
-                child: Text(
-                  '我的账单',
-                  style: AppTextStyles.normalPageTitle,
-                ),
+                child: Text('我的账单', style: AppTextStyles.normalPageTitle),
               ),
             ),
             const SizedBox(width: 80),

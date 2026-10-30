@@ -73,8 +73,7 @@ class PaymentService {
       status: PaymentRecordStatus.fromValue(json['status']),
       remark: _string(json, ['remark']),
       paidAt: _date(json['paidAt'] ?? json['paid_at']),
-      createdAt:
-          _date(json['createdAt'] ?? json['created_at']) ?? DateTime.now(),
+      createdAt: _requiredDate(json['createdAt'] ?? json['created_at']),
     );
   }
 
@@ -106,5 +105,11 @@ class PaymentService {
     final text = value?.toString();
     if (text == null || text.isEmpty) return null;
     return DateTime.tryParse(text);
+  }
+
+  DateTime _requiredDate(Object? value) {
+    final date = _date(value);
+    if (date == null) throw const FormatException('支付记录创建时间缺失或格式无效');
+    return date;
   }
 }

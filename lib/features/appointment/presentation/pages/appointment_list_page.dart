@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:zhuxiang_app/core/network/image_url_resolver.dart';
 
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -168,7 +169,7 @@ class _AppointmentCard extends StatelessWidget {
                           child: Icon(Icons.home_work_outlined),
                         )
                       : Image.network(
-                          appointment.coverImage,
+                          resolveImageUrl(appointment.coverImage),
                           fit: BoxFit.cover,
                           errorBuilder: (_, _, _) => const ColoredBox(
                             color: Color(0xFFF1F5FA),

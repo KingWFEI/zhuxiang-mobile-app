@@ -132,19 +132,6 @@ void main() {
     },
   );
 
-  test('mock service returns six houses and supports rent sorting', () async {
-    final service = HouseService(ApiClient());
-    final result = await service.fetchHouses(const {
-      'sort': 'price_asc',
-      'page': 1,
-      'pageSize': 20,
-    });
-
-    expect(result.items, hasLength(6));
-    expect(result.items.first.title, '精致单间 · 配套齐全');
-    expect(result.items.last.title, '智能门锁房 · 拎包入住');
-  });
-
   test('house service provider injects the shared api client', () {
     final container = ProviderContainer();
     addTearDown(container.dispose);
@@ -175,10 +162,7 @@ void main() {
     addTearDown(container.dispose);
 
     final notifier = container.read(houseSearchProvider.notifier);
-    await Future.wait([
-      notifier.loadHotKeywords(),
-      notifier.loadSearchHistory(),
-    ]);
+    await notifier.loadSearchHistory();
     await notifier.search();
 
     await tester.pumpWidget(
@@ -237,7 +221,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('search page only renders discovery content', (tester) async {
+  testWidgets('search page does not show seeded discovery data', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(430, 932);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -255,10 +241,7 @@ void main() {
     addTearDown(container.dispose);
 
     final notifier = container.read(houseSearchProvider.notifier);
-    await Future.wait([
-      notifier.loadHotKeywords(),
-      notifier.loadSearchHistory(),
-    ]);
+    await notifier.loadSearchHistory();
 
     await tester.pumpWidget(
       UncontrolledProviderScope(
@@ -268,9 +251,9 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('热门搜索'), findsOneWidget);
-    expect(find.text('热门小区'), findsOneWidget);
-    expect(find.text('搜索历史'), findsOneWidget);
+    expect(find.text('热门搜索'), findsNothing);
+    expect(find.text('热门小区'), findsNothing);
+    expect(find.text('搜索历史'), findsNothing);
     expect(find.text('搜索结果'), findsNothing);
     expect(find.byType(HouseSearchResultPage), findsNothing);
     final backIconLeft = tester

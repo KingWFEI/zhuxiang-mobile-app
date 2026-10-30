@@ -139,18 +139,6 @@ class MessageUnreadCounts {
   final int repair;
   final int system;
   final int total;
-
-  int forCategory(MessageCategory? category) {
-    return switch (category) {
-      null => total,
-      MessageCategory.appointment => appointment,
-      MessageCategory.bill => bill,
-      MessageCategory.lease => lease,
-      MessageCategory.lock => lock,
-      MessageCategory.repair => repair,
-      MessageCategory.system => system,
-    };
-  }
 }
 
 String? _nullableString(dynamic value) {

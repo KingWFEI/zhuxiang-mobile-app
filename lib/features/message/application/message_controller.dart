@@ -10,7 +10,6 @@ import '../domain/entities/message_realtime_event.dart';
 class MessageState {
   const MessageState({
     this.messages = const [],
-    this.category,
     this.unreadCounts = const MessageUnreadCounts(),
     this.page = 1,
     this.total = 0,
@@ -23,7 +22,6 @@ class MessageState {
   });
 
   final List<AppMessage> messages;
-  final MessageCategory? category;
   final MessageUnreadCounts unreadCounts;
   final int page;
   final int total;
@@ -36,8 +34,6 @@ class MessageState {
 
   MessageState copyWith({
     List<AppMessage>? messages,
-    MessageCategory? category,
-    bool clearCategory = false,
     MessageUnreadCounts? unreadCounts,
     int? page,
     int? total,
@@ -51,7 +47,6 @@ class MessageState {
   }) {
     return MessageState(
       messages: messages ?? this.messages,
-      category: clearCategory ? null : category ?? this.category,
       unreadCounts: unreadCounts ?? this.unreadCounts,
       page: page ?? this.page,
       total: total ?? this.total,
@@ -84,11 +79,7 @@ class MessageController extends StateNotifier<MessageState> {
       clearError: true,
     );
 
-    final listFuture = _service.fetchMessages(
-      category: state.category,
-      page: 1,
-      pageSize: pageSize,
-    );
+    final listFuture = _service.fetchMessages(page: 1, pageSize: pageSize);
     final countsFuture = _service.fetchUnreadCounts();
     final listResult = await listFuture;
     final countsResult = await countsFuture;
@@ -118,20 +109,10 @@ class MessageController extends StateNotifier<MessageState> {
     }
   }
 
-  Future<void> selectCategory(MessageCategory? category) async {
-    if (state.category == category) return;
-    state = state.copyWith(category: category, clearCategory: category == null);
-    await loadInitial();
-  }
-
   Future<void> refresh() async {
     if (state.isRefreshing) return;
     state = state.copyWith(isRefreshing: true, clearError: true);
-    final listFuture = _service.fetchMessages(
-      category: state.category,
-      page: 1,
-      pageSize: pageSize,
-    );
+    final listFuture = _service.fetchMessages(page: 1, pageSize: pageSize);
     final countsFuture = _service.fetchUnreadCounts();
     final listResult = await listFuture;
     final countsResult = await countsFuture;
@@ -169,7 +150,6 @@ class MessageController extends StateNotifier<MessageState> {
     }
     state = state.copyWith(isLoadingMore: true);
     final result = await _service.fetchMessages(
-      category: state.category,
       page: state.page + 1,
       pageSize: pageSize,
     );
@@ -211,7 +191,7 @@ class MessageController extends StateNotifier<MessageState> {
   Future<bool> markAllAsRead() async {
     if (state.isMutating) return false;
     state = state.copyWith(isMutating: true);
-    // 后端当前只支持全部消息已读，不支持按分类传 category。
+    // 后端当前支持将全部消息标记为已读。
     final result = await _service.markAllAsRead();
     if (!mounted) return false;
     if (result is! ApiSuccess<bool> || !result.data) {
@@ -286,9 +266,7 @@ class MessageController extends StateNotifier<MessageState> {
     if (event.type == 'message.created' && event.message != null) {
       final message = event.message!;
       final alreadyExists = state.messages.any((item) => item.id == message.id);
-      final categoryMatches =
-          state.category == null || state.category == message.category;
-      if (!alreadyExists && categoryMatches) {
+      if (!alreadyExists) {
         state = state.copyWith(
           messages: [message, ...state.messages],
           total: state.total + 1,

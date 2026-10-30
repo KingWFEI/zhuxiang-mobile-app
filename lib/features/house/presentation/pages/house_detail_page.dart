@@ -8,6 +8,7 @@ import 'package:zhuxiang_app/features/house/data/models/house_detail.dart';
 import 'package:zhuxiang_app/features/house/data/models/house_facility_item.dart';
 import 'package:zhuxiang_app/features/house/data/models/immersive_tour.dart';
 import 'package:zhuxiang_app/features/house/data/providers/house_providers.dart';
+import 'package:zhuxiang_app/core/network/image_url_resolver.dart';
 
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_card_spacing.dart';
@@ -246,7 +247,7 @@ class _ImageCarouselState extends State<_ImageCarousel> {
             behavior: HitTestBehavior.opaque,
             onTap: () => _openPreview(context, images, index),
             child: Image.network(
-              images[index],
+              resolveImageUrl(images[index]),
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) {
                 return Container(
@@ -392,7 +393,7 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
               child: SizedBox.expand(
                 child: Center(
                   child: Image.network(
-                    widget.images[index],
+                    resolveImageUrl(widget.images[index]),
                     fit: BoxFit.contain,
                     errorBuilder: (_, _, _) => const Icon(
                       Icons.broken_image_outlined,
@@ -939,7 +940,7 @@ class _ImmersiveTourEntryCardState
                 children: [
                   if (coverUrl.isNotEmpty)
                     Image.network(
-                      coverUrl,
+                      resolveImageUrl(coverUrl),
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return Container(color: const Color(0xFF1F2937));
@@ -1550,7 +1551,7 @@ class _LandlordCard extends StatelessWidget {
                     backgroundColor: AppColors.primaryLight,
                     backgroundImage:
                         !house.isPlatformSource && avatar.isNotEmpty
-                        ? NetworkImage(avatar)
+                        ? NetworkImage(resolveImageUrl(avatar))
                         : null,
                     child: house.isPlatformSource || avatar.isEmpty
                         ? Icon(
@@ -1703,7 +1704,7 @@ class _LandlordProfileSheet extends StatelessWidget {
               child: AspectRatio(
                 aspectRatio: 16 / 7,
                 child: Image.network(
-                  profile.coverImageUrl,
+                  resolveImageUrl(profile.coverImageUrl),
                   fit: BoxFit.cover,
                   errorBuilder: (_, _, _) => Container(
                     color: AppColors.primaryLight,
@@ -1723,7 +1724,7 @@ class _LandlordProfileSheet extends StatelessWidget {
                 radius: 32,
                 backgroundColor: AppColors.primaryLight,
                 backgroundImage: profile.avatarUrl.isNotEmpty
-                    ? NetworkImage(profile.avatarUrl)
+                    ? NetworkImage(resolveImageUrl(profile.avatarUrl))
                     : null,
                 child: profile.avatarUrl.isEmpty
                     ? Icon(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:zhuxiang_app/core/network/image_url_resolver.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
@@ -55,12 +56,9 @@ class CurrentLeaseCard extends StatelessWidget {
                     width: 80,
                     height: 68,
                     child: lease.houseImageUrl.isEmpty
-                        ? Image.asset(
-                            'assets/home_bk.png',
-                            fit: BoxFit.cover,
-                          )
+                        ? Image.asset('assets/home_bk.png', fit: BoxFit.cover)
                         : Image.network(
-                            lease.houseImageUrl,
+                            resolveImageUrl(lease.houseImageUrl),
                             fit: BoxFit.cover,
                             errorBuilder: (_, _, _) => Image.asset(
                               'assets/home_bk.png',
@@ -88,10 +86,7 @@ class CurrentLeaseCard extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        lease.houseSummary,
-                        style: AppTextStyles.bodyMedium,
-                      ),
+                      Text(lease.houseSummary, style: AppTextStyles.bodyMedium),
                       const SizedBox(height: AppSpacing.sm),
                       Row(
                         children: [
@@ -155,7 +150,9 @@ class CurrentLeaseCard extends StatelessWidget {
                 Expanded(
                   child: _Metric(
                     label: '支付日',
-                    value: '每月${lease.paymentDay}日',
+                    value: lease.paymentDay > 0
+                        ? '每月${lease.paymentDay}日'
+                        : '未设置',
                     color: _accentColor,
                   ),
                 ),
@@ -205,7 +202,11 @@ class CurrentLeaseCard extends StatelessWidget {
 }
 
 class _Metric extends StatelessWidget {
-  const _Metric({required this.label, required this.value, required this.color});
+  const _Metric({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
   final String label;
   final String value;
   final Color color;
@@ -245,7 +246,9 @@ class _ActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final borderColor = primary ? accentColor : AppColors.border;
     final textColor = primary ? accentColor : AppColors.textSecondary;
-    final bgColor = primary ? accentColor.withValues(alpha: 0.08) : Colors.transparent;
+    final bgColor = primary
+        ? accentColor.withValues(alpha: 0.08)
+        : Colors.transparent;
 
     return SizedBox(
       height: 36,

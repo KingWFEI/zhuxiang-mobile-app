@@ -9,7 +9,7 @@ class RepairTimelineItemModel {
     return RepairTimelineItem(
       title: _string(json['title'], fallback: '进度更新'),
       description: _string(json['description']),
-      time: _date(json['time']) ?? DateTime.now(),
+      time: _requiredDate(json['time'], 'timeline.time'),
       status: RepairStatus.fromValue(json['status']),
     );
   }
@@ -45,51 +45,20 @@ class RepairOrderModel {
         json['housekeeperPhone'] ?? json['housekeeper_phone'],
       ),
       repairmanName: _string(json['repairmanName'] ?? json['repairman_name']),
-      createdAt:
-          _date(json['createdAt'] ?? json['created_at']) ?? DateTime.now(),
-      updatedAt:
-          _date(json['updatedAt'] ?? json['updated_at']) ?? DateTime.now(),
+      createdAt: _requiredDate(
+        json['createdAt'] ?? json['created_at'],
+        'createdAt',
+      ),
+      updatedAt: _requiredDate(
+        json['updatedAt'] ?? json['updated_at'],
+        'updatedAt',
+      ),
       completedAt: _date(json['completedAt'] ?? json['completed_at']),
       rating: _int(json['rating']),
       reviewContent: _nullableString(
         json['reviewContent'] ?? json['review_content'],
       ),
       timeline: _timeline(json['timeline']),
-    );
-  }
-}
-
-class RepairHouseModel {
-  const RepairHouseModel(this.json);
-
-  final Map<String, dynamic> json;
-
-  RepairHouse toEntity() {
-    return RepairHouse(
-      houseId: _string(
-        json['houseId'] ?? json['house_id'],
-        fallback: 'house-001',
-      ),
-      houseName: _string(
-        json['houseName'] ?? json['house_name'],
-        fallback: '3栋2单元1201',
-      ),
-      roomName: _string(
-        json['roomName'] ?? json['room_name'],
-        fallback: '3栋2单元1201',
-      ),
-      leaseStatus: _string(
-        json['leaseStatus'] ?? json['lease_status'],
-        fallback: '履约中',
-      ),
-      housekeeperName: _string(
-        json['housekeeperName'] ?? json['housekeeper_name'],
-        fallback: '小住管家',
-      ),
-      housekeeperPhone: _string(
-        json['housekeeperPhone'] ?? json['housekeeper_phone'],
-        fallback: '400-800-1234',
-      ),
     );
   }
 }
@@ -140,6 +109,12 @@ DateTime? _date(Object? value) {
   if (value == null) return null;
   if (value is DateTime) return value;
   return DateTime.tryParse(value.toString());
+}
+
+DateTime _requiredDate(Object? value, String fieldName) {
+  final date = _date(value);
+  if (date == null) throw FormatException('Invalid or missing $fieldName');
+  return date;
 }
 
 int? _int(Object? value) {

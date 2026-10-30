@@ -30,28 +30,15 @@ abstract class LeaseServiceContract {
 }
 
 class LeaseService implements LeaseServiceContract {
-  LeaseService(
-    this._apiClient, {
-    LeaseServiceContract? fallback,
-    this.allowMockFallback = true,
-  }) : _fallback = fallback ?? MockLeaseService();
+  LeaseService(this._apiClient);
 
   final ApiClient _apiClient;
-  final LeaseServiceContract _fallback;
-  final bool allowMockFallback;
 
   @override
-  Future<List<Lease>> getMyLeases() {
-    return _withFallback(_fetchMyLeases, _fallback.getMyLeases);
-  }
+  Future<List<Lease>> getMyLeases() => _fetchMyLeases();
 
   @override
-  Future<Lease> getLeaseDetail(String leaseId) {
-    return _withFallback(
-      () => _fetchLeaseDetail(leaseId),
-      () => _fallback.getLeaseDetail(leaseId),
-    );
-  }
+  Future<Lease> getLeaseDetail(String leaseId) => _fetchLeaseDetail(leaseId);
 
   @override
   Future<DepositInfo?> getDeposit(String leaseId) {
@@ -59,20 +46,11 @@ class LeaseService implements LeaseServiceContract {
   }
 
   @override
-  Future<LeaseContractDocument> getLeaseContract(String leaseId) {
-    return _withFallback(
-      () => _fetchLeaseContract(leaseId),
-      () => _fallback.getLeaseContract(leaseId),
-    );
-  }
+  Future<LeaseContractDocument> getLeaseContract(String leaseId) =>
+      _fetchLeaseContract(leaseId);
 
   @override
-  Future<void> renew(String leaseId) {
-    return _withFallback(
-      () => _submitAction(leaseId, 'renew'),
-      () => _fallback.renew(leaseId),
-    );
-  }
+  Future<void> renew(String leaseId) => _submitAction(leaseId, 'renew');
 
   @override
   Future<LeaseTerminationAttachment> uploadTerminationAttachment({
@@ -88,23 +66,14 @@ class LeaseService implements LeaseServiceContract {
   }
 
   @override
-  Future<TerminationCheck> checkTermination(String leaseId) {
-    return _withFallback(
-      () => _checkTermination(leaseId),
-      () => _fallback.checkTermination(leaseId),
-    );
-  }
+  Future<TerminationCheck> checkTermination(String leaseId) =>
+      _checkTermination(leaseId);
 
   @override
   Future<TerminationApplication> applyTermination(
     String leaseId,
     Map<String, dynamic> body,
-  ) {
-    return _withFallback(
-      () => _applyTermination(leaseId, body),
-      () => _fallback.applyTermination(leaseId, body),
-    );
-  }
+  ) => _applyTermination(leaseId, body);
 
   @override
   Future<RescissionActionLink> getRescissionSignUrl(
@@ -324,7 +293,7 @@ class LeaseService implements LeaseServiceContract {
         'statusText',
         'status_text',
         'contractStatusText',
-      ], fallback: '已签约'),
+      ]),
       content: _string(source, [
         'content',
         'contractContent',
@@ -460,7 +429,8 @@ class LeaseService implements LeaseServiceContract {
       final parsed = DateTime.tryParse(source[key]?.toString() ?? '');
       if (parsed != null) return parsed;
     }
-    return fallback ?? DateTime(2026, 3, 1);
+    if (fallback != null) return fallback;
+    throw FormatException('Missing required date field: ${keys.join(', ')}');
   }
 
   static DateTime? _nullableDate(
@@ -481,203 +451,4 @@ class LeaseService implements LeaseServiceContract {
         .where((item) => item.isNotEmpty)
         .toList(growable: false);
   }
-
-  Future<T> _withFallback<T>(
-    Future<T> Function() remote,
-    Future<T> Function() fallback,
-  ) async {
-    try {
-      return await remote();
-    } on ApiException catch (e) {
-      // 401 未登录/Token 失效时不降级到 mock 数据，
-      // 让上层控制器收到错误并提示用户登录。
-      if (e.type == ApiExceptionType.unauthorized || e.statusCode == 401) {
-        rethrow;
-      }
-      if (!allowMockFallback) rethrow;
-      return fallback();
-    } on Object {
-      if (!allowMockFallback) rethrow;
-      return fallback();
-    }
-  }
-}
-
-class MockLeaseService implements LeaseServiceContract {
-  MockLeaseService() : _leases = [_currentLease, _historyLease];
-
-  final List<Lease> _leases;
-
-  @override
-  Future<List<Lease>> getMyLeases() async {
-    await Future<void>.delayed(const Duration(milliseconds: 350));
-    return List.unmodifiable(_leases);
-  }
-
-  @override
-  Future<Lease> getLeaseDetail(String leaseId) async {
-    await Future<void>.delayed(const Duration(milliseconds: 180));
-    return _leases.firstWhere((lease) => lease.id == leaseId);
-  }
-
-  @override
-  Future<DepositInfo?> getDeposit(String leaseId) async {
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-    return null;
-  }
-
-  @override
-  Future<LeaseContractDocument> getLeaseContract(String leaseId) async {
-    await Future<void>.delayed(const Duration(milliseconds: 280));
-    final lease = _leases.firstWhere((lease) => lease.id == leaseId);
-    return LeaseContractDocument(
-      id: 'contract-$leaseId',
-      contractNo: 'HT202603010001',
-      houseName: lease.houseName,
-      tenantName: lease.tenantName,
-      startDate: lease.startDate,
-      endDate: lease.endDate,
-      monthlyRent: lease.monthlyRent,
-      deposit: lease.deposit,
-      paymentMethod: lease.paymentMethod,
-      statusText: lease.contractStatus.label,
-      content: '',
-      fileUrl: '',
-      clauses: [
-        '甲乙双方确认房源信息：${lease.houseName}，地址为${lease.houseAddress}。',
-        '租赁期限：自${_formatDate(lease.startDate)}起至${_formatDate(lease.endDate)}止。',
-        '租金及支付方式：月租金为人民币${_formatMoney(lease.monthlyRent)}元，押金为人民币${_formatMoney(lease.deposit)}元，付款方式为${lease.paymentMethod}。',
-        '房屋用途：承租方承诺该房屋仅作为居住使用，不得擅自转租或改变用途。',
-        '合同解除：提前解除合同需按合同约定完成申请、验房、结算和押金处理。',
-      ],
-      signedAt: DateTime(2026, 3, 1),
-    );
-  }
-
-  @override
-  Future<void> renew(String leaseId) async {
-    await Future<void>.delayed(const Duration(milliseconds: 300));
-    _leases.firstWhere((lease) => lease.id == leaseId);
-  }
-
-  @override
-  Future<LeaseTerminationAttachment> uploadTerminationAttachment({
-    required String filePath,
-    required String fileName,
-  }) async {
-    await Future<void>.delayed(const Duration(milliseconds: 350));
-    return LeaseTerminationAttachment(
-      url: 'mock://lease-termination/$fileName',
-      type: 'image',
-      name: fileName,
-    );
-  }
-
-  @override
-  Future<TerminationApplication?> getCurrentTermination(String leaseId) async {
-    await Future<void>.delayed(const Duration(milliseconds: 180));
-    return null;
-  }
-
-  @override
-  Future<TerminationCheck> checkTermination(String leaseId) async {
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-    return const TerminationCheck(
-      canApply: true,
-      hasPendingApplication: false,
-      hasUnpaidBills: false,
-      message: '',
-    );
-  }
-
-  @override
-  Future<TerminationApplication> applyTermination(
-    String leaseId,
-    Map<String, dynamic> body,
-  ) async {
-    await Future<void>.delayed(const Duration(milliseconds: 450));
-    _leases.firstWhere((lease) => lease.id == leaseId);
-    return const TerminationApplication(
-      id: 'termination-2026-001',
-      applicationNo: 'TZ202606290001',
-      status: 'pending_review',
-      statusText: '待审核',
-    );
-  }
-
-  @override
-  Future<RescissionActionLink> getRescissionSignUrl(
-    String applicationId,
-  ) async {
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-    return RescissionActionLink(
-      action: 'sign',
-      url: 'https://example.com/mock-rescission-sign/$applicationId',
-    );
-  }
-}
-
-final _currentLease = Lease(
-  id: 'lease-2026-001',
-  contractId: 'contract-2026-001',
-  houseId: 'house-001',
-  houseName: '3栋2单元1201',
-  houseAddress: '重庆市渝北区中央公园悦居社区',
-  houseSummary: '温馨一居 · 42㎡ · 朝南',
-  houseImageUrl: '',
-  tenantName: '王小明',
-  tenantPhone: '13800138000',
-  tenantIdCard: '500101199605201234',
-  startDate: DateTime(2026, 3, 1),
-  endDate: DateTime(2027, 2, 28),
-  monthlyRent: 268000,
-  deposit: 268000,
-  paymentMethod: '押一付一',
-  paymentDay: 5,
-  status: LeaseStatus.active,
-  contractStatus: LeaseContractStatus.signed,
-  billStatus: LeaseBillStatus.unpaid,
-  lockPermissionStatus: LeaseLockPermissionStatus.active,
-  keeperName: '小住管家',
-  keeperPhone: '400-800-2026',
-  pendingBillTitle: '3月租金待支付',
-  pendingBillAmount: 268000,
-  pendingBillDueDate: DateTime(2026, 3, 5),
-);
-
-final _historyLease = Lease(
-  id: 'lease-2025-006',
-  contractId: 'contract-2025-006',
-  houseId: 'house-006',
-  houseName: '悦来公寓6栋802',
-  houseAddress: '重庆市渝北区悦来大道',
-  houseSummary: '精装两居 · 68㎡ · 南北通透',
-  houseImageUrl: '',
-  tenantName: '王小明',
-  tenantPhone: '13800138000',
-  tenantIdCard: '500101199605201234',
-  startDate: DateTime(2025, 3, 1),
-  endDate: DateTime(2026, 2, 28),
-  monthlyRent: 320000,
-  deposit: 320000,
-  paymentMethod: '押一付一',
-  paymentDay: 5,
-  status: LeaseStatus.expired,
-  contractStatus: LeaseContractStatus.signed,
-  billStatus: LeaseBillStatus.paid,
-  lockPermissionStatus: LeaseLockPermissionStatus.expired,
-  keeperName: '小住管家',
-  keeperPhone: '400-800-2026',
-  pendingBillTitle: '',
-  pendingBillAmount: 0,
-  pendingBillDueDate: DateTime(2026, 2, 5),
-);
-
-String _formatDate(DateTime value) {
-  String two(int number) => number.toString().padLeft(2, '0');
-  return '${value.year}-${two(value.month)}-${two(value.day)}';
-}
-
-String _formatMoney(int amount) {
-  return (amount / 100).toStringAsFixed(amount % 100 == 0 ? 0 : 2);
 }

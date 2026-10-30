@@ -61,7 +61,7 @@ class LeaseModel {
       tenantName: _string(json, [
         'tenantName',
         'tenant_name',
-      ], fallback: _string(tenant, ['name', 'realName'], fallback: '勿忧管家租客')),
+      ], fallback: _string(tenant, ['name', 'realName'])),
       tenantPhone: _string(json, [
         'tenantPhone',
         'tenant_phone',
@@ -83,17 +83,13 @@ class LeaseModel {
       ]),
       deposit: _money(json, ['deposit', 'depositAmount', 'deposit_amount']),
       paymentMethod: _paymentMethodLabel(
-        _string(json, [
-          'paymentMethod',
-          'paymentCycle',
-          'payment_method',
-        ], fallback: 'monthly'),
+        _string(json, ['paymentMethod', 'paymentCycle', 'payment_method']),
       ),
       paymentDay: _integer(json, [
         'paymentDay',
         'rentPaymentDay',
         'payment_day',
-      ], fallback: 5),
+      ]),
       status: _leaseStatus(
         _string(json, ['status', 'leaseStatus', 'lease_status']),
       ),
@@ -120,23 +116,25 @@ class LeaseModel {
       keeperName: _string(json, [
         'keeperName',
         'keeper_name',
-      ], fallback: _string(keeper, ['name'], fallback: '小住管家')),
+      ], fallback: _string(keeper, ['name'])),
       keeperPhone: _string(json, [
         'keeperPhone',
         'keeper_phone',
-      ], fallback: _string(keeper, ['phone'], fallback: '400-800-2026')),
+      ], fallback: _string(keeper, ['phone'])),
       pendingBillTitle: _string(json, [
         'pendingBillTitle',
         'pending_bill_title',
-      ], fallback: _string(bill, ['title'], fallback: '本月租金待支付')),
+      ], fallback: _string(bill, ['title'])),
       pendingBillAmount: _money(json, [
         'pendingBillAmount',
         'pending_bill_amount',
       ], fallback: _money(bill, ['amount'])),
-      pendingBillDueDate: _date(json, [
-        'pendingBillDueDate',
-        'pending_bill_due_date',
-      ], fallback: _date(bill, ['dueDate', 'due_date'])),
+      pendingBillDueDate:
+          _nullableDate(json, [
+            'pendingBillDueDate',
+            'pending_bill_due_date',
+          ]) ??
+          _nullableDate(bill, ['dueDate', 'due_date']),
     );
   }
 
@@ -192,14 +190,30 @@ class LeaseModel {
       final parsed = DateTime.tryParse(value?.toString() ?? '');
       if (parsed != null) return parsed;
     }
-    return fallback ?? DateTime(2026, 3, 1);
+    if (fallback != null) return fallback;
+    throw FormatException('Missing required lease date: ${keys.join(', ')}');
+  }
+
+  static DateTime? _nullableDate(
+    Map<String, dynamic> source,
+    List<String> keys,
+  ) {
+    for (final key in keys) {
+      final parsed = DateTime.tryParse(source[key]?.toString() ?? '');
+      if (parsed != null) return parsed;
+    }
+    return null;
   }
 
   static String _buildHouseSummary(Map<String, dynamic> house) {
-    final roomType = _string(house, ['roomType', 'layout'], fallback: '温馨一居');
+    final roomType = _string(house, ['roomType', 'layout']);
     final area = _integer(house, ['area']);
-    final orientation = _string(house, ['orientation'], fallback: '朝南');
-    return '$roomType · ${area > 0 ? '${area}m²' : '42m²'} · $orientation';
+    final orientation = _string(house, ['orientation']);
+    return [
+      roomType,
+      if (area > 0) '${area}m²',
+      orientation,
+    ].where((part) => part.isNotEmpty).join(' · ');
   }
 
   static String _buildFlatHouseName(Map<String, dynamic> source) {
@@ -213,7 +227,7 @@ class LeaseModel {
       unit,
       room,
     ].where((part) => part.isNotEmpty).toList(growable: false);
-    return parts.isEmpty ? '租住房屋' : parts.join(' ');
+    return parts.join(' ');
   }
 
   static String _paymentMethodLabel(String value) {
@@ -228,6 +242,7 @@ class LeaseModel {
 
   static LeaseStatus _leaseStatus(String value) {
     return switch (value.toLowerCase()) {
+      'active' || 'effective' || 'in_effect' => LeaseStatus.active,
       'pending' || 'pending_effective' => LeaseStatus.pending,
       'expired' => LeaseStatus.expired,
       'checkedout' ||
@@ -236,15 +251,16 @@ class LeaseModel {
       'terminated' ||
       'terminate' => LeaseStatus.checkedOut,
       'cancelled' || 'canceled' => LeaseStatus.cancelled,
-      _ => LeaseStatus.active,
+      _ => LeaseStatus.unknown,
     };
   }
 
   static LeaseContractStatus _contractStatus(String value) {
     return switch (value.toLowerCase()) {
       'unsigned' || 'draft' || 'pending' => LeaseContractStatus.unsigned,
+      'signed' || 'active' || 'completed' => LeaseContractStatus.signed,
       'voided' || 'invalid' || 'cancelled' => LeaseContractStatus.voided,
-      _ => LeaseContractStatus.signed,
+      _ => LeaseContractStatus.unknown,
     };
   }
 
@@ -253,15 +269,17 @@ class LeaseModel {
       'unpaid' || 'pending' => LeaseBillStatus.unpaid,
       'overdue' => LeaseBillStatus.overdue,
       'paid' || 'settled' => LeaseBillStatus.paid,
-      _ => LeaseBillStatus.normal,
+      'normal' => LeaseBillStatus.normal,
+      _ => LeaseBillStatus.unknown,
     };
   }
 
   static LeaseLockPermissionStatus _lockStatus(String value) {
     return switch (value.toLowerCase()) {
+      'active' || 'valid' || 'enabled' => LeaseLockPermissionStatus.active,
       'expired' => LeaseLockPermissionStatus.expired,
       'revoked' || 'disabled' => LeaseLockPermissionStatus.revoked,
-      _ => LeaseLockPermissionStatus.active,
+      _ => LeaseLockPermissionStatus.unknown,
     };
   }
 }

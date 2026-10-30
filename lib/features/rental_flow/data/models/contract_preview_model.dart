@@ -38,18 +38,9 @@ class ContractPreviewModel extends ContractPreview {
       contractNo: _string(
         source['contractNo'] ?? source['contract_no'] ?? json['contractNo'],
       ),
-      houseName: _string(
-        source['houseName'] ?? source['house_name'],
-        fallback: 'Rental property',
-      ),
-      tenantName: _string(
-        source['tenantName'] ?? source['tenant_name'],
-        fallback: 'Tenant',
-      ),
-      landlordName: _string(
-        source['landlordName'] ?? source['landlord_name'],
-        fallback: 'Landlord',
-      ),
+      houseName: _string(source['houseName'] ?? source['house_name']),
+      tenantName: _string(source['tenantName'] ?? source['tenant_name']),
+      landlordName: _string(source['landlordName'] ?? source['landlord_name']),
       landlordPhone: _string(
         source['landlordPhone'] ?? source['landlord_phone'],
       ),
@@ -61,10 +52,7 @@ class ContractPreviewModel extends ContractPreview {
       monthlyRent: _amount(source['monthlyRent'] ?? source['monthly_rent']),
       deposit: _amount(source['deposit'] ?? source['depositAmount']),
       paymentMethod: _paymentMethodLabel(
-        _string(
-          source['paymentMethod'] ?? source['payment_method'],
-          fallback: 'monthly',
-        ),
+        _string(source['paymentMethod'] ?? source['payment_method']),
       ),
       clauses: clauses,
       content: content.isNotEmpty ? content : clauses.join('\n\n'),
@@ -83,8 +71,11 @@ String _string(Object? value, {String fallback = ''}) {
   return text == null || text.isEmpty ? fallback : text;
 }
 
-DateTime _date(Object? value) =>
-    DateTime.tryParse(_string(value)) ?? DateTime.now();
+DateTime _date(Object? value) {
+  final date = DateTime.tryParse(_string(value));
+  if (date == null) throw const FormatException('合同日期缺失或格式无效');
+  return date;
+}
 
 int _amount(Object? value) {
   final number = switch (value) {

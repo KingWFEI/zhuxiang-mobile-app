@@ -8,7 +8,7 @@ import 'package:zhuxiang_app/features/message/domain/entities/app_message.dart';
 import 'package:zhuxiang_app/features/message/presentation/pages/message_page.dart';
 
 void main() {
-  testWidgets('message page renders reference-style sections and search', (
+  testWidgets('message page displays all messages without category tabs', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(430, 932);
@@ -26,27 +26,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('消息'), findsOneWidget);
-    expect(find.text('系统通知'), findsOneWidget);
-    expect(find.text('活动公告'), findsOneWidget);
-    expect(find.text('租约提醒'), findsWidgets);
-    expect(find.text('服务通知'), findsOneWidget);
-    expect(find.text('全部消息'), findsOneWidget);
-    expect(find.text('公告'), findsOneWidget);
+    expect(find.text('系统通知'), findsNothing);
+    expect(find.text('活动公告'), findsNothing);
+    expect(find.text('账单/支付'), findsNothing);
+    expect(find.text('服务通知'), findsNothing);
+    expect(find.text('全部消息'), findsNothing);
+    expect(find.text('公告'), findsNothing);
     expect(find.text('勿忧管家'), findsWidgets);
     expect(find.text('账单通知'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-
-    await tester.tap(find.byTooltip('搜索消息'));
-    await tester.pump();
-    await tester.enterText(
-      find.byKey(const ValueKey('message-search-field')),
-      '账单',
-    );
-    await tester.pump();
-
-    expect(find.text('账单通知'), findsOneWidget);
-    expect(find.text('勿忧管家'), findsNothing);
+    expect(find.text('租约提醒'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

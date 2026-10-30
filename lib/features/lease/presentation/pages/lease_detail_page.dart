@@ -599,6 +599,7 @@ class _SmartLockPermissionContent extends StatelessWidget {
         LeaseLockPermissionStatus.active => '智能门锁已经生效',
         LeaseLockPermissionStatus.expired => '智能门锁权限已过期',
         LeaseLockPermissionStatus.revoked => '智能门锁权限已回收',
+        LeaseLockPermissionStatus.unknown => '门锁状态未知',
         null => '门锁状态未知',
       };
 
@@ -611,6 +612,7 @@ class _SmartLockPermissionContent extends StatelessWidget {
               : '$lockName 可使用，入住期间保持有效',
         LeaseLockPermissionStatus.expired => '当前门锁权限已过期，请联系管家处理',
         LeaseLockPermissionStatus.revoked => '当前门锁权限已回收，如需开门请联系管家',
+        LeaseLockPermissionStatus.unknown => '请稍后刷新，或联系管家确认门锁状态',
         null => '请稍后刷新，或联系管家确认门锁状态',
       };
 
@@ -620,6 +622,7 @@ class _SmartLockPermissionContent extends StatelessWidget {
         LeaseLockPermissionStatus.active => '有效',
         LeaseLockPermissionStatus.expired => '已过期',
         LeaseLockPermissionStatus.revoked => '已回收',
+        LeaseLockPermissionStatus.unknown => '未知',
         null => '未知',
       };
 
@@ -629,6 +632,7 @@ class _SmartLockPermissionContent extends StatelessWidget {
         LeaseLockPermissionStatus.active => AppColors.success,
         LeaseLockPermissionStatus.expired => AppColors.warning,
         LeaseLockPermissionStatus.revoked => AppColors.error,
+        LeaseLockPermissionStatus.unknown => AppColors.textMuted,
         null => AppColors.textMuted,
       };
 
@@ -638,6 +642,7 @@ class _SmartLockPermissionContent extends StatelessWidget {
         LeaseLockPermissionStatus.active => Icons.lock_open_rounded,
         LeaseLockPermissionStatus.expired => Icons.lock_clock_rounded,
         LeaseLockPermissionStatus.revoked => Icons.lock_reset_rounded,
+        LeaseLockPermissionStatus.unknown => Icons.lock_outline_rounded,
         null => Icons.lock_outline_rounded,
       };
 

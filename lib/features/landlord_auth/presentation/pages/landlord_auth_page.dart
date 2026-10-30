@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:zhuxiang_app/core/network/image_url_resolver.dart';
 
 import '../../../../app/router/app_mode_controller.dart';
 import '../../../../app/router/route_names.dart';
@@ -1275,7 +1276,10 @@ class _UploadTile extends StatelessWidget {
                   children: [
                     localPath != null
                         ? Image.file(File(localPath!), fit: BoxFit.cover)
-                        : Image.network(remoteUrl!, fit: BoxFit.cover),
+                        : Image.network(
+                            resolveImageUrl(remoteUrl!),
+                            fit: BoxFit.cover,
+                          ),
                     Positioned(
                       left: 0,
                       right: 0,
@@ -1346,7 +1350,7 @@ class _ProofRow extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(9),
           child: Image.network(
-            proof.fileUrl,
+            resolveImageUrl(proof.fileUrl),
             width: 58,
             height: 58,
             fit: BoxFit.cover,

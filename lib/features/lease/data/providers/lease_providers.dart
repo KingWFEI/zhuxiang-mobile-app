@@ -10,11 +10,7 @@ import '../../domain/entities/lease_contract_document.dart';
 import '../services/lease_service.dart';
 
 final leaseServiceProvider = Provider<LeaseServiceContract>((ref) {
-  return LeaseService(
-    ref.watch(apiClientProvider),
-    // 我的租约只展示后端真实数据，接口失败时交给页面展示错误 message。
-    allowMockFallback: false,
-  );
+  return LeaseService(ref.watch(apiClientProvider));
 });
 
 final leaseControllerProvider =
