@@ -4,6 +4,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:zhuxiang_app/core/network/image_url_resolver.dart';
 
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -142,8 +143,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                             const SizedBox(height: AppSpacing.xs),
                             const _DynamicServices(),
                             const SizedBox(height: AppSpacing.lg),
-                            const _HomeRecommendationBanner(),
-                            const SizedBox(height: AppSpacing.lg),
+                            if (data.homeBanners.isNotEmpty) ...[
+                              const _HomeSectionHeader(title: '勿忧精选'),
+                              const SizedBox(height: AppSpacing.sm),
+                              _HomeBannerCarousel(banners: data.homeBanners),
+                              const SizedBox(height: AppSpacing.lg),
+                            ],
                             _HomeSectionHeader(title: '为你推荐'),
                             const SizedBox(height: AppSpacing.sm),
                           ],
@@ -648,89 +653,206 @@ class _HomeSectionHeader extends StatelessWidget {
   }
 }
 
-class _HomeRecommendationBanner extends StatelessWidget {
-  const _HomeRecommendationBanner();
+class _HomeBannerCarousel extends StatefulWidget {
+  const _HomeBannerCarousel({required this.banners});
+
+  final List<HomeAdItem> banners;
+
+  @override
+  State<_HomeBannerCarousel> createState() => _HomeBannerCarouselState();
+}
+
+class _HomeBannerCarouselState extends State<_HomeBannerCarousel> {
+  final PageController _controller = PageController();
+  int _currentPage = 0;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 96,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        gradient: LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          colors: [
-            AppColors.primarySoft.withValues(alpha: 0.94),
-            AppColors.primaryLight.withValues(alpha: 0.94),
-          ],
+    return Column(
+      children: [
+        SizedBox(
+          height: 144,
+          child: PageView.builder(
+            controller: _controller,
+            itemCount: widget.banners.length,
+            onPageChanged: (index) => setState(() => _currentPage = index),
+            itemBuilder: (context, index) =>
+                _HomeBannerCard(ad: widget.banners[index]),
+          ),
         ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x145B8FD8),
-            blurRadius: 16,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            left: AppSpacing.lg,
-            top: AppSpacing.md,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-                vertical: AppSpacing.xs,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              child: const Text(
-                '勿忧精选',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
+        if (widget.banners.length > 1) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              for (var index = 0; index < widget.banners.length; index++)
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: index == _currentPage ? 16 : 6,
+                  height: 6,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  decoration: BoxDecoration(
+                    color: index == _currentPage
+                        ? AppColors.primary
+                        : AppColors.primary.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
                 ),
-              ),
-            ),
-          ),
-          Positioned(
-            left: AppSpacing.lg,
-            top: 38,
-            child: Text(
-              '精选好房 · 为你优选',
-              style: AppTextStyles.titleMedium.copyWith(fontSize: 18),
-            ),
-          ),
-          Positioned(
-            left: AppSpacing.lg,
-            bottom: AppSpacing.md,
-            child: Text(
-              '从位置、品质到服务，精选细选只为更好的你',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-                fontSize: 11,
-              ),
-            ),
-          ),
-          const Positioned(
-            right: AppSpacing.lg,
-            top: 34,
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: AppColors.primaryLight,
-              child: HugeIcon(
-                icon: HugeIcons.strokeRoundedArrowRight01,
-                color: AppColors.primary,
-                size: 22,
-              ),
-            ),
+            ],
           ),
         ],
+      ],
+    );
+  }
+}
+
+class _HomeBannerCard extends StatelessWidget {
+  const _HomeBannerCard({required this.ad});
+
+  final HomeAdItem ad;
+
+  String get _targetType => ad.targetType.trim().toLowerCase();
+
+  bool get _canNavigate =>
+      ad.targetValue.trim().isNotEmpty &&
+      const {'house', 'house_list', 'url'}.contains(_targetType);
+
+  Future<void> _handleTap(BuildContext context) async {
+    if (!_canNavigate) return;
+    final target = ad.targetValue.trim();
+    switch (_targetType) {
+      case 'house':
+        await context.pushNamed(
+          RouteNames.houseDetail,
+          pathParameters: {'houseId': target},
+        );
+      case 'house_list':
+        await context.pushNamed(
+          RouteNames.houseSearchResult,
+          queryParameters: {'keyword': target},
+        );
+      case 'url':
+        final uri = Uri.tryParse(target);
+        final opened =
+            uri != null &&
+            (uri.scheme == 'http' || uri.scheme == 'https') &&
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+        if (!opened && context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('暂时无法打开该链接')));
+        }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = ad.imageUrl.trim();
+    return Padding(
+      padding: const EdgeInsets.only(right: AppSpacing.xs),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        child: Material(
+          color: AppColors.primary,
+          child: InkWell(
+            onTap: _canNavigate ? () => _handleTap(context) : null,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (imageUrl.isEmpty)
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF367BF5), Color(0xFF75A7FF)],
+                      ),
+                    ),
+                  )
+                else
+                  Image.network(
+                    resolveImageUrl(imageUrl),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => const _AdImageFallback(),
+                  ),
+                const DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0x00000000),
+                        Color(0x1A000000),
+                        Color(0xB8000000),
+                      ],
+                    ),
+                  ),
+                ),
+                if (ad.tag.trim().isNotEmpty)
+                  Positioned(
+                    top: AppSpacing.md,
+                    left: AppSpacing.md,
+                    child: _AdBadge(
+                      label: ad.tag.trim(),
+                      backgroundColor: Colors.black.withValues(alpha: 0.42),
+                    ),
+                  ),
+                Positioned(
+                  left: AppSpacing.md,
+                  right: 54,
+                  bottom: AppSpacing.md,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (ad.title.trim().isNotEmpty)
+                        Text(
+                          ad.title.trim(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.titleMedium.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      if (ad.description.trim().isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          ad.description.trim(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: Colors.white.withValues(alpha: 0.9),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (_canNavigate)
+                  const Positioned(
+                    right: AppSpacing.md,
+                    bottom: AppSpacing.md,
+                    child: CircleAvatar(
+                      radius: 18,
+                      backgroundColor: Color(0x38FFFFFF),
+                      child: HugeIcon(
+                        icon: HugeIcons.strokeRoundedArrowRight01,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -849,7 +971,7 @@ class _FeedAdCard extends StatelessWidget {
                 AspectRatio(
                   aspectRatio: 1.35,
                   child: Image.network(
-                    ad.imageUrl,
+                    resolveImageUrl(ad.imageUrl),
                     width: double.infinity,
                     fit: BoxFit.cover,
                     errorBuilder: (_, _, _) => const _AdImageFallback(),
@@ -949,8 +1071,9 @@ class _FeedAdCard extends StatelessWidget {
 }
 
 class _AdBadge extends StatelessWidget {
-  const _AdBadge({this.backgroundColor});
+  const _AdBadge({this.label = '精选推荐', this.backgroundColor});
 
+  final String label;
   final Color? backgroundColor;
 
   @override
@@ -965,7 +1088,7 @@ class _AdBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Text(
-        '精选推荐',
+        label,
         style: AppTextStyles.bodyMedium.copyWith(
           color: AppColors.surface,
           fontSize: 11,

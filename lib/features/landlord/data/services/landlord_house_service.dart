@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 
 import '../../../../core/network/api_client.dart';
@@ -49,10 +51,39 @@ class LandlordHouseService {
         .toList();
   }
 
-  Future<LandlordHouseItem> createHouse(CreateHouseRequest request) async {
+  Future<LandlordHouseItem> createHouseWithImages(
+    CreateHouseRequest request, {
+    required List<String> imagePaths,
+    required int coverIndex,
+  }) async {
+    final houseData = request.toJson()
+      ..remove('coverImage')
+      ..remove('imageUrls');
+    final formData = FormData();
+    formData.files.add(
+      MapEntry(
+        'house',
+        MultipartFile.fromString(
+          jsonEncode(houseData),
+          filename: 'house.json',
+          contentType: DioMediaType('application', 'json'),
+        ),
+      ),
+    );
+    for (final imagePath in imagePaths) {
+      formData.files.add(
+        MapEntry('images', await MultipartFile.fromFile(imagePath)),
+      );
+    }
+    formData.fields.add(MapEntry('coverIndex', coverIndex.toString()));
+
     final result = await _apiClient.post(
       '/landlord/houses',
-      data: request.toJson(),
+      data: formData,
+      options: Options(
+        sendTimeout: const Duration(minutes: 3),
+        receiveTimeout: const Duration(minutes: 3),
+      ),
     );
     final data = _unwrap(result);
     return LandlordHouseItem.fromJson(data);

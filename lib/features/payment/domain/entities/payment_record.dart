@@ -100,7 +100,6 @@ class PaymentRecord {
     return switch (paymentChannel) {
       'wechat' || 'wx' => '微信支付',
       'alipay' => '支付宝',
-      'mock' => '模拟支付',
       '' => '--',
       _ => paymentChannel,
     };

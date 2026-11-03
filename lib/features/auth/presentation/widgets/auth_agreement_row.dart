@@ -1,6 +1,8 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
@@ -51,7 +53,7 @@ class AuthAgreementRow extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                   recognizer: TapGestureRecognizer()
-                    ..onTap = () => _showUnavailable(context),
+                    ..onTap = () => context.pushNamed(RouteNames.userAgreement),
                 ),
                 TextSpan(text: '  ', style: AppTextStyles.bodySmall),
                 TextSpan(
@@ -61,7 +63,7 @@ class AuthAgreementRow extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                   recognizer: TapGestureRecognizer()
-                    ..onTap = () => _showUnavailable(context),
+                    ..onTap = () => context.pushNamed(RouteNames.privacyPolicy),
                 ),
               ],
             ),
@@ -73,9 +75,4 @@ class AuthAgreementRow extends StatelessWidget {
     );
   }
 
-  void _showUnavailable(BuildContext context) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('协议内容暂未接入')));
-  }
 }

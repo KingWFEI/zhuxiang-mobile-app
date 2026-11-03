@@ -9,6 +9,7 @@ import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../auth/presentation/auth_controller.dart';
 import '../../data/providers/repair_providers.dart';
 import '../../data/services/repair_service.dart';
 import '../../domain/entities/repair_order.dart';
@@ -27,15 +28,17 @@ class CreateRepairPage extends ConsumerStatefulWidget {
 class _CreateRepairPageState extends ConsumerState<CreateRepairPage> {
   final _formKey = GlobalKey<FormState>();
   final _descriptionController = TextEditingController();
-  final _nameController = TextEditingController(text: '王小明');
-  final _phoneController = TextEditingController(text: '13812342468');
+  late final TextEditingController _nameController;
+  late final TextEditingController _phoneController;
   RepairType? _selectedType;
   DateTime? _expectedVisitTime;
-  final List<String> _mockImages = [];
 
   @override
   void initState() {
     super.initState();
+    final user = ref.read(authControllerProvider).user;
+    _nameController = TextEditingController(text: user?.nickname ?? '');
+    _phoneController = TextEditingController(text: user?.phone ?? '');
     _selectedType = widget.initialType;
     _expectedVisitTime = DateTime.now().add(const Duration(days: 1, hours: 2));
   }
@@ -129,18 +132,6 @@ class _CreateRepairPageState extends ConsumerState<CreateRepairPage> {
                                 if (text.length < 5) return '问题描述至少填写 5 个字';
                                 return null;
                               },
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          _CardSection(
-                            title: '问题图片',
-                            child: _ImagePlaceholder(
-                              images: _mockImages,
-                              onAdd: () => setState(
-                                () => _mockImages.add(
-                                  'mock://${_mockImages.length + 1}',
-                                ),
-                              ),
                             ),
                           ),
                           const SizedBox(height: AppSpacing.lg),
@@ -255,7 +246,7 @@ class _CreateRepairPageState extends ConsumerState<CreateRepairPage> {
       roomName: house.roomName,
       repairType: _selectedType!,
       description: _descriptionController.text.trim(),
-      imageUrls: List.of(_mockImages),
+      imageUrls: const [],
       contactName: _nameController.text.trim(),
       contactPhone: _phoneController.text.trim(),
       expectedVisitTime: _expectedVisitTime,
@@ -327,47 +318,6 @@ class _CardSection extends StatelessWidget {
           child,
         ],
       ),
-    );
-  }
-}
-
-class _ImagePlaceholder extends StatelessWidget {
-  const _ImagePlaceholder({required this.images, required this.onAdd});
-
-  final List<String> images;
-  final VoidCallback onAdd;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: AppSpacing.md,
-      runSpacing: AppSpacing.md,
-      children: [
-        for (final _ in images)
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: AppColors.primaryLight,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-            ),
-            child: const Icon(Icons.image_rounded, color: AppColors.primary),
-          ),
-        InkWell(
-          onTap: onAdd,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          child: Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: const Icon(Icons.add_a_photo_rounded),
-          ),
-        ),
-      ],
     );
   }
 }

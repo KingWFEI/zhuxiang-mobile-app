@@ -18,7 +18,7 @@ class RentBillCard extends StatelessWidget {
 
   final String title;
   final int amount;
-  final DateTime dueDate;
+  final DateTime? dueDate;
   final VoidCallback onPayTap;
 
   @override
@@ -54,10 +54,11 @@ class RentBillCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text(
-            '请于${dueDate.month.toString().padLeft(2, '0')}月${dueDate.day.toString().padLeft(2, '0')}日前完成支付，逾期将产生滞纳金',
-            style: AppTextStyles.bodySmall,
-          ),
+          if (dueDate != null)
+            Text(
+              '请于${dueDate!.month.toString().padLeft(2, '0')}月${dueDate!.day.toString().padLeft(2, '0')}日前完成支付，逾期将产生滞纳金',
+              style: AppTextStyles.bodySmall,
+            ),
           const SizedBox(height: AppSpacing.lg),
           SizedBox(
             width: double.infinity,

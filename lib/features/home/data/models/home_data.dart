@@ -3,9 +3,14 @@ import '../../../house/data/models/house_source_type.dart';
 
 class HomeData {
   final List<HomeTab> tabs;
+  final List<HomeAdItem> homeBanners;
   final Map<String, HomeHouseGroup> houseGroups;
 
-  const HomeData({required this.tabs, required this.houseGroups});
+  const HomeData({
+    required this.tabs,
+    this.homeBanners = const [],
+    required this.houseGroups,
+  });
 
   factory HomeData.fromJson(Map<String, dynamic> json) {
     return HomeData(
@@ -14,6 +19,12 @@ class HomeData {
               ?.map((e) => HomeTab.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+      homeBanners:
+          (json['homeBanners'] as List<dynamic>?)
+              ?.whereType<Map<String, dynamic>>()
+              .map(HomeAdItem.fromJson)
+              .toList(growable: false) ??
+          const [],
       houseGroups:
           (json['houseGroups'] as Map<String, dynamic>?)?.map(
             (key, value) => MapEntry(
@@ -278,6 +289,7 @@ class HomeAdItem {
   final String id;
   final String title;
   final String description;
+  final String tag;
   final String imageUrl;
   final String targetType;
   final String targetValue;
@@ -286,6 +298,7 @@ class HomeAdItem {
     required this.id,
     required this.title,
     required this.description,
+    this.tag = '',
     required this.imageUrl,
     required this.targetType,
     required this.targetValue,
@@ -296,6 +309,7 @@ class HomeAdItem {
       id: json['id'] as String? ?? '',
       title: json['title'] as String? ?? '',
       description: json['description'] as String? ?? '',
+      tag: json['tag'] as String? ?? '',
       imageUrl: json['imageUrl'] as String? ?? '',
       targetType: json['targetType'] as String? ?? '',
       targetValue: json['targetValue'] as String? ?? '',

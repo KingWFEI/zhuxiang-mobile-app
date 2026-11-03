@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:zhuxiang_app/core/network/image_url_resolver.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_icon.dart';
@@ -28,6 +31,8 @@ class LandlordHouseFormPage extends ConsumerStatefulWidget {
 }
 
 class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
+  static const _localImagePrefix = 'local:';
+
   final _formKey = GlobalKey<FormState>();
   var _submitting = false;
   var _uploadingImages = false;
@@ -891,7 +896,7 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       Text(
-                        '点击上传封面图',
+                        widget.isEdit ? '点击上传封面图' : '点击选择封面图',
                         style: AppTextStyles.bodyLarge.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -903,18 +908,7 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
                 : Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.network(
-                        _coverUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => const ColoredBox(
-                          color: AppColors.authBackground,
-                          child: Icon(
-                            Icons.broken_image_outlined,
-                            color: AppColors.textMuted,
-                            size: 40,
-                          ),
-                        ),
-                      ),
+                      _imageWidget(_coverUrl, fit: BoxFit.cover),
                       Positioned(
                         left: 0,
                         right: 0,
@@ -991,7 +985,13 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.collections_outlined),
-            label: Text(_uploadingImages ? '图片上传中…' : '添加房源图片'),
+            label: Text(
+              _uploadingImages
+                  ? '图片上传中…'
+                  : widget.isEdit
+                  ? '添加房源图片'
+                  : '选择房源图片',
+            ),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
               side: const BorderSide(color: AppColors.inputBorder),
@@ -1002,7 +1002,10 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
           ),
         ),
         const SizedBox(height: AppSpacing.xs),
-        Text('点击已上传的房源图片可将其设为封面', style: AppTextStyles.bodySmall),
+        Text(
+          widget.isEdit ? '点击已上传的房源图片可将其设为封面' : '图片会在点击创建时统一上传；点击图片可设为封面',
+          style: AppTextStyles.bodySmall,
+        ),
       ],
     );
   }
@@ -1117,14 +1120,7 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
               onTap: () => setState(() => _coverUrl = url),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(AppRadius.md - 2),
-                child: Image.network(
-                  url,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => const Icon(
-                    Icons.broken_image,
-                    color: AppColors.textMuted,
-                  ),
-                ),
+                child: _imageWidget(url, fit: BoxFit.cover),
               ),
             ),
           ),
@@ -1177,6 +1173,23 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
     );
   }
 
+  Widget _imageWidget(String value, {required BoxFit fit}) {
+    if (value.startsWith(_localImagePrefix)) {
+      return Image.file(
+        File(value.substring(_localImagePrefix.length)),
+        fit: fit,
+        errorBuilder: (_, _, _) =>
+            const Icon(Icons.broken_image, color: AppColors.textMuted),
+      );
+    }
+    return Image.network(
+      resolveImageUrl(value),
+      fit: fit,
+      errorBuilder: (_, _, _) =>
+          const Icon(Icons.broken_image, color: AppColors.textMuted),
+    );
+  }
+
   Future<void> _pickAndUploadCover() async {
     try {
       final file = await ImagePicker().pickImage(
@@ -1186,6 +1199,10 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
         requestFullMetadata: false,
       );
       if (file == null || !mounted) return;
+      if (!widget.isEdit) {
+        setState(() => _coverUrl = '$_localImagePrefix${file.path}');
+        return;
+      }
       setState(() => _uploadingImages = true);
       final url = await ref
           .read(landlordHouseServiceProvider)
@@ -1213,6 +1230,21 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
         requestFullMetadata: false,
       );
       if (files.isEmpty || !mounted) return;
+      if (!widget.isEdit) {
+        setState(() {
+          for (final file in files) {
+            final localPath = '$_localImagePrefix${file.path}';
+            if (!_imageUrls.contains(localPath)) _imageUrls.add(localPath);
+            _coverUrl = _coverUrl.isEmpty ? localPath : _coverUrl;
+          }
+        });
+        AppToast.show(
+          context,
+          '已选择 ${files.length} 张图片，点击创建时统一上传',
+          type: AppToastType.success,
+        );
+        return;
+      }
       setState(() => _uploadingImages = true);
       var uploadedCount = 0;
       for (final file in files) {
@@ -1265,7 +1297,11 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
       return;
     }
     if (_coverUrl.isEmpty) {
-      AppToast.show(context, '请先上传封面图', type: AppToastType.error);
+      AppToast.show(
+        context,
+        widget.isEdit ? '请先上传封面图' : '请先选择封面图',
+        type: AppToastType.error,
+      );
       return;
     }
     final price = _monthlyRentCents;
@@ -1311,7 +1347,29 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
           ),
         );
       } else {
-        savedHouse = await service.createHouse(
+        final imagePaths = <String>[];
+        String? coverPath;
+        void addLocalImage(String value) {
+          if (!value.startsWith(_localImagePrefix)) return;
+          final path = value.substring(_localImagePrefix.length);
+          if (!imagePaths.contains(path)) imagePaths.add(path);
+        }
+
+        addLocalImage(_coverUrl);
+        coverPath = _coverUrl.startsWith(_localImagePrefix)
+            ? _coverUrl.substring(_localImagePrefix.length)
+            : null;
+        for (final image in _imageUrls) {
+          addLocalImage(image);
+        }
+        final coverIndex = coverPath == null
+            ? -1
+            : imagePaths.indexOf(coverPath);
+        if (imagePaths.isEmpty || coverIndex < 0) {
+          AppToast.show(context, '请重新选择封面图', type: AppToastType.error);
+          return;
+        }
+        savedHouse = await service.createHouseWithImages(
           CreateHouseRequest(
             title: _titleCtrl.text.trim(),
             coverImage: _coverUrl,
@@ -1342,6 +1400,8 @@ class _LandlordHouseFormPageState extends ConsumerState<LandlordHouseFormPage> {
             isSmartLockSupported: _isSmartLock,
             isSelfViewingSupported: _isSelfViewingSupported,
           ),
+          imagePaths: imagePaths,
+          coverIndex: coverIndex,
         );
       }
 

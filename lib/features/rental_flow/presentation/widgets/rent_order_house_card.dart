@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:zhuxiang_app/core/network/image_url_resolver.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
@@ -40,7 +41,7 @@ class RentOrderHouseCard extends StatelessWidget {
                     ),
                   )
                 : Image.network(
-                    order.coverUrl,
+                    resolveImageUrl(order.coverUrl),
                     width: 82,
                     height: 82,
                     fit: BoxFit.cover,

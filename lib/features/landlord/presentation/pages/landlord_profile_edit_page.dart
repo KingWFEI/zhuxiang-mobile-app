@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:zhuxiang_app/core/network/image_url_resolver.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
@@ -391,7 +392,7 @@ class _CoverPicker extends StatelessWidget {
           children: [
             if (imageUrl.isNotEmpty)
               Image.network(
-                imageUrl,
+                resolveImageUrl(imageUrl),
                 fit: BoxFit.cover,
                 errorBuilder: (_, _, _) =>
                     Container(color: AppColors.primaryLight),

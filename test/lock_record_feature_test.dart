@@ -28,32 +28,6 @@ void main() {
     expect(record.failureReason, '网络请求超时');
   });
 
-  test('mock service contains required unlock scenarios', () async {
-    final overview = await const MockLockRecordService().fetchOverview();
-
-    expect(overview.records, hasLength(8));
-    expect(
-      overview.records.any(
-        (record) =>
-            record.unlockMethod == UnlockMethod.bluetooth && record.isSuccess,
-      ),
-      isTrue,
-    );
-    expect(
-      overview.records.any(
-        (record) =>
-            record.unlockMethod == UnlockMethod.remote && !record.isSuccess,
-      ),
-      isTrue,
-    );
-    expect(
-      overview.records.any(
-        (record) => record.operatorType == UnlockOperatorType.admin,
-      ),
-      isTrue,
-    );
-  });
-
   testWidgets('unlock records page filters and opens detail sheet', (
     tester,
   ) async {
@@ -66,7 +40,7 @@ void main() {
       ProviderScope(
         overrides: [
           lockRecordServiceProvider.overrideWithValue(
-            const MockLockRecordService(),
+            _FakeLockRecordService(overview: _populatedOverview),
           ),
         ],
         child: const MaterialApp(home: UnlockRecordsPage()),
@@ -75,7 +49,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('开门记录'), findsOneWidget);
-    expect(find.text('客厅智能门锁'), findsWidgets);
+    expect(find.text('测试门锁'), findsWidgets);
     expect(find.byKey(const ValueKey('unlock-001')), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('unlock-filter-failed')));
@@ -147,4 +121,46 @@ final _emptyOverview = UnlockRecordOverview(
     supportedMethods: const [UnlockMethod.bluetooth],
   ),
   records: const [],
+);
+
+final _populatedOverview = UnlockRecordOverview(
+  lockStatus: CurrentLockStatus(
+    houseName: '测试房源',
+    lockName: '测试门锁',
+    permissionStatus: LockPermissionStatus.active,
+    lastUnlockTime: DateTime(2026, 6, 22, 14, 32),
+    supportedMethods: const [UnlockMethod.bluetooth],
+  ),
+  records: [
+    UnlockRecord(
+      id: 'unlock-001',
+      houseId: 'test-house',
+      houseName: '测试房源',
+      lockId: 'test-lock',
+      lockName: '测试门锁',
+      unlockMethod: UnlockMethod.bluetooth,
+      unlockResult: UnlockResult.failed,
+      unlockTime: DateTime(2026, 6, 22, 14, 32),
+      operatorName: '测试用户',
+      operatorType: UnlockOperatorType.tenant,
+      failureReason: '蓝牙连接超时',
+      deviceName: '',
+      remark: '',
+    ),
+    UnlockRecord(
+      id: 'unlock-002',
+      houseId: 'test-house',
+      houseName: '测试房源',
+      lockId: 'test-lock',
+      lockName: '测试门锁',
+      unlockMethod: UnlockMethod.bluetooth,
+      unlockResult: UnlockResult.success,
+      unlockTime: DateTime(2026, 6, 22, 11, 18),
+      operatorName: '测试用户',
+      operatorType: UnlockOperatorType.tenant,
+      failureReason: '',
+      deviceName: '',
+      remark: '',
+    ),
+  ],
 );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:zhuxiang_app/core/network/image_url_resolver.dart';
 
 import '../../../../app/theme/app_radius.dart';
 
@@ -37,7 +38,7 @@ class HouseImagePlaceholder extends StatelessWidget {
       child: imageUrl == null || imageUrl.isEmpty
           ? const _ImageFallback()
           : Image.network(
-              imageUrl,
+              resolveImageUrl(imageUrl),
               fit: BoxFit.cover,
               height: height,
               width: double.infinity,

@@ -31,7 +31,7 @@ class PaymentInfoModel extends PaymentInfo {
       paymentMethods:
           (json['paymentMethods'] as List<dynamic>? ??
                   json['payment_methods'] as List<dynamic>? ??
-                  const ['微信支付', '支付宝', '银行卡'])
+                  const <dynamic>[])
               .map((item) => '$item')
               .toList(),
       selectedPaymentMethod:

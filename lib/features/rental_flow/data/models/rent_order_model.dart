@@ -31,30 +31,29 @@ class RentOrderModel extends RentOrder {
       orderNo: json['orderNo'] as String? ?? json['order_no'] as String? ?? '',
       houseId: '${json['houseId'] ?? json['house_id'] ?? ''}',
       houseName:
-          json['houseName'] as String? ??
-          json['house_name'] as String? ??
-          '租住房源',
+          json['houseName'] as String? ?? json['house_name'] as String? ?? '',
       roomName:
           json['roomName'] as String? ?? json['room_name'] as String? ?? '',
       address: json['address'] as String? ?? '',
       coverUrl:
           json['coverUrl'] as String? ?? json['cover_url'] as String? ?? '',
-      startDate:
-          DateTime.tryParse(
-            '${json['startDate'] ?? json['start_date'] ?? ''}',
-          ) ??
-          DateTime.now(),
-      leaseMonths:
-          (json['leaseMonths'] as num? ?? json['lease_months'] as num? ?? 12)
-              .toInt(),
+      startDate: _requiredDate(
+        json['startDate'] ?? json['start_date'],
+        'startDate',
+      ),
+      leaseMonths: _requiredPositiveInt(
+        json['leaseMonths'] ?? json['lease_months'],
+        'leaseMonths',
+      ),
       paymentMethod: _paymentMethodLabel(
         json['paymentMethod'] as String? ??
             json['payment_method'] as String? ??
-            'monthly',
+            '',
       ),
-      tenantCount:
-          (json['tenantCount'] as num? ?? json['tenant_count'] as num? ?? 1)
-              .toInt(),
+      tenantCount: _requiredPositiveInt(
+        json['tenantCount'] ?? json['tenant_count'],
+        'tenantCount',
+      ),
       monthlyRent: _centsToYuan(
         json['monthlyRent'] as num? ?? json['monthly_rent'] as num? ?? 0,
       ),
@@ -129,6 +128,24 @@ class RentOrderModel extends RentOrder {
 }
 
 int _centsToYuan(num value) => (value / 100).round();
+
+DateTime _requiredDate(Object? value, String fieldName) {
+  final parsed = _parseDateTime(value);
+  if (parsed == null) throw FormatException('Missing or invalid $fieldName');
+  return parsed;
+}
+
+int _requiredPositiveInt(Object? value, String fieldName) {
+  final parsed = switch (value) {
+    num number => number.toInt(),
+    String text => int.tryParse(text.trim()),
+    _ => null,
+  };
+  if (parsed == null || parsed <= 0) {
+    throw FormatException('Missing or invalid $fieldName');
+  }
+  return parsed;
+}
 
 DateTime? _parseDateTime(Object? value) {
   if (value == null) return null;

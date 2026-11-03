@@ -18,6 +18,7 @@ class CurrentLockStatusCard extends StatelessWidget {
       LockPermissionStatus.active => AppColors.success,
       LockPermissionStatus.pending => AppColors.warning,
       LockPermissionStatus.expired => AppColors.error,
+      LockPermissionStatus.unknown => AppColors.textMuted,
     };
 
     return Container(
@@ -118,7 +119,8 @@ class CurrentLockStatusCard extends StatelessWidget {
   }
 }
 
-String formatUnlockTime(DateTime value) {
+String formatUnlockTime(DateTime? value) {
+  if (value == null) return '暂无开门记录';
   final now = DateTime.now();
   final time =
       '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';

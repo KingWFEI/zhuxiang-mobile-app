@@ -9,13 +9,13 @@ class UnlockRecordModel {
     return UnlockRecord(
       id: _string(['id', 'recordId']),
       houseId: _string(['houseId']),
-      houseName: _string(['houseName', 'houseTitle'], fallback: '3栋2单元1201'),
+      houseName: _string(['houseName', 'houseTitle']),
       lockId: _string(['lockId']),
-      lockName: _string(['lockName'], fallback: '客厅智能门锁'),
+      lockName: _string(['lockName']),
       unlockMethod: _method(_string(['unlockMethod', 'method'])),
       unlockResult: _result(_string(['unlockResult', 'result', 'status'])),
-      unlockTime: _date(['unlockTime', 'createdAt', 'time']),
-      operatorName: _string(['operatorName'], fallback: '本人'),
+      unlockTime: _requiredDate(['unlockTime', 'createdAt', 'time']),
+      operatorName: _string(['operatorName']),
       operatorType: _operatorType(_string(['operatorType', 'source'])),
       failureReason: _string(['failureReason', 'failReason']),
       deviceName: _string(['deviceName']),
@@ -38,32 +38,37 @@ class UnlockRecordModel {
       final value = DateTime.tryParse(json[key]?.toString() ?? '');
       if (value != null) return value;
     }
-    return DateTime.now();
+    throw FormatException('Missing unlock record date: ${keys.join(', ')}');
   }
+
+  DateTime _requiredDate(List<String> keys) => _date(keys);
 
   UnlockMethod _method(String value) {
     return switch (value.toLowerCase()) {
+      'bluetooth' || 'ble' => UnlockMethod.bluetooth,
       'remote' || 'remote_unlock' => UnlockMethod.remote,
       'password' || 'code' || 'temporary_password' => UnlockMethod.password,
       'admin' || 'administrator' => UnlockMethod.admin,
       'system' => UnlockMethod.system,
-      _ => UnlockMethod.bluetooth,
+      _ => UnlockMethod.unknown,
     };
   }
 
   UnlockResult _result(String value) {
     return switch (value.toLowerCase()) {
+      'success' || 'succeeded' || 'ok' || '1' => UnlockResult.success,
       'failed' || 'failure' || 'error' => UnlockResult.failed,
-      _ => UnlockResult.success,
+      _ => UnlockResult.unknown,
     };
   }
 
   UnlockOperatorType _operatorType(String value) {
     return switch (value.toLowerCase()) {
+      'tenant' || 'user' || 'self' => UnlockOperatorType.tenant,
       'housekeeper' || 'keeper' => UnlockOperatorType.housekeeper,
       'admin' || 'administrator' => UnlockOperatorType.admin,
       'system' => UnlockOperatorType.system,
-      _ => UnlockOperatorType.tenant,
+      _ => UnlockOperatorType.unknown,
     };
   }
 }
@@ -76,19 +81,15 @@ class CurrentLockStatusModel {
   CurrentLockStatus toEntity() {
     final methods = json['supportedMethods'];
     return CurrentLockStatus(
-      houseName: json['houseName']?.toString() ?? '3栋2单元1201',
-      lockName: json['lockName']?.toString() ?? '客厅智能门锁',
+      houseName: json['houseName']?.toString() ?? '',
+      lockName: json['lockName']?.toString() ?? '',
       permissionStatus: _permission(json['permissionStatus']?.toString() ?? ''),
-      lastUnlockTime:
-          DateTime.tryParse(json['lastUnlockTime']?.toString() ?? '') ??
-          DateTime.now(),
+      lastUnlockTime: DateTime.tryParse(
+        json['lastUnlockTime']?.toString() ?? '',
+      ),
       supportedMethods: methods is List
           ? methods.map((item) => _method(item.toString())).toList()
-          : const [
-              UnlockMethod.bluetooth,
-              UnlockMethod.remote,
-              UnlockMethod.password,
-            ],
+          : const [],
     );
   }
 
@@ -96,17 +97,19 @@ class CurrentLockStatusModel {
     return switch (value.toLowerCase()) {
       'pending' || 'inactive' => LockPermissionStatus.pending,
       'expired' || 'revoked' => LockPermissionStatus.expired,
-      _ => LockPermissionStatus.active,
+      'active' || 'valid' => LockPermissionStatus.active,
+      _ => LockPermissionStatus.unknown,
     };
   }
 
   UnlockMethod _method(String value) {
     return switch (value.toLowerCase()) {
+      'bluetooth' || 'ble' => UnlockMethod.bluetooth,
       'remote' => UnlockMethod.remote,
       'password' || 'temporary_password' => UnlockMethod.password,
       'admin' => UnlockMethod.admin,
       'system' => UnlockMethod.system,
-      _ => UnlockMethod.bluetooth,
+      _ => UnlockMethod.unknown,
     };
   }
 }

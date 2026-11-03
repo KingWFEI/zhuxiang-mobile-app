@@ -5,7 +5,8 @@ enum LeaseStatus {
   pending('待生效', Color(0xFFF59E0B)),
   expired('已到期', Color(0xFF9CA3AF)),
   checkedOut('已退租', Color(0xFF7B8190)),
-  cancelled('已取消', Color(0xFFD32F2F));
+  cancelled('已取消', Color(0xFFD32F2F)),
+  unknown('状态未知', Color(0xFF9CA3AF));
 
   const LeaseStatus(this.label, this.color);
   final String label;
@@ -15,7 +16,8 @@ enum LeaseStatus {
 enum LeaseContractStatus {
   unsigned('待签约'),
   signed('已签约'),
-  voided('已作废');
+  voided('已作废'),
+  unknown('状态未知');
 
   const LeaseContractStatus(this.label);
   final String label;
@@ -25,7 +27,8 @@ enum LeaseBillStatus {
   normal('正常'),
   unpaid('待缴费'),
   overdue('已逾期'),
-  paid('已结清');
+  paid('已结清'),
+  unknown('状态未知');
 
   const LeaseBillStatus(this.label);
   final String label;
@@ -34,7 +37,8 @@ enum LeaseBillStatus {
 enum LeaseLockPermissionStatus {
   active('已授权'),
   expired('已过期'),
-  revoked('已回收');
+  revoked('已回收'),
+  unknown('状态未知');
 
   const LeaseLockPermissionStatus(this.label);
   final String label;
@@ -66,7 +70,7 @@ class Lease {
     required this.keeperPhone,
     required this.pendingBillTitle,
     required this.pendingBillAmount,
-    required this.pendingBillDueDate,
+    this.pendingBillDueDate,
   });
 
   final String id;
@@ -93,7 +97,7 @@ class Lease {
   final String keeperPhone;
   final String pendingBillTitle;
   final int pendingBillAmount;
-  final DateTime pendingBillDueDate;
+  final DateTime? pendingBillDueDate;
 
   bool get isCurrent =>
       status == LeaseStatus.active || status == LeaseStatus.pending;

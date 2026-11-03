@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:zhuxiang_app/core/network/image_url_resolver.dart';
 
 import '../../../../app/router/app_mode_controller.dart';
 import '../../../../app/router/route_names.dart';
@@ -36,7 +37,7 @@ class LandlordProfilePage extends ConsumerWidget {
                   radius: 28,
                   backgroundColor: AppColors.primaryLight,
                   backgroundImage: user != null && user.avatarUrl.isNotEmpty
-                      ? NetworkImage(user.avatarUrl)
+                      ? NetworkImage(resolveImageUrl(user.avatarUrl))
                       : null,
                   child: user == null || user.avatarUrl.isEmpty
                       ? const Icon(

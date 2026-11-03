@@ -83,7 +83,7 @@ lib/
 │   ├── extensions/                    # 通用扩展方法
 │   ├── models/                        # 跨 Feature 共享的 Model
 │   └── widgets/                       # 跨 Feature 共享的 Widget
-└── mock/                              # Mock 数据
+└── main.dart                          # App 入口
 ```
 
 ---
@@ -155,7 +155,7 @@ repair/
 │   └── entities/repair_order.dart          # 领域实体（不可变 + copyWith）
 ├── data/
 │   ├── models/repair_order_model.dart       # 数据模型（含 fromJson/toEntity）
-│   ├── services/repair_service.dart         # API 调用 + Mock 降级
+│   ├── services/repair_service.dart         # 服务端 API 调用
 │   └── providers/repair_providers.dart      # Riverpod Provider
 ├── application/
 │   └── repair_controller.dart               # StateNotifier 控制器

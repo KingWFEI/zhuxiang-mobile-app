@@ -58,7 +58,7 @@ class CsMessage {
       content: json['content']?.toString() ?? '',
       metadataJson: json['metadataJson']?.toString(),
       status: json['status']?.toString() ?? 'SENT',
-      createdAt: _parseDateTime(json['createdAt']) ?? DateTime.now(),
+      createdAt: _requiredDateTime(json['createdAt'], 'createdAt'),
     );
   }
 
@@ -107,6 +107,12 @@ DateTime? _parseDateTime(dynamic value) {
   if (value == null) return null;
   final text = value.toString();
   return DateTime.tryParse(text)?.toLocal();
+}
+
+DateTime _requiredDateTime(dynamic value, String fieldName) {
+  final date = _parseDateTime(value);
+  if (date == null) throw FormatException('Missing or invalid $fieldName');
+  return date;
 }
 
 int _intValue(dynamic value, {int fallback = 0}) {

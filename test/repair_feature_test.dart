@@ -50,29 +50,9 @@ void main() {
     expect(order.timeline, hasLength(1));
   });
 
-  test('MockRepairService provides required repair records', () async {
-    final overview = await MockRepairService().fetchOverview();
-
-    expect(overview.currentHouse.houseName, isNotEmpty);
-    expect(overview.orders.length, greaterThanOrEqualTo(8));
-    expect(
-      overview.orders.map((order) => order.status).toSet(),
-      containsAll([
-        RepairStatus.submitted,
-        RepairStatus.processing,
-        RepairStatus.pendingReview,
-        RepairStatus.completed,
-        RepairStatus.cancelled,
-      ]),
-    );
-  });
-
   test('RepairService uses active lease as repair house', () async {
     final dio = _repairOverviewDio();
-    final service = RepairService(
-      ApiClient(dio: dio),
-      allowMockFallback: false,
-    );
+    final service = RepairService(ApiClient(dio: dio));
 
     final overview = await service.fetchOverview();
 
@@ -98,7 +78,7 @@ void main() {
   );
 
   test('RepairController filters, creates repair and submits review', () async {
-    final controller = RepairController(MockRepairService());
+    final controller = RepairController(_TestRepairService());
 
     await controller.load();
     controller.selectFilter(RepairStatusFilter.pendingReview);
@@ -207,7 +187,103 @@ Dio _repairOverviewDio() {
   return dio;
 }
 
-class _NoActiveLeaseRepairService extends MockRepairService {
+class _TestRepairService implements RepairServiceContract {
+  final _house = const RepairHouse(
+    houseId: 'test-house',
+    houseName: '测试房源',
+    roomName: '测试房源',
+    leaseStatus: '履约中',
+    housekeeperName: '',
+    housekeeperPhone: '',
+  );
+
+  final List<RepairOrder> _orders = [
+    RepairOrder(
+      id: 'test-pending-review',
+      orderNo: 'TEST-1',
+      houseId: 'test-house',
+      houseName: '测试房源',
+      roomName: '测试房源',
+      repairType: RepairType.plumbing,
+      description: '测试维修工单',
+      imageUrls: const [],
+      contactName: '测试联系人',
+      contactPhone: '0000000000',
+      expectedVisitTime: null,
+      status: RepairStatus.pendingReview,
+      housekeeperName: '',
+      housekeeperPhone: '',
+      repairmanName: '',
+      createdAt: DateTime(2026, 6, 22),
+      updatedAt: DateTime(2026, 6, 22),
+      timeline: const [],
+    ),
+  ];
+
+  @override
+  Future<RepairOverview> fetchOverview() async => RepairOverview(
+    currentHouse: _house,
+    availableHouses: [_house],
+    orders: List.of(_orders),
+  );
+
+  @override
+  Future<RepairOrder> fetchRepairDetail(String repairId) async =>
+      _orders.firstWhere((order) => order.id == repairId);
+
+  @override
+  Future<RepairOrder> createRepair(CreateRepairRequest request) async {
+    final now = DateTime.now();
+    final order = RepairOrder(
+      id: 'test-created-${_orders.length}',
+      orderNo: 'TEST-${_orders.length + 1}',
+      houseId: request.houseId,
+      houseName: request.houseName,
+      roomName: request.roomName,
+      repairType: request.repairType,
+      description: request.description,
+      imageUrls: request.imageUrls,
+      contactName: request.contactName,
+      contactPhone: request.contactPhone,
+      expectedVisitTime: request.expectedVisitTime,
+      status: RepairStatus.submitted,
+      housekeeperName: '',
+      housekeeperPhone: '',
+      repairmanName: '',
+      createdAt: now,
+      updatedAt: now,
+      timeline: const [],
+    );
+    _orders.insert(0, order);
+    return order;
+  }
+
+  @override
+  Future<RepairOrder> submitReview({
+    required String repairId,
+    required int rating,
+    required String content,
+  }) async {
+    final index = _orders.indexWhere((order) => order.id == repairId);
+    final updated = _orders[index].copyWith(
+      status: RepairStatus.completed,
+      rating: rating,
+      reviewContent: content,
+    );
+    _orders[index] = updated;
+    return updated;
+  }
+
+  @override
+  Future<RepairOrder> cancelRepair(String repairId) async {
+    final index = _orders.indexWhere((order) => order.id == repairId);
+    final updated = _orders[index].copyWith(status: RepairStatus.cancelled);
+    _orders[index] = updated;
+    return updated;
+  }
+}
+
+class _NoActiveLeaseRepairService extends _TestRepairService {
   @override
   Future<RepairOverview> fetchOverview() async {
     throw const ApiException(

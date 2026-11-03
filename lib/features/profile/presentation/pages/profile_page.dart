@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:zhuxiang_app/core/network/image_url_resolver.dart';
 
 import '../../../../app/router/app_mode_controller.dart';
 import '../../../../app/router/route_names.dart';
@@ -221,7 +222,7 @@ class _UserIdentityCard extends StatelessWidget {
                     radius: 36,
                     backgroundColor: const Color(0xFFEAF3FF),
                     backgroundImage: hasAvatar
-                        ? NetworkImage(user.avatarUrl)
+                        ? NetworkImage(resolveImageUrl(user.avatarUrl))
                         : null,
                     child: hasAvatar
                         ? null
@@ -895,7 +896,7 @@ class _CurrentHomeCard extends StatelessWidget {
                   height: 124,
                   child: hasImage
                       ? Image.network(
-                          home.coverImage,
+                          resolveImageUrl(home.coverImage),
                           fit: BoxFit.cover,
                           errorBuilder: (_, _, _) => const _HomeImageFallback(),
                         )

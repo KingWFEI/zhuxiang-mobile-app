@@ -129,13 +129,15 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
     }
 
     final channel = _channelForMethod(selected);
+    if (channel == null) {
+      AppToast.show(context, '暂不支持该支付方式', type: AppToastType.error);
+      return;
+    }
     final result = await ref
         .read(rentalFlowControllerProvider.notifier)
         .submitPayment(widget.orderId, selected, channel);
     if (!mounted || result == null) return;
 
-    // 支付宝只有在明确拿到 H5 地址后才能打开支付页；地址缺失时停留当前页，
-    // 不能落入 mock 分支并误跳到等待房东签约。
     if (channel == 'alipay') {
       if (!result.needWebView) {
         AppToast.show(context, '支付页面获取失败，请稍后重试', type: AppToastType.error);
@@ -161,24 +163,16 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
       return;
     }
 
-    if (channel != 'mock') {
-      AppToast.show(context, '暂不支持该支付方式', type: AppToastType.error);
-      return;
-    }
-
-    // 只有明确的 mock 支付才直接进入等待房东签约页。
-    ref.invalidate(myRentOrdersProvider);
-    context.pushReplacementNamed(
-      RouteNames.waitingLandlordSign,
-      pathParameters: {'orderId': widget.orderId},
-    );
+    AppToast.show(context, '暂不支持该支付方式', type: AppToastType.error);
   }
 
   /// 支付方式显示名 → 后端渠道名
-  String _channelForMethod(String method) {
-    if (method.contains('支付宝') || method == 'alipay') return 'alipay';
-    if (method.contains('微信') || method == 'wechat') return 'wechat';
-    return 'mock';
+  String? _channelForMethod(String method) {
+    final normalized = method.trim().toLowerCase();
+    if (normalized.contains('支付宝') || normalized == 'alipay') {
+      return 'alipay';
+    }
+    return null;
   }
 }
 

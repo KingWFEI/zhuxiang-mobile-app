@@ -35,7 +35,8 @@ enum RepairStatus {
   processing,
   pendingReview,
   completed,
-  cancelled;
+  cancelled,
+  unknown;
 
   String get label => switch (this) {
     RepairStatus.submitted => '待受理',
@@ -45,6 +46,7 @@ enum RepairStatus {
     RepairStatus.pendingReview => '待评价',
     RepairStatus.completed => '已完成',
     RepairStatus.cancelled => '已取消',
+    RepairStatus.unknown => '状态未知',
   };
 
   bool get canReview => this == RepairStatus.pendingReview;
@@ -55,7 +57,7 @@ enum RepairStatus {
     final text = value?.toString();
     return RepairStatus.values.firstWhere(
       (status) => status.name == text,
-      orElse: () => RepairStatus.submitted,
+      orElse: () => RepairStatus.unknown,
     );
   }
 }

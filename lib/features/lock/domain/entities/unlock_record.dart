@@ -3,7 +3,8 @@ enum UnlockMethod {
   remote('远程开锁'),
   password('密码开锁'),
   admin('管理员开锁'),
-  system('系统开锁');
+  system('系统开锁'),
+  unknown('其他方式');
 
   const UnlockMethod(this.label);
   final String label;
@@ -11,7 +12,8 @@ enum UnlockMethod {
 
 enum UnlockResult {
   success('成功'),
-  failed('失败');
+  failed('失败'),
+  unknown('未知');
 
   const UnlockResult(this.label);
   final String label;
@@ -21,7 +23,8 @@ enum UnlockOperatorType {
   tenant('本人操作'),
   housekeeper('管家操作'),
   admin('管理员操作'),
-  system('系统记录');
+  system('系统记录'),
+  unknown('未知');
 
   const UnlockOperatorType(this.label);
   final String label;
@@ -30,7 +33,8 @@ enum UnlockOperatorType {
 enum LockPermissionStatus {
   active('已授权'),
   pending('待授权'),
-  expired('已过期');
+  expired('已过期'),
+  unknown('状态未知');
 
   const LockPermissionStatus(this.label);
   final String label;
@@ -87,14 +91,14 @@ class CurrentLockStatus {
     required this.houseName,
     required this.lockName,
     required this.permissionStatus,
-    required this.lastUnlockTime,
+    this.lastUnlockTime,
     required this.supportedMethods,
   });
 
   final String houseName;
   final String lockName;
   final LockPermissionStatus permissionStatus;
-  final DateTime lastUnlockTime;
+  final DateTime? lastUnlockTime;
   final List<UnlockMethod> supportedMethods;
 }
 

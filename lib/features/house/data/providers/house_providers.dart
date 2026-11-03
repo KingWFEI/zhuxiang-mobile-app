@@ -66,11 +66,6 @@ final immersiveTourProvider = FutureProvider.autoDispose
       return service.getImmersiveTour(houseId);
     });
 
-/// 热门搜索关键词
-final hotKeywordsProvider = Provider<List<String>>((ref) {
-  return const ['近地铁', '整租', '两居室', '可月付', '智能门锁'];
-});
-
 /// 热门小区列表（GET /houses/hot-communities）
 final hotCommunitiesProvider = FutureProvider<List<HotCommunity>>((ref) async {
   final service = ref.watch(houseServiceProvider);
@@ -92,7 +87,7 @@ class SearchHistoryNotifier extends Notifier<List<String>> {
         .read(localStorageProvider)
         .getString(StorageKeys.houseSearchHistory);
     if (raw == null || raw.isEmpty) {
-      return const ['中央公园', '朝阳公园', '望京', '三里屯', '整租两居', '近地铁', '可月付', '智能门锁'];
+      return const [];
     }
     try {
       return (jsonDecode(raw) as List<dynamic>)

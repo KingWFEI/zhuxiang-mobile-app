@@ -22,7 +22,6 @@ class HouseSearchState {
     this.isRefreshing = false,
     this.houses = const [],
     this.searchHistory = const [],
-    this.hotKeywords = const [],
     this.error,
   });
 
@@ -49,7 +48,6 @@ class HouseSearchState {
 
   final List<House> houses;
   final List<String> searchHistory;
-  final List<String> hotKeywords;
   final String? error;
 
   bool get hasActiveFilters {
@@ -102,7 +100,6 @@ class HouseSearchState {
     bool? isRefreshing,
     List<House>? houses,
     List<String>? searchHistory,
-    List<String>? hotKeywords,
     String? error,
     bool clearError = false,
   }) {
@@ -127,7 +124,6 @@ class HouseSearchState {
       isRefreshing: isRefreshing ?? this.isRefreshing,
       houses: houses ?? this.houses,
       searchHistory: searchHistory ?? this.searchHistory,
-      hotKeywords: hotKeywords ?? this.hotKeywords,
       error: clearError ? null : error ?? this.error,
     );
   }
